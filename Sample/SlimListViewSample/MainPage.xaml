@@ -19,14 +19,19 @@
 
             <xfslimlistview:SlimListView.SectionHeaderTemplate>
                 <DataTemplate>
-                    <Label BackgroundColor="Green" Padding="20" Text="Section Header" TextColor="White" />
+                    <StackLayout>
+                        <Label BackgroundColor="Green" Padding="20" Text="Section Header" TextColor="White" />
+                        <BoxView HeightRequest="5" />
+                    </StackLayout>
                 </DataTemplate>
             </xfslimlistview:SlimListView.SectionHeaderTemplate>
 
             <xfslimlistview:SlimListView.SectionFooterTemplate>
                 <DataTemplate>
-                    <BoxView HeightRequest="5" />
-                    
+                    <StackLayout>
+                        <BoxView HeightRequest="5" />
+                        <Label BackgroundColor="Green" Padding="20" Text="Section Header" TextColor="White" />
+                    </StackLayout>
                 </DataTemplate>
             </xfslimlistview:SlimListView.SectionFooterTemplate>
 
