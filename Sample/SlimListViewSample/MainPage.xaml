@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:xfslimlistview="clr-namespace:XFSlimListView;assembly=XFSlimListView"
+             xmlns:local="clr-namespace:SlimListViewSample"
+             x:Class="SlimListViewSample.MainPage">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <local:ItemSelector x:Key="itemSelector" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    <StackLayout>
+        <Frame BackgroundColor="#2196F3" Padding="24" CornerRadius="0">
+            <Label Text="Welcome to Xamarin.Forms!" HorizontalTextAlignment="Center" TextColor="White" FontSize="36"/>
+        </Frame>
+        <xfslimlistview:SlimListView
+            Adapter="{Binding Adapter}"
+            ItemTemplateSelector="{StaticResource itemSelector}" />
+    </StackLayout>
+
+</ContentPage>
