@@ -28,6 +28,11 @@ namespace XFSlimListView
 		RecyclerView recyclerView;
 		LinearLayoutManager layoutManager;
 
+		public override Xamarin.Forms.SizeRequest GetDesiredSize(int widthConstraint, int heightConstraint)
+		{
+			return new Xamarin.Forms.SizeRequest(new Xamarin.Forms.Size(int.MaxValue - 1000, int.MaxValue - 1000),
+				new Xamarin.Forms.Size(0, 0));
+		}
 		protected override void OnElementChanged(Xamarin.Forms.Platform.Android.ElementChangedEventArgs<SlimListView> e)
 		{
 			base.OnElementChanged(e);
@@ -62,6 +67,8 @@ namespace XFSlimListView
 
 					recyclerView.SetLayoutManager(layoutManager);
 					recyclerView.SetAdapter(adapter);
+					recyclerView.LayoutParameters = new LayoutParams(
+						LayoutParams.FillParent, LayoutParams.FillParent);
 
 					SetNativeControl(recyclerView);
 				}
@@ -135,21 +142,24 @@ namespace XFSlimListView
 			{
 				var sum = 0;
 
-				if (TemplateSelector.HeaderTemplate != null)
+				if (TemplateSelector?.HeaderTemplate != null)
 					sum += 1;
 
-				for (int i = 0; i < adapter.Sections; i++)
+				if (adapter != null)
 				{
-					if (TemplateSelector.SectionHeaderTemplate != null || TemplateSelector.SectionHeaderTemplateSelector != null)
-						sum += 1;
+					for (int i = 0; i < adapter.Sections; i++)
+					{
+						if (TemplateSelector?.SectionHeaderTemplate != null || TemplateSelector?.SectionHeaderTemplateSelector != null)
+							sum += 1;
 
-					sum += adapter.ItemsForSection(i);
+						sum += adapter.ItemsForSection(i);
 
-					if (TemplateSelector.SectionFooterTemplate != null || TemplateSelector.SectionFooterTemplateSelector != null)
-						sum += 1;
+						if (TemplateSelector?.SectionFooterTemplate != null || TemplateSelector?.SectionFooterTemplateSelector != null)
+							sum += 1;
+					}
 				}
 
-				if (TemplateSelector.FooterTemplate != null)
+				if (TemplateSelector?.FooterTemplate != null)
 					sum += 1;
 
 				return sum;
@@ -177,7 +187,7 @@ namespace XFSlimListView
 				fHolder.FormsView.BindingContext = item;
 				fHolder.ItemPosition = position;
 				fHolder.ItemView.Tag = new Java.Lang.Integer(position);
-				fHolder.ItemView.SetOnClickListener(this);
+				//fHolder.ItemView.SetOnClickListener(this);
 			}
 		}
 

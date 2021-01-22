@@ -9,13 +9,38 @@
             <local:ItemSelector x:Key="itemSelector" />
         </ResourceDictionary>
     </ContentPage.Resources>
-    <StackLayout>
-        <Frame BackgroundColor="#2196F3" Padding="24" CornerRadius="0">
-            <Label Text="Welcome to Xamarin.Forms!" HorizontalTextAlignment="Center" TextColor="White" FontSize="36"/>
-        </Frame>
+    <Grid>
         <xfslimlistview:SlimListView
+            HorizontalOptions="FillAndExpand"
+            VerticalOptions="FillAndExpand"
+            BackgroundColor="Pink"
             Adapter="{Binding Adapter}"
-            ItemTemplateSelector="{StaticResource itemSelector}" />
-    </StackLayout>
+            ItemTemplateSelector="{StaticResource itemSelector}">
 
+            <xfslimlistview:SlimListView.SectionHeaderTemplate>
+                <DataTemplate>
+                    <Label BackgroundColor="Green" Padding="20" Text="Section Header" TextColor="White" />
+                </DataTemplate>
+            </xfslimlistview:SlimListView.SectionHeaderTemplate>
+
+            <xfslimlistview:SlimListView.SectionFooterTemplate>
+                <DataTemplate>
+                    <BoxView HeightRequest="5" />
+                    <Label Margin="0,5,0,0" BackgroundColor="Green" Padding="20" Text="Section Footer" TextColor="White" />
+                </DataTemplate>
+            </xfslimlistview:SlimListView.SectionFooterTemplate>
+
+            <xfslimlistview:SlimListView.HeaderTemplate>
+                <DataTemplate>
+                    <Label BackgroundColor="Navy" Padding="20" Text="Header" TextColor="White" />
+                </DataTemplate>
+            </xfslimlistview:SlimListView.HeaderTemplate>
+
+            <xfslimlistview:SlimListView.FooterTemplate>
+                <DataTemplate>
+                    <Label BackgroundColor="Navy" Padding="20" Text="Footer" TextColor="White" />
+                </DataTemplate>
+            </xfslimlistview:SlimListView.FooterTemplate>
+        </xfslimlistview:SlimListView>
+        </Grid>
 </ContentPage>

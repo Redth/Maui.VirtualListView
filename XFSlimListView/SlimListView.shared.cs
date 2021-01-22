@@ -8,7 +8,7 @@ namespace XFSlimListView
 {
 	public class SlimListView : Xamarin.Forms.View
 	{
-		public SlimListView()
+		public SlimListView() : base()
 		{
 
 		}

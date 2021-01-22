@@ -11,9 +11,13 @@ namespace SlimListViewSample
 {
 	public partial class MainPage : ContentPage
 	{
+		MainViewModel vm;
+
 		public MainPage()
 		{
 			InitializeComponent();
+			vm = new MainViewModel();
+			BindingContext = vm;
 		}
 	}
 
@@ -27,7 +31,6 @@ namespace SlimListViewSample
 			PersonTemplate = new DataTemplate(typeof(PersonView));
 			AnimalTemplate = new DataTemplate(typeof(AnimalView));
 		}
-
 
 		public override DataTemplate SelectItemTemplate(ISlimListViewAdapter adapter, int sectionIndex, int itemIndex)
 		{
@@ -45,6 +48,7 @@ namespace SlimListViewSample
 	public class MainViewModel : INotifyPropertyChanged
 	{
 		public ListAdapter<Creature> Adapter
+		{ get; set; }
 			= new ListAdapter<Creature>
 			{
 				Items = new List<Creature>
@@ -57,6 +61,20 @@ namespace SlimListViewSample
 						Breed = "Dog",
 						Sound = "Bark",
 						Description = "This is a long one\r\n with more than one line\r\nin fact there are several lines to consider and the text can be long and potentially need to wrap to the next line too "
+					},
+					new Person {
+						FirstName = "Mr",
+						LastName = "Sad",
+						Description = "This is a short one" },
+					new Animal {
+						Breed = "Cat",
+						Sound = "Meow",
+						Description = "This is a long one\r\n with more than one line"
+					},
+					new Animal {
+						Breed = "Penguin",
+						Sound = "?",
+						Description = "Not sure"
 					}
 				}
 			};
