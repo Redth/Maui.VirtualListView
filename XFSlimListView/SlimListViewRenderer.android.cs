@@ -134,8 +134,23 @@ namespace XFSlimListView
 			get
 			{
 				var sum = 0;
+
+				if (TemplateSelector.HeaderTemplate != null)
+					sum += 1;
+
 				for (int i = 0; i < adapter.Sections; i++)
+				{
+					if (TemplateSelector.SectionHeaderTemplate != null || TemplateSelector.SectionHeaderTemplateSelector != null)
+						sum += 1;
+
 					sum += adapter.ItemsForSection(i);
+
+					if (TemplateSelector.SectionFooterTemplate != null || TemplateSelector.SectionFooterTemplateSelector != null)
+						sum += 1;
+				}
+
+				if (TemplateSelector.FooterTemplate != null)
+					sum += 1;
 
 				return sum;
 			}
