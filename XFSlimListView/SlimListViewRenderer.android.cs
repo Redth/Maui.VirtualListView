@@ -224,7 +224,13 @@ namespace XFSlimListView
 		public void OnClick(View v)
 		{
 			if (v.Tag is Java.Lang.Integer position)
-				ItemClicked?.Invoke(this, position.IntValue());
+			{
+				var info = TemplateSelector.GetInfo(adapter, position.IntValue());
+
+				if (info.Type == PositionInfo.PositionType.Item)
+					ItemClicked?.Invoke(this, position.IntValue());
+			}
+				
 		}
 	}
 }
