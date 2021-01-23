@@ -37,7 +37,7 @@
 
             <xfslimlistview:SlimListView.HeaderTemplate>
                 <DataTemplate>
-                    <Label BackgroundColor="Navy" Padding="20" Text="Header" TextColor="White" />
+                    <Label WidthRequest="100" BackgroundColor="Navy" Padding="20" Text="Header" TextColor="White" />
                 </DataTemplate>
             </xfslimlistview:SlimListView.HeaderTemplate>
 

@@ -13,7 +13,7 @@ using System.Linq;
 using System.Text;
 using Xamarin.Forms.Platform.Android.AppCompat;
 
-[assembly: Xamarin.Forms.ExportRenderer(typeof(XFSlimListView.SlimListView), typeof(XFSlimListView.SlimListViewRenderer))]
+
 
 namespace XFSlimListView
 {
@@ -33,6 +33,7 @@ namespace XFSlimListView
 			return new Xamarin.Forms.SizeRequest(new Xamarin.Forms.Size(int.MaxValue - 1000, int.MaxValue - 1000),
 				new Xamarin.Forms.Size(0, 0));
 		}
+
 		protected override void OnElementChanged(Xamarin.Forms.Platform.Android.ElementChangedEventArgs<SlimListView> e)
 		{
 			base.OnElementChanged(e);
@@ -61,6 +62,7 @@ namespace XFSlimListView
 				{
 					recyclerView = new RecyclerView(Context);
 					layoutManager = new LinearLayoutManager(Context);
+					layoutManager.Orientation = LinearLayoutManager.Horizontal;
 
 					adapter = new SlimListViewRvAdapter(Context, e.NewElement.Adapter);
 					adapter.TemplateSelector = CreateTemplateSelector();
