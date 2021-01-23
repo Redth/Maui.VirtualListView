@@ -181,7 +181,7 @@ namespace XFSlimListView
 					collectionView.DequeueReusableSupplementaryView(
 						UICollectionElementKindSection.Header,
 						reuseId,
-						indexPath) as SlimListViewCollectionViewCell;
+						indexPath) as SlimListViewCollectionReusableView;
 
 			header.EnsureFormsTemplate(template);
 
