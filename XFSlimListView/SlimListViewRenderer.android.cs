@@ -62,7 +62,7 @@ namespace XFSlimListView
 				{
 					recyclerView = new RecyclerView(Context);
 					layoutManager = new LinearLayoutManager(Context);
-					layoutManager.Orientation = LinearLayoutManager.Horizontal;
+					//layoutManager.Orientation = LinearLayoutManager.Horizontal;
 
 					adapter = new SlimListViewRvAdapter(Context, e.NewElement.Adapter);
 					adapter.TemplateSelector = CreateTemplateSelector();
