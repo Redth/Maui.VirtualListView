@@ -109,6 +109,32 @@ namespace XFSlimListView
 
 			return new CGSize(formsSize.Request.Width, formsSize.Request.Height);
 		}
+
+		public override CGSize GetReferenceSizeForHeader(UICollectionView collectionView, UICollectionViewLayout layout, nint section)
+		{
+			var header = collectionView.DataSource.GetViewForSupplementaryElement(collectionView,
+				new NSString("UICollectionElementKindSectionHeader"), NSIndexPath.FromItemSection(0, section))
+				as SlimListViewCollectionReusableView;
+
+			var formsSize = header.FormsView.Measure(collectionView.Frame.Width, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
+
+			Console.WriteLine($"FormsHeaderSize Request: {formsSize.Request.Width}x{formsSize.Request.Height}");
+
+			return new CGSize(formsSize.Request.Width, formsSize.Request.Height);
+		}
+
+		public override CGSize GetReferenceSizeForFooter(UICollectionView collectionView, UICollectionViewLayout layout, nint section)
+		{
+			var footer = collectionView.DataSource.GetViewForSupplementaryElement(collectionView,
+				new NSString("UICollectionElementKindSectionFooter"), NSIndexPath.FromItemSection(0, section))
+				as SlimListViewCollectionReusableView;
+
+			var formsSize = footer.FormsView.Measure(collectionView.Frame.Width, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
+
+			Console.WriteLine($"FormsFooterSize Request: {formsSize.Request.Width}x{formsSize.Request.Height}");
+
+			return new CGSize(formsSize.Request.Width, formsSize.Request.Height);
+		}
 	}
 
 	internal class CollectionViewDataSource : UICollectionViewDataSource
