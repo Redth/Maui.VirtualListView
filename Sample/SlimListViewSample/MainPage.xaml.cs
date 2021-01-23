@@ -47,12 +47,13 @@ namespace SlimListViewSample
 
 	public class MainViewModel : INotifyPropertyChanged
 	{
-		public ListAdapter<Creature> Adapter
-		{ get; set; }
-			= new ListAdapter<Creature>
+		public MainViewModel()
+		{
+			var allItems = new List<Creature>();
+
+			for (int i = 0; i < 100; i++)
 			{
-				Items = new List<Creature>
-				{
+				allItems.AddRange(new Creature[] {
 					new Person {
 						FirstName = "Mr",
 						LastName = "Happy",
@@ -60,7 +61,7 @@ namespace SlimListViewSample
 					new Animal {
 						Breed = "Dog",
 						Sound = "Bark",
-						Description = "This is a long one\r\n with more than one line\r\nin fact there are several lines to consider and the text can be long and potentially need to wrap to the next line too "
+						Description = "This is a long one\r\n with more than one line\r\nin fact there are several lines to consider and the text can be long and potentially need to wrap to the next line too \r\nThis is a long one\r\n with more than one line\r\nin fact there are several lines to consider and the text can be long and potentially need to wrap to the next line too"
 					},
 					new Person {
 						FirstName = "Mr",
@@ -76,9 +77,17 @@ namespace SlimListViewSample
 						Sound = "?",
 						Description = "Not sure"
 					}
-				}
-			};
+				});
+			}
 
+
+			Adapter = new ListAdapter<Creature>
+			{
+				Items = allItems
+			};
+		}
+
+		public ListAdapter<Creature> Adapter { get; set; }
 
 		public void NotifyPropertyChanged(string propertyName)
 			=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
