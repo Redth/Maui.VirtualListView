@@ -179,7 +179,7 @@ namespace XFSlimListView
 
 			var header =
 					collectionView.DequeueReusableSupplementaryView(
-						UICollectionElementKindSection.Header,
+						elementKind,
 						reuseId,
 						indexPath) as SlimListViewCollectionReusableView;
 
