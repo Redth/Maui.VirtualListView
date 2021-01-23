@@ -30,14 +30,14 @@
                 <DataTemplate>
                     <StackLayout>
                         <BoxView HeightRequest="5" />
-                        <Label BackgroundColor="Green" Padding="20" Text="Section Header" TextColor="White" />
+                        <Label BackgroundColor="Green" Padding="20" Text="Section Footer" TextColor="White" />
                     </StackLayout>
                 </DataTemplate>
             </xfslimlistview:SlimListView.SectionFooterTemplate>
 
             <xfslimlistview:SlimListView.HeaderTemplate>
                 <DataTemplate>
-                    <Label WidthRequest="100" BackgroundColor="Navy" Padding="20" Text="Header" TextColor="White" />
+                    <Label BackgroundColor="Navy" Padding="20" Text="Header" TextColor="White" />
                 </DataTemplate>
             </xfslimlistview:SlimListView.HeaderTemplate>
 
