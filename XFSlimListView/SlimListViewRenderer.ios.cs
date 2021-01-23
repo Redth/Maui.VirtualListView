@@ -17,7 +17,7 @@ namespace XFSlimListView
 		{
 		}
 
-		CollectionViewDataSource dataSource;
+		CvDataSource dataSource;
 		UICollectionView collectionView;
 		CvFlowDelegate flowDelegate;
 
@@ -39,15 +39,16 @@ namespace XFSlimListView
 				{
 					var layout = new UICollectionViewFlowLayout();
 					layout.EstimatedItemSize = new CGSize(1f, 1f);
-
-					//UICollectionViewCompositionalLayout.GetLayout(
-					//new UICollectionLayoutListConfiguration(UICollectionLayoutListAppearance.Plain));
-
+					layout.SectionInset = new UIEdgeInsets(0, 0, 0, 0);
+					layout.MinimumInteritemSpacing = 0f;
+					layout.MinimumLineSpacing = 0f;
+					
 					flowDelegate = new CvFlowDelegate();
-					dataSource = new CollectionViewDataSource(e.NewElement.Adapter);
+					dataSource = new CvDataSource(e.NewElement.Adapter);
 					collectionView = new UICollectionView(this.Frame, layout);
 					collectionView.DataSource = dataSource;
 					collectionView.Delegate = flowDelegate;
+					collectionView.ContentInset = new UIEdgeInsets(0, 0, 0, 0);
 
 					dataSource.TemplateSelector = CreateTemplateSelector();
 
@@ -95,51 +96,62 @@ namespace XFSlimListView
 		}
 	}
 
+	internal static class CvConsts
+	{
+		public static NSString ElementKindSectionHeader
+			=> new NSString("UICollectionElementKindSectionHeader");
+		public static NSString ElementKindSectionFooter
+			=> new NSString("UICollectionElementKindSectionFooter");
+	}
+
 	internal class CvFlowDelegate : UICollectionViewDelegateFlowLayout
 	{
 		public override CGSize GetSizeForItem(UICollectionView collectionView, UICollectionViewLayout layout, NSIndexPath indexPath)
 		{
-			var cell = collectionView.DataSource.GetCell(collectionView, indexPath);
+			var cell = collectionView.DataSource.GetCell(collectionView, indexPath)
+				as SlimListViewCollectionViewCell;
 
-			var scell = cell as SlimListViewCollectionViewCell;
+			if (cell != null)
+			{
+				var formsSize = cell.FormsView.Measure(collectionView.Frame.Width, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
 
-			var formsSize = scell.FormsView.Measure(collectionView.Frame.Width, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
+				return new CGSize(Math.Max(formsSize.Request.Width, collectionView.Frame.Width), formsSize.Request.Height);
+			}
 
-			Console.WriteLine($"FormsSize Request: {formsSize.Request.Width}x{formsSize.Request.Height}");
-
-			return new CGSize(formsSize.Request.Width, formsSize.Request.Height);
+			return new CGSize();
 		}
 
 		public override CGSize GetReferenceSizeForHeader(UICollectionView collectionView, UICollectionViewLayout layout, nint section)
 		{
 			var header = collectionView.DataSource.GetViewForSupplementaryElement(collectionView,
-				new NSString("UICollectionElementKindSectionHeader"), NSIndexPath.FromItemSection(0, section))
+				new NSString(CvConsts.ElementKindSectionHeader), NSIndexPath.FromItemSection(0, section))
 				as SlimListViewCollectionReusableView;
 
-			var formsSize = header.FormsView.Measure(collectionView.Frame.Width, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
+			if (header != null)
+			{
+				var formsSize = header.FormsView.Measure(collectionView.Frame.Width, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
 
-			Console.WriteLine($"FormsHeaderSize Request: {formsSize.Request.Width}x{formsSize.Request.Height}");
+				return new CGSize(Math.Max(formsSize.Request.Width, collectionView.Frame.Width), formsSize.Request.Height);
+			}
 
-			return new CGSize(formsSize.Request.Width, formsSize.Request.Height);
+			return new CGSize();
 		}
 
 		public override CGSize GetReferenceSizeForFooter(UICollectionView collectionView, UICollectionViewLayout layout, nint section)
 		{
 			var footer = collectionView.DataSource.GetViewForSupplementaryElement(collectionView,
-				new NSString("UICollectionElementKindSectionFooter"), NSIndexPath.FromItemSection(0, section))
+				new NSString(CvConsts.ElementKindSectionFooter), NSIndexPath.FromItemSection(0, section))
 				as SlimListViewCollectionReusableView;
 
 			var formsSize = footer.FormsView.Measure(collectionView.Frame.Width, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
 
-			Console.WriteLine($"FormsFooterSize Request: {formsSize.Request.Width}x{formsSize.Request.Height}");
-
-			return new CGSize(formsSize.Request.Width, formsSize.Request.Height);
+			return new CGSize(Math.Max(formsSize.Request.Width, collectionView.Frame.Width), formsSize.Request.Height);
 		}
 	}
 
-	internal class CollectionViewDataSource : UICollectionViewDataSource
+	internal class CvDataSource : UICollectionViewDataSource
 	{
-		public CollectionViewDataSource(ISlimListViewAdapter adapter)
+		public CvDataSource(ISlimListViewAdapter adapter)
 		{
 			Adapter = adapter;
 		}
@@ -159,14 +171,14 @@ namespace XFSlimListView
 			DataTemplate template = null;
 			NSString reuseId = null;
 
-			if (elementKind == "UICollectionElementKindSectionHeader")
+			if (elementKind == CvConsts.ElementKindSectionHeader)
 			{
 				template = TemplateSelector?.SectionHeaderTemplateSelector?.SelectGroupTemplate(Adapter, indexPath.Section)
 					?? TemplateSelector.SectionHeaderTemplate;
 
 				reuseId = sectionHeaderIdManager.GetReuseId(collectionView, template);
 			}
-			else if (elementKind == "UICollectionElementKindSectionFooter")
+			else if (elementKind == CvConsts.ElementKindSectionFooter)
 			{
 				template = TemplateSelector?.SectionFooterTemplateSelector?.SelectGroupTemplate(Adapter, indexPath.Section)
 					?? TemplateSelector.SectionFooterTemplate;
@@ -177,18 +189,20 @@ namespace XFSlimListView
 			if (template == null || reuseId == null)
 				return new UICollectionReusableView();
 
-			var header =
+			var supplementary =
 					collectionView.DequeueReusableSupplementaryView(
 						elementKind,
 						reuseId,
 						indexPath) as SlimListViewCollectionReusableView;
 
-			header.EnsureFormsTemplate(template);
+			supplementary.IsHeader = elementKind == CvConsts.ElementKindSectionHeader;
 
-			var headerBindingContext = Adapter.Section(indexPath.Section);
-			header.UpdateFormsBindingContext(headerBindingContext);
+			supplementary.EnsureFormsTemplate(template);
 
-			return header;
+			var bindingContext = Adapter.Section(indexPath.Section);
+			supplementary.UpdateFormsBindingContext(bindingContext);
+
+			return supplementary;
 		}
 
 
@@ -231,10 +245,26 @@ namespace XFSlimListView
 		}
 	}
 
+	public class CvFlowLayout : UICollectionViewFlowLayout
+	{
+		public CvFlowLayout() : base()
+		{
+		}
+
+		public override bool ShouldInvalidateLayoutForBoundsChange(CGRect newBounds)
+			=> true;
+
+		public override UICollectionViewLayoutAttributes LayoutAttributesForItem(NSIndexPath path)
+			=> base.LayoutAttributesForItem(path);
+
+		public override UICollectionViewLayoutAttributes[] LayoutAttributesForElementsInRect(CGRect rect)
+			=> base.LayoutAttributesForElementsInRect(rect);
+	}
+
 	public class SlimListViewCollectionViewCell : UICollectionViewCell
 	{
 		public object FormsBindingContext { get; private set; }
-		public Xamarin.Forms.View FormsView { get; private set; }
+		public View FormsView { get; private set; }
 
 		UIContainerView containerView = null;
 
@@ -243,62 +273,60 @@ namespace XFSlimListView
 		{
 		}
 
-		public void EnsureFormsTemplate(Xamarin.Forms.DataTemplate template)
+		public void EnsureFormsTemplate(DataTemplate template)
 		{
 			if (FormsView == null)
-				FormsView = template.CreateContent() as Xamarin.Forms.View;
+				FormsView = template.CreateContent() as View;
 
 			if (containerView == null)
 			{
-				containerView = new UIContainerView(FormsView);
-
-				ContentView.TranslatesAutoresizingMaskIntoConstraints = false;
-				containerView.TranslatesAutoresizingMaskIntoConstraints = false;
+				containerView = new UIContainerView(FormsView)
+				{
+					Frame = ContentView.Frame,
+					AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth
+				};
 
 				ContentView.AddSubview(containerView);
-
-				// We want the cell to be the same size as the ContentView
-				ContentView.TopAnchor.ConstraintEqualTo(TopAnchor).Active = true;
-				ContentView.BottomAnchor.ConstraintEqualTo(BottomAnchor).Active = true;
-				ContentView.LeadingAnchor.ConstraintEqualTo(LeadingAnchor).Active = true;
-				ContentView.TrailingAnchor.ConstraintEqualTo(TrailingAnchor).Active = true;
-
-				// And we want the ContentView to be the same size as the root renderer for the Forms element
-				ContentView.TopAnchor.ConstraintEqualTo(containerView.TopAnchor).Active = true;
-				ContentView.BottomAnchor.ConstraintEqualTo(containerView.BottomAnchor).Active = true;
-				ContentView.LeadingAnchor.ConstraintEqualTo(containerView.LeadingAnchor).Active = true;
-				ContentView.TrailingAnchor.ConstraintEqualTo(containerView.TrailingAnchor).Active = true;
 			}
 		}
 
 		public void UpdateFormsBindingContext(object bindingContext)
 		{
 			if (FormsView != null)
+			{
 				FormsView.BindingContext = bindingContext;
+				FormsView.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
+			}
 		}
 	}
-
 
 	public class SlimListViewCollectionReusableView : UICollectionReusableView
 	{
 		public object FormsBindingContext { get; private set; }
-		public Xamarin.Forms.View FormsView { get; private set; }
+		public View FormsView { get; private set; }
 
 		UIContainerView containerView = null;
+
+		public bool IsHeader { get; set; } = false;
 
 		[Export("initWithFrame:")]
 		public SlimListViewCollectionReusableView(CGRect frame) : base(frame)
 		{
 		}
 
-		public void EnsureFormsTemplate(Xamarin.Forms.DataTemplate template)
+		public void EnsureFormsTemplate(DataTemplate template)
 		{
 			if (FormsView == null)
-				FormsView = template.CreateContent() as Xamarin.Forms.View;
+				FormsView = template.CreateContent() as View;
 
 			if (containerView == null)
 			{
-				containerView = new UIContainerView(FormsView);
+				containerView = new UIContainerView(FormsView)
+				{
+					Frame = this.Frame,
+					AutoresizingMask = UIViewAutoresizing.FlexibleWidth | UIViewAutoresizing.FlexibleHeight
+				};
+
 				AddSubview(containerView);
 			}
 		}
@@ -306,7 +334,10 @@ namespace XFSlimListView
 		public void UpdateFormsBindingContext(object bindingContext)
 		{
 			if (FormsView != null)
+			{
 				FormsView.BindingContext = bindingContext;
+				FormsView.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
+			}
 		}
 	}
 
@@ -316,21 +347,20 @@ namespace XFSlimListView
 		{
 			UniquePrefix = uniquePrefix;
 			SupplementaryKind = supplementaryKind;
-			templates = new List<Xamarin.Forms.DataTemplate>();
+			templates = new List<DataTemplate>();
 			lockObj = new object();
 		}
 
 		public string UniquePrefix { get; }
 		public NSString SupplementaryKind { get; }
 
-		readonly List<Xamarin.Forms.DataTemplate> templates;
+		readonly List<DataTemplate> templates;
 		readonly object lockObj;
-
 
 		NSString GetReuseId(int i)
 			=> new NSString($"_{UniquePrefix}_{nameof(SlimListView)}_{i}");
 
-		public NSString GetReuseId(UICollectionView collectionView, Xamarin.Forms.DataTemplate template)
+		public NSString GetReuseId(UICollectionView collectionView, DataTemplate template)
 		{
 			var viewType = 0;
 
