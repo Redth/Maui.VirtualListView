@@ -19,6 +19,7 @@ namespace XFSlimListView
 
 		CollectionViewDataSource dataSource;
 		UICollectionView collectionView;
+		CvFlowDelegate flowDelegate;
 
 		protected override void OnElementChanged(ElementChangedEventArgs<SlimListView> e)
 		{
@@ -36,14 +37,17 @@ namespace XFSlimListView
 				// Create the native control
 				if (Control == null)
 				{
-					var layout = UICollectionViewCompositionalLayout.GetLayout(
-						new UICollectionLayoutListConfiguration(UICollectionLayoutListAppearance.Plain));
+					var layout = new UICollectionViewFlowLayout();
+					layout.EstimatedItemSize = new CGSize(1f, 1f);
 
-					Console.WriteLine("Creating collection view");
+					//UICollectionViewCompositionalLayout.GetLayout(
+					//new UICollectionLayoutListConfiguration(UICollectionLayoutListAppearance.Plain));
 
+					flowDelegate = new CvFlowDelegate();
 					dataSource = new CollectionViewDataSource(e.NewElement.Adapter);
 					collectionView = new UICollectionView(this.Frame, layout);
 					collectionView.DataSource = dataSource;
+					collectionView.Delegate = flowDelegate;
 
 					dataSource.TemplateSelector = CreateTemplateSelector();
 
@@ -86,7 +90,24 @@ namespace XFSlimListView
 				dataSource.ResetTemplates(collectionView);
 				dataSource.TemplateSelector = CreateTemplateSelector();
 				collectionView.ReloadData();
+				collectionView.CollectionViewLayout.InvalidateLayout();
 			}
+		}
+	}
+
+	internal class CvFlowDelegate : UICollectionViewDelegateFlowLayout
+	{
+		public override CGSize GetSizeForItem(UICollectionView collectionView, UICollectionViewLayout layout, NSIndexPath indexPath)
+		{
+			var cell = collectionView.DataSource.GetCell(collectionView, indexPath);
+
+			var scell = cell as SlimListViewCollectionViewCell;
+
+			var formsSize = scell.FormsView.Measure(collectionView.Frame.Width, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
+
+			Console.WriteLine($"FormsSize Request: {formsSize.Request.Width}x{formsSize.Request.Height}");
+
+			return new CGSize(formsSize.Request.Width, formsSize.Request.Height);
 		}
 	}
 
@@ -101,20 +122,11 @@ namespace XFSlimListView
 		internal PositionTemplateSelector TemplateSelector { get; set; }
 
 		readonly ReusableIdManager itemIdManager = new ReusableIdManager("Item");
-		readonly ReusableIdManager sectionHeaderIdManager = new ReusableIdManager("SectionHeader");
-		readonly ReusableIdManager sectionFooterIdManager = new ReusableIdManager("SectionFooter");
+		readonly ReusableIdManager sectionHeaderIdManager = new ReusableIdManager("SectionHeader", new NSString("UICollectionElementKindSectionHeader"));
+		readonly ReusableIdManager sectionFooterIdManager = new ReusableIdManager("SectionFooter", new NSString("UICollectionElementKindSectionFooter"));
 
 		public override nint NumberOfSections(UICollectionView collectionView)
-		{
-			var n = Adapter?.Sections ?? 0;
-
-			if (TemplateSelector.HeaderTemplate != null)
-				n++;
-			if (TemplateSelector.FooterTemplate != null)
-				n++;
-
-			return n;
-		}
+			=> Adapter?.Sections ?? 0;
 
 		public override UICollectionReusableView GetViewForSupplementaryElement(UICollectionView collectionView, NSString elementKind, NSIndexPath indexPath)
 		{
@@ -128,7 +140,7 @@ namespace XFSlimListView
 
 				reuseId = sectionHeaderIdManager.GetReuseId(collectionView, template);
 			}
-			else if (elementKind == "UICollectionElementKindSectionHeader")
+			else if (elementKind == "UICollectionElementKindSectionFooter")
 			{
 				template = TemplateSelector?.SectionFooterTemplateSelector?.SelectGroupTemplate(Adapter, indexPath.Section)
 					?? TemplateSelector.SectionFooterTemplate;
@@ -177,10 +189,10 @@ namespace XFSlimListView
 
 		public override nint GetItemsCount(UICollectionView collectionView, nint section)
 		{
-			if (TemplateSelector.HeaderTemplate != null)
-				return 1;
-			if (TemplateSelector.FooterTemplate != null)
-				return 1;
+			//if (TemplateSelector.HeaderTemplate != null)
+			//	return 1;
+			//if (TemplateSelector.FooterTemplate != null)
+			//	return 1;
 
 			return (nint)Adapter.ItemsForSection((int)section);
 		}
@@ -213,7 +225,23 @@ namespace XFSlimListView
 			if (containerView == null)
 			{
 				containerView = new UIContainerView(FormsView);
-				AddSubview(containerView);
+
+				ContentView.TranslatesAutoresizingMaskIntoConstraints = false;
+				containerView.TranslatesAutoresizingMaskIntoConstraints = false;
+
+				ContentView.AddSubview(containerView);
+
+				// We want the cell to be the same size as the ContentView
+				ContentView.TopAnchor.ConstraintEqualTo(TopAnchor).Active = true;
+				ContentView.BottomAnchor.ConstraintEqualTo(BottomAnchor).Active = true;
+				ContentView.LeadingAnchor.ConstraintEqualTo(LeadingAnchor).Active = true;
+				ContentView.TrailingAnchor.ConstraintEqualTo(TrailingAnchor).Active = true;
+
+				// And we want the ContentView to be the same size as the root renderer for the Forms element
+				ContentView.TopAnchor.ConstraintEqualTo(containerView.TopAnchor).Active = true;
+				ContentView.BottomAnchor.ConstraintEqualTo(containerView.BottomAnchor).Active = true;
+				ContentView.LeadingAnchor.ConstraintEqualTo(containerView.LeadingAnchor).Active = true;
+				ContentView.TrailingAnchor.ConstraintEqualTo(containerView.TrailingAnchor).Active = true;
 			}
 		}
 
@@ -258,14 +286,16 @@ namespace XFSlimListView
 
 	internal class ReusableIdManager
 	{
-		public ReusableIdManager(string uniquePrefix)
+		public ReusableIdManager(string uniquePrefix, NSString supplementaryKind = null)
 		{
 			UniquePrefix = uniquePrefix;
+			SupplementaryKind = supplementaryKind;
 			templates = new List<Xamarin.Forms.DataTemplate>();
 			lockObj = new object();
 		}
 
 		public string UniquePrefix { get; }
+		public NSString SupplementaryKind { get; }
 
 		readonly List<Xamarin.Forms.DataTemplate> templates;
 		readonly object lockObj;
@@ -287,9 +317,15 @@ namespace XFSlimListView
 					templates.Add(template);
 					viewType = templates.Count - 1;
 
-					collectionView.RegisterClassForCell(
-						typeof(SlimListViewCollectionViewCell),
-						GetReuseId(viewType));
+					if (SupplementaryKind != null)
+						collectionView.RegisterClassForSupplementaryView(
+							typeof(SlimListViewCollectionReusableView),
+							SupplementaryKind,
+							GetReuseId(viewType));
+					else
+						collectionView.RegisterClassForCell(
+							typeof(SlimListViewCollectionViewCell),
+							GetReuseId(viewType));
 				}
 			}
 
@@ -301,7 +337,12 @@ namespace XFSlimListView
 			lock (lockObj)
 			{
 				for (int i = 0; i < templates.Count; i++)
-					collectionView.RegisterClassForCell(null, GetReuseId(i));
+				{
+					if (SupplementaryKind != null)
+						collectionView.RegisterClassForSupplementaryView(null, SupplementaryKind, GetReuseId(i));
+					else
+						collectionView.RegisterClassForCell(null, GetReuseId(i));
+				}
 
 				templates.Clear();
 			}
