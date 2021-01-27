@@ -20,7 +20,7 @@
             <xfslimlistview:SlimListView.SectionHeaderTemplate>
                 <DataTemplate>
                     <Grid HorizontalOptions="FillAndExpand">
-                        <Label BackgroundColor="Green" Padding="20" Text="Section Header" TextColor="White" />
+                        <Label BackgroundColor="DarkGreen" Padding="20" Text="{Binding GroupName}" TextColor="White" />
                     </Grid>
                 </DataTemplate>
             </xfslimlistview:SlimListView.SectionHeaderTemplate>
@@ -28,7 +28,7 @@
             <xfslimlistview:SlimListView.SectionFooterTemplate>
                 <DataTemplate>
                     <Grid>
-                        <Label BackgroundColor="Green" Padding="20" Text="Section Footer" TextColor="White" />
+                        <Label BackgroundColor="LightGreen" Padding="20" Text="{Binding GroupCount}" TextColor="White" />
                     </Grid>
                 </DataTemplate>
             </xfslimlistview:SlimListView.SectionFooterTemplate>

@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using SQLite;
 using Xamarin.Forms;
 using XFSlimListView;
 
@@ -36,11 +39,6 @@ namespace SlimListViewSample
 		{
 			var item = adapter.Item(sectionIndex, itemIndex);
 
-			if (item is Animal)
-				return AnimalTemplate;
-			else if (item is Person)
-				return PersonTemplate;
-
 			return PersonTemplate;
 		}
 	}
@@ -49,49 +47,10 @@ namespace SlimListViewSample
 	{
 		public MainViewModel()
 		{
-			var itemGroups = new List<CreatureGroup>();
-
-			for (int i = 0; i < 100; i++)
-			{
-				var cg = new CreatureGroup();
-				cg.Name = $"Group {i}";
-				cg.AddRange(new Creature[] {
-					new Person {
-						FirstName = "Mr",
-						LastName = "Happy",
-						Description = "This is a short one" },
-					new Animal {
-						Breed = "Dog",
-						Sound = "Bark",
-						Description = "This is a long one\r\n with more than one line\r\nin fact there are several lines to consider and the text can be long and potentially need to wrap to the next line too \r\nThis is a long one\r\n with more than one line\r\nin fact there are several lines to consider and the text can be long and potentially need to wrap to the next line too"
-					},
-					new Person {
-						FirstName = "Mr",
-						LastName = "Sad",
-						Description = "This is a short one" },
-					new Animal {
-						Breed = "Cat",
-						Sound = "Meow",
-						Description = "This is a long one\r\n with more than one line"
-					},
-					new Animal {
-						Breed = "Penguin",
-						Sound = "?",
-						Description = "Not sure"
-					}
-				});
-
-				itemGroups.Add(cg);
-			}
-
-
-			Adapter = new GroupedAdapter<CreatureGroup, Creature>
-			{
-				Groups = itemGroups
-			};
+			Adapter = new SqliteGroupedAdapter<PersonGroup, Person>();
 		}
 
-		public GroupedAdapter<CreatureGroup, Creature> Adapter { get; set; }
+		public SqliteGroupedAdapter<PersonGroup, Person> Adapter { get; set; }
 
 		public void NotifyPropertyChanged(string propertyName)
 			=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -118,6 +77,7 @@ namespace SlimListViewSample
 	public class GroupedAdapter<TGroup, TItem> : ISlimListViewAdapter
 		where TGroup : IList<TItem> 
 	{
+		
 		public List<TGroup> Groups { get; set; } = new List<TGroup>();
 
 		public int Sections => Groups.Count;
@@ -132,28 +92,61 @@ namespace SlimListViewSample
 			=> Groups[sectionIndex];
 	}
 
-	public class CreatureGroup : List<Creature>
+
+	public class SqliteGroupedAdapter<TGroup, TItem> : ISlimListViewAdapter
+		where TGroup : IList<TItem>
 	{
-		public string Name { get; set; }
+
+		public class DbPersonGroup
+		{
+			public string GroupName { get; set; }
+
+			public int GroupCount { get; set; }
+		}
+
+		public SqliteGroupedAdapter()
+		{
+			var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "sampledata.db");
+			
+			if (!File.Exists(path))
+			{
+				// note that the prefix includes the trailing period '.' that is required
+				var assembly = IntrospectionExtensions.GetTypeInfo(typeof(App)).Assembly;
+				using (var stream = assembly.GetManifestResourceStream(nameof(SlimListViewSample) + ".sampledata.db"))
+				using (var outStream = File.Create(path))
+					stream.CopyTo(outStream);
+			}
+
+			Db = new SQLiteConnection(path);
+			Db.CreateTable<Person>();
+		}
+
+		public SQLiteConnection Db { get; }
+
+		List<DbPersonGroup> sections;
+
+		List<DbPersonGroup> GetSections()
+		{
+			if (sections == null)
+				sections = Db.Query<DbPersonGroup>("select IndexCharacter as GroupName, count(IndexCharacter) as GroupCount from Person group by IndexCharacter ORDER BY IndexCharacter");
+
+			return sections;
+		}
+
+		public int Sections
+			=> GetSections().Count;
+
+		public object Item(int sectionIndex, int itemIndex)
+			=> Db.Query<Person>(
+				"select * from Person Where IndexCharacter = ? ORDER BY LastName, FirstName LIMIT 1 OFFSET " + itemIndex,
+				GetSections()[sectionIndex].GroupName)
+				?.FirstOrDefault();
+
+		public int ItemsForSection(int sectionIndex)
+ 			=> GetSections()[sectionIndex].GroupCount;
+
+		public object Section(int sectionIndex)
+			=> GetSections()[sectionIndex];
 	}
 
-	public class Creature
-	{
-		public string Description { get; set; }
-	}
-
-
-	public class Person : Creature
-	{
-		public string FirstName { get; set; }
-
-		public string LastName { get; set; }
-	}
-
-	public class Animal : Creature
-	{
-		public string Breed { get; set; }
-
-		public string Sound { get; set; }
-	}
 }

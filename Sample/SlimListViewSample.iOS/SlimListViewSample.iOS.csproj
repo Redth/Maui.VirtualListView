@@ -70,8 +70,8 @@
     <None Include="Entitlements.plist" />
     <None Include="Info.plist" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SlimListViewRenderer.ios.cs">
-      <SubType>Code</SubType>
+    <Compile Include="..\..\XFSlimListView\SlimListViewRenderer.ios.cs">
+      <Link>SlimListViewRenderer.ios.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

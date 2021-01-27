@@ -10,7 +10,7 @@
 				<Label Text="Person" FontSize="Title" />
 				<Label Text="{Binding FirstName}" />
 				<Label Text="{Binding LastName}" />
-				<Label Text="{Binding Description}" MaxLines="20" />
+				<Label Text="{Binding Email}" MaxLines="20" />
 			</StackLayout>
 		</Frame>
 	</ContentView.Content>

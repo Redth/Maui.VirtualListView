@@ -15,15 +15,22 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Xamarin.Forms" Version="5.0.0.1905" />
+    <PackageReference Include="Xamarin.Forms" Version="5.0.0.1931" />
     <PackageReference Include="Xamarin.Essentials" Version="1.6.1" />
+    <PackageReference Include="sqlite-net-pcl" Version="1.7.335" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Update="ISlimViewAdapter.shared.cs">
-      <SubType>Code</SubType>
+    <Compile Include="..\..\XFSlimListView\ISlimViewAdapter.shared.cs">
+      <Link>ISlimViewAdapter.shared.cs</Link>
     </Compile>
-    <Compile Update="SlimListView.shared.cs">
-      <SubType>Code</SubType>
+    <Compile Include="..\..\XFSlimListView\SlimListView.shared.cs">
+      <Link>SlimListView.shared.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="contacts-20000.db" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="sampledata.db" />
   </ItemGroup>
 </Project>

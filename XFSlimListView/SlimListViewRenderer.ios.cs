@@ -5,7 +5,6 @@ using System.Linq;
 using CoreGraphics;
 using Foundation;
 using UIKit;
-using Xamarin.Essentials;
 using Xamarin.Forms;
 using Xamarin.Forms.Platform.iOS;
 
@@ -373,24 +372,24 @@ namespace XFSlimListView
 
 		internal PositionTemplateSelector TemplateSelector { get; set; }
 
-		public override UICollectionViewLayoutAttributes LayoutAttributesForSupplementaryView(NSString kind, NSIndexPath indexPath)
-		{
-			var layoutAttributes = base.LayoutAttributesForSupplementaryView(kind, indexPath);
+		//public override UICollectionViewLayoutAttributes LayoutAttributesForSupplementaryView(NSString kind, NSIndexPath indexPath)
+		//{
+		//	var layoutAttributes = base.LayoutAttributesForSupplementaryView(kind, indexPath);
 
-			var x = SectionInset.Left;
-			var y = layoutAttributes.Frame.Y;
+		//	var x = SectionInset.Left;
+		//	var y = layoutAttributes.Frame.Y;
 
-			nfloat width;
+		//	nfloat width;
 
-			if (UIDevice.CurrentDevice.CheckSystemVersion(11, 0))
-				width = CollectionView.SafeAreaLayoutGuide.LayoutFrame.Width - SectionInset.Left - SectionInset.Right;
-			else
-				width = CollectionView.Bounds.Width - SectionInset.Left - SectionInset.Right;
+		//	if (UIDevice.CurrentDevice.CheckSystemVersion(11, 0))
+		//		width = CollectionView.SafeAreaLayoutGuide.LayoutFrame.Width - SectionInset.Left - SectionInset.Right;
+		//	else
+		//		width = CollectionView.Bounds.Width - SectionInset.Left - SectionInset.Right;
 
-			layoutAttributes.Frame = new CGRect(x, y, width, 1); // layoutAttributes.Frame.Height);
+		//	layoutAttributes.Frame = new CGRect(x, y, width, 1); // layoutAttributes.Frame.Height);
 
-			return layoutAttributes;
-		}
+		//	return layoutAttributes;
+		//}
 
 
 		public override UICollectionViewLayoutAttributes LayoutAttributesForItem(NSIndexPath path)
@@ -430,13 +429,13 @@ namespace XFSlimListView
 				// If it's 1st item in the section
 				// and we use a section header
 				// but not if it's the first section and we have a global header already
-				if (indexPath.Item == 0 && (TemplateSelector?.HasSectionHeader ?? false)
-					&& !(indexPath.Section == 0 && (TemplateSelector?.HasGlobalHeader ?? false)))
-				{
-					var supLayoutAttributes = LayoutAttributesForSupplementaryView(CvConsts.ElementKindSectionHeader, layoutAttributes.IndexPath);
+				//if (indexPath.Item == 0 && (TemplateSelector?.HasSectionHeader ?? false)
+				//	&& !(indexPath.Section == 0 && (TemplateSelector?.HasGlobalHeader ?? false)))
+				//{
+				//	var supLayoutAttributes = LayoutAttributesForSupplementaryView(CvConsts.ElementKindSectionHeader, layoutAttributes.IndexPath);
 
-					supplementaryAttributeObjects.Add(supLayoutAttributes);
-				}
+				//	supplementaryAttributeObjects.Add(supLayoutAttributes);
+				//}
 			}
 
 			if (supplementaryAttributeObjects.Any())
@@ -472,8 +471,6 @@ namespace XFSlimListView
 
 			var w = formsSize.Request.Width;
 			var h = formsSize.Request.Height;
-
-			if (IndexPath.Section == 0 && )
 
 			attr.Frame = new CGRect(attr.Frame.X, attr.Frame.Y, attr.Frame.Width, h);
 			attr.Size = new CGSize(w, h);
