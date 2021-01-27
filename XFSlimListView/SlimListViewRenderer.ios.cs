@@ -372,6 +372,9 @@ namespace XFSlimListView
 
 		internal PositionTemplateSelector TemplateSelector { get; set; }
 
+		// This is if we enable the code that's also commented out a bit further down
+		// in the LayoutAttributesForElementsInRect method, see that for more info
+		//
 		//public override UICollectionViewLayoutAttributes LayoutAttributesForSupplementaryView(NSString kind, NSIndexPath indexPath)
 		//{
 		//	var layoutAttributes = base.LayoutAttributesForSupplementaryView(kind, indexPath);
@@ -426,9 +429,17 @@ namespace XFSlimListView
 					layoutAttributes.Frame = newFrame;
 				}
 
-				// If it's 1st item in the section
-				// and we use a section header
-				// but not if it's the first section and we have a global header already
+				// If we specify more attributes for supplementary views here
+				// We will get a call to requested our preferred attributes in our supplementary
+				// view implementation, however the weird thing is when we do that,
+				// we have to manage arranging that view inside the same bounds as
+				// the cell that it is supplementary for, which also means the cell
+				// would need to know if it should layout differently to save room for this
+				// For now we are just implementing GetReferenceSizeForFooter and GetReferenceSizeForHeader
+				// which, while unfortunately calculates (measures) the size for all sections at once,
+				// it does handle laying it out for us properly
+				// In the future it might be good to switch back to this for perf
+
 				//if (indexPath.Item == 0 && (TemplateSelector?.HasSectionHeader ?? false)
 				//	&& !(indexPath.Section == 0 && (TemplateSelector?.HasGlobalHeader ?? false)))
 				//{
