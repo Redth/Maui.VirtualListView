@@ -13,7 +13,7 @@ using System.Linq;
 using System.Text;
 using Xamarin.Forms.Platform.Android.AppCompat;
 
-
+[assembly: Xamarin.Forms.ExportRenderer(typeof(XFSlimListView.SlimListView), typeof(XFSlimListView.SlimListViewRenderer))]
 
 namespace XFSlimListView
 {
@@ -189,6 +189,8 @@ namespace XFSlimListView
 				fHolder.FormsView.BindingContext = item;
 				fHolder.ItemPosition = position;
 				fHolder.ItemView.Tag = new Java.Lang.Integer(position);
+
+				fHolder.FormsView.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
 				//fHolder.ItemView.SetOnClickListener(this);
 			}
 		}

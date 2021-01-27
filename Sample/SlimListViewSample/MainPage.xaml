@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:xfslimlistview="clr-namespace:XFSlimListView;assembly=XFSlimListView"
-             xmlns:local="clr-namespace:SlimListViewSample"
+             
+             xmlns:local="clr-namespace:SlimListViewSample" xmlns:xfslimlistview="clr-namespace:XFSlimListView"
              x:Class="SlimListViewSample.MainPage">
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -19,31 +19,33 @@
 
             <xfslimlistview:SlimListView.SectionHeaderTemplate>
                 <DataTemplate>
-                    <StackLayout>
+                    <Grid HorizontalOptions="FillAndExpand">
                         <Label BackgroundColor="Green" Padding="20" Text="Section Header" TextColor="White" />
-                        <BoxView HeightRequest="5" />
-                    </StackLayout>
+                    </Grid>
                 </DataTemplate>
             </xfslimlistview:SlimListView.SectionHeaderTemplate>
 
             <xfslimlistview:SlimListView.SectionFooterTemplate>
                 <DataTemplate>
-                    <StackLayout>
-                        <BoxView HeightRequest="5" />
+                    <Grid>
                         <Label BackgroundColor="Green" Padding="20" Text="Section Footer" TextColor="White" />
-                    </StackLayout>
+                    </Grid>
                 </DataTemplate>
             </xfslimlistview:SlimListView.SectionFooterTemplate>
 
             <xfslimlistview:SlimListView.HeaderTemplate>
                 <DataTemplate>
-                    <Label BackgroundColor="Navy" Padding="20" Text="Header" TextColor="White" />
+                    <Grid HorizontalOptions="FillAndExpand">
+                        <Label BackgroundColor="Navy" Padding="20" Text="Header" TextColor="White" />
+                    </Grid>
                 </DataTemplate>
             </xfslimlistview:SlimListView.HeaderTemplate>
 
             <xfslimlistview:SlimListView.FooterTemplate>
                 <DataTemplate>
-                    <Label BackgroundColor="Navy" Padding="20" Text="Footer" TextColor="White" />
+                    <Grid>
+                        <Label BackgroundColor="Navy" Padding="20" Text="Footer" TextColor="White" />
+                    </Grid>
                 </DataTemplate>
             </xfslimlistview:SlimListView.FooterTemplate>
         </xfslimlistview:SlimListView>

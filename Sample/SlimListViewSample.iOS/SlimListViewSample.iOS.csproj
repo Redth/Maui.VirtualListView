@@ -70,6 +70,9 @@
     <None Include="Entitlements.plist" />
     <None Include="Info.plist" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SlimListViewRenderer.ios.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="Resources\LaunchScreen.storyboard" />
@@ -126,16 +129,12 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Xamarin.Forms" Version="5.0.0.1905" />
-    <PackageReference Include="Xamarin.Essentials" Version="1.5.3.2" />
+    <PackageReference Include="Xamarin.Essentials" Version="1.6.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SlimListViewSample\SlimListViewSample.csproj">
       <Project>{8E40D048-B354-4C0C-A716-0F2125602BD7}</Project>
       <Name>SlimListViewSample</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\XFSlimListView\XFSlimListView.csproj">
-      <Project>{FB164182-263B-4BA7-A4AC-DF79E5E4846B}</Project>
-      <Name>XFSlimListView</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />

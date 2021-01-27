@@ -99,7 +99,7 @@ namespace XFSlimListView
 			BindableProperty.Create(nameof(SectionHeaderTemplateSelector), typeof(AdapterSectionDataTemplateSelector), typeof(SlimListView), default);
 	}
 
-	internal class PositionInfo
+	public class PositionInfo
 	{
 		public int Position { get; set; }
 
@@ -116,7 +116,8 @@ namespace XFSlimListView
 			Footer
 		}
 	}
-	internal class PositionTemplateSelector
+
+	public class PositionTemplateSelector
 	{
 		public DataTemplate HeaderTemplate { get; set; }
 		public DataTemplate FooterTemplate { get; set; }
@@ -128,6 +129,18 @@ namespace XFSlimListView
 		public AdapterItemDataTemplateSelector ItemTemplateSelector { get; set; }
 		public AdapterSectionDataTemplateSelector SectionHeaderTemplateSelector { get; set; }
 		public AdapterSectionDataTemplateSelector SectionFooterTemplateSelector { get; set; }
+
+		public bool HasSectionHeader
+			=> SectionHeaderTemplate != null || SectionHeaderTemplateSelector != null;
+
+		public bool HasSectionFooter
+			=> SectionFooterTemplate != null || SectionFooterTemplateSelector != null;
+
+		public bool HasGlobalHeader
+			=> HeaderTemplate != null;
+
+		public bool HasGlobalFooter
+			=> FooterTemplate != null;
 
 		public PositionInfo GetInfo(ISlimListViewAdapter adapter, int position)
 		{

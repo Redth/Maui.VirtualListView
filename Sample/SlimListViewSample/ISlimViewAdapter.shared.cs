@@ -17,6 +17,35 @@ namespace XFSlimListView
 		object Item(int sectionIndex, int itemIndex);
 	}
 
+	public class CachedCountAdapter : ISlimListViewAdapter
+	{
+		public CachedCountAdapter(ISlimListViewAdapter adapter)
+		{
+			sourceAdapter = adapter;
+		}
+
+		ISlimListViewAdapter sourceAdapter;
+
+		public void ReloadData()
+		{
+			sections = null;
+			itemsForSection = null;
+		}
+
+		int? sections;
+		public int Sections =>
+			sections ??= sourceAdapter.Sections;
+
+		public object Item(int sectionIndex, int itemIndex)
+			=> sourceAdapter.Item(sectionIndex, itemIndex);
+
+		int? itemsForSection;
+		public int ItemsForSection(int sectionIndex)
+			=> itemsForSection ??= sourceAdapter.ItemsForSection(sectionIndex);
+
+		public object Section(int sectionIndex)
+			=> sourceAdapter.Section(sectionIndex);
+	}
 
 	public class ObservableListViewAdapter<T> : ISlimListViewAdapter, IDisposable
 	{

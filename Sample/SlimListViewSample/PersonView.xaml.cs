@@ -17,17 +17,5 @@ namespace SlimListViewSample
 		{
 			InitializeComponent();
 		}
-
-		protected override void OnPropertyChanged([CallerMemberName] string propertyName = null)
-		{
-			base.OnPropertyChanged(propertyName);
-
-			if (propertyName == "BindingContext")
-			{
-				var bc = BindingContext;
-				Console.WriteLine($"BC");
-			}
-			Console.WriteLine($"PersonView->{propertyName} changed");
-		}
 	}
 }

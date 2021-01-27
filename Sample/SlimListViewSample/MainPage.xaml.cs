@@ -49,11 +49,13 @@ namespace SlimListViewSample
 	{
 		public MainViewModel()
 		{
-			var allItems = new List<Creature>();
+			var itemGroups = new List<CreatureGroup>();
 
 			for (int i = 0; i < 100; i++)
 			{
-				allItems.AddRange(new Creature[] {
+				var cg = new CreatureGroup();
+				cg.Name = $"Group {i}";
+				cg.AddRange(new Creature[] {
 					new Person {
 						FirstName = "Mr",
 						LastName = "Happy",
@@ -78,16 +80,18 @@ namespace SlimListViewSample
 						Description = "Not sure"
 					}
 				});
+
+				itemGroups.Add(cg);
 			}
 
 
-			Adapter = new ListAdapter<Creature>
+			Adapter = new GroupedAdapter<CreatureGroup, Creature>
 			{
-				Items = allItems
+				Groups = itemGroups
 			};
 		}
 
-		public ListAdapter<Creature> Adapter { get; set; }
+		public GroupedAdapter<CreatureGroup, Creature> Adapter { get; set; }
 
 		public void NotifyPropertyChanged(string propertyName)
 			=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -109,6 +113,28 @@ namespace SlimListViewSample
 
 		public object Section(int sectionIndex)
 			=> null;
+	}
+
+	public class GroupedAdapter<TGroup, TItem> : ISlimListViewAdapter
+		where TGroup : IList<TItem> 
+	{
+		public List<TGroup> Groups { get; set; } = new List<TGroup>();
+
+		public int Sections => Groups.Count;
+
+		public object Item(int sectionIndex, int itemIndex)
+			=> Groups[sectionIndex][itemIndex];
+
+		public int ItemsForSection(int sectionIndex)
+ 			=> Groups[sectionIndex].Count;
+
+		public object Section(int sectionIndex)
+			=> Groups[sectionIndex];
+	}
+
+	public class CreatureGroup : List<Creature>
+	{
+		public string Name { get; set; }
 	}
 
 	public class Creature
