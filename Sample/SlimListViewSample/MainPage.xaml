@@ -15,7 +15,7 @@
             VerticalOptions="FillAndExpand"
             BackgroundColor="Pink"
             Adapter="{Binding Adapter}"
-            SeparatorColor="Black"
+            SeparatorColor="HotPink"
             SeparatorSize="20"
             ItemTemplateSelector="{StaticResource itemSelector}">
 
