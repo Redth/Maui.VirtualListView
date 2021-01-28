@@ -13,6 +13,26 @@ namespace XFSlimListView
 
 		}
 
+		public Color SeparatorColor
+		{
+			get => (Color)GetValue(SeparatorColorProperty);
+			set => SetValue(SeparatorColorProperty, value);
+		}
+
+		public static readonly BindableProperty SeparatorColorProperty =
+			BindableProperty.Create(nameof(SeparatorColor), typeof(Color), typeof(SlimListView), Color.Transparent);
+
+		public double SeparatorSize
+		{
+			get => (double)GetValue(SeparatorSizeProperty);
+			set => SetValue(SeparatorSizeProperty, value);
+		}
+
+		public static readonly BindableProperty SeparatorSizeProperty =
+			BindableProperty.Create(nameof(SeparatorSize), typeof(double), typeof(SlimListView), 0d);
+
+
+
 		public ISlimListViewAdapter Adapter
 		{
 			get => (ISlimListViewAdapter)GetValue(AdapterProperty);
@@ -68,7 +88,6 @@ namespace XFSlimListView
 
 		public static readonly BindableProperty SectionFooterTemplateProperty =
 			BindableProperty.Create(nameof(SectionFooterTemplate), typeof(DataTemplate), typeof(SlimListView), default);
-
 
 
 		public AdapterItemDataTemplateSelector ItemTemplateSelector
@@ -232,7 +251,7 @@ namespace XFSlimListView
 
 			for (int s = 0; s < adapter.Sections; s++)
 			{
-				if (SectionHeaderTemplate != null || SectionHeaderTemplateSelector != null)
+				if (HasSectionHeader)
 				{
 					if (position == linear)
 						return SectionHeaderTemplateSelector?.SelectGroupTemplate(adapter, s)
@@ -251,7 +270,7 @@ namespace XFSlimListView
 
 				linear += itemsInSection;
 
-				if (SectionFooterTemplate != null || SectionFooterTemplateSelector != null)
+				if (HasSectionFooter)
 				{
 					if (position == linear)
 						return SectionFooterTemplateSelector?.SelectGroupTemplate(adapter, s)

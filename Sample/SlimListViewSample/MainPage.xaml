@@ -15,6 +15,8 @@
             VerticalOptions="FillAndExpand"
             BackgroundColor="Pink"
             Adapter="{Binding Adapter}"
+            SeparatorColor="Black"
+            SeparatorSize="20"
             ItemTemplateSelector="{StaticResource itemSelector}">
 
             <xfslimlistview:SlimListView.SectionHeaderTemplate>

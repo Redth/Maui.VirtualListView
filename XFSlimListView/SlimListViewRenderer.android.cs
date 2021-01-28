@@ -1,7 +1,10 @@
 ﻿using Android.App;
 using Android.Content;
+using Android.Graphics;
+using Android.Graphics.Drawables;
 using Android.OS;
 using Android.Runtime;
+using Android.Util;
 using Android.Views;
 using Android.Widget;
 using AndroidX.RecyclerView.Widget;
@@ -24,7 +27,7 @@ namespace XFSlimListView
 		{
 		}
 
-		SlimListViewRvAdapter adapter;
+		RvAdapter adapter;
 		RecyclerView recyclerView;
 		LinearLayoutManager layoutManager;
 
@@ -64,8 +67,16 @@ namespace XFSlimListView
 					layoutManager = new LinearLayoutManager(Context);
 					//layoutManager.Orientation = LinearLayoutManager.Horizontal;
 
-					adapter = new SlimListViewRvAdapter(Context, e.NewElement.Adapter);
-					adapter.TemplateSelector = CreateTemplateSelector();
+					var templateSelector = CreateTemplateSelector();
+
+					adapter = new RvAdapter(Context, e.NewElement.Adapter);
+					adapter.TemplateSelector = templateSelector;
+
+					separatorItemDecoration = new SeparatorItemDecoration();
+					separatorItemDecoration.TemplateSelector = templateSelector;
+					recyclerView.AddItemDecoration(separatorItemDecoration);
+
+					SetSeparator();
 
 					recyclerView.SetLayoutManager(layoutManager);
 					recyclerView.SetAdapter(adapter);
@@ -75,6 +86,23 @@ namespace XFSlimListView
 					SetNativeControl(recyclerView);
 				}
 			}
+		}
+
+		SeparatorItemDecoration separatorItemDecoration;
+
+		void SetSeparator()
+		{
+			if (recyclerView == null)
+				return;
+
+			var c = Xamarin.Forms.Platform.Android.ColorExtensions.ToAndroid(Element.SeparatorColor);
+
+			var size = Element.SeparatorSize;
+			var sizeDp = TypedValue.ApplyDimension(ComplexUnitType.Dip, (int)Element.SeparatorSize, Resources.DisplayMetrics);
+
+			separatorItemDecoration.Update(c, size, sizeDp);
+
+			recyclerView.AddItemDecoration(separatorItemDecoration);
 		}
 
 		PositionTemplateSelector CreateTemplateSelector()
@@ -106,23 +134,30 @@ namespace XFSlimListView
 				|| e.PropertyName == SlimListView.SectionHeaderTemplateProperty.PropertyName
 				|| e.PropertyName == SlimListView.SectionHeaderTemplateSelectorProperty.PropertyName)
 			{
-				adapter.TemplateSelector = CreateTemplateSelector();
+				var templateSelector = CreateTemplateSelector();
+				separatorItemDecoration.TemplateSelector = templateSelector;
+				adapter.TemplateSelector = templateSelector;
 				adapter?.NotifyDataSetChanged();
+			}
+			else if (e.PropertyName == SlimListView.SeparatorColorProperty.PropertyName
+				|| e.PropertyName == SlimListView.SeparatorSizeProperty.PropertyName)
+			{
+				SetSeparator();
 			}
 		}
 	}
 
-	internal class SlimListViewRvHolder : RecyclerView.ViewHolder
+	internal class RvHolder : RecyclerView.ViewHolder
 	{
 		public Xamarin.Forms.View FormsView { get; }
 
-		public SlimListViewRvHolder(Xamarin.Forms.View formsView, View itemView) : base(itemView)
+		public RvHolder(Xamarin.Forms.View formsView, View itemView) : base(itemView)
 			=> FormsView = formsView;
 
 		public int ItemPosition { get; set; } = -1;
 	}
 
-	internal class SlimListViewRvAdapter : RecyclerView.Adapter, View.IOnClickListener
+	internal class RvAdapter : RecyclerView.Adapter, View.IOnClickListener
 	{
 		internal PositionTemplateSelector TemplateSelector { get; set; }
 		
@@ -168,9 +203,7 @@ namespace XFSlimListView
 			}
 		}
 
-		internal SlimListViewRvAdapter(
-			Context context,
-			ISlimListViewAdapter adapter)
+		internal RvAdapter(Context context, ISlimListViewAdapter adapter)
 		{
 			Context = context;
 			this.adapter = adapter;
@@ -184,7 +217,7 @@ namespace XFSlimListView
 
 			var item = info.BindingContext ?? BindingContext;
 
-			if (item != null && holder is SlimListViewRvHolder fHolder && fHolder.FormsView != null)
+			if (item != null && holder is RvHolder fHolder && fHolder.FormsView != null)
 			{
 				fHolder.FormsView.BindingContext = item;
 				fHolder.ItemPosition = position;
@@ -232,7 +265,7 @@ namespace XFSlimListView
 					ViewGroup.LayoutParams.WrapContent)
 			};
 
-			return new SlimListViewRvHolder(xfView, container);
+			return new RvHolder(xfView, container);
 		}
 
 		public void OnClick(View v)
@@ -245,6 +278,95 @@ namespace XFSlimListView
 					ItemClicked?.Invoke(this, position.IntValue());
 			}
 				
+		}
+	}
+
+	internal class SeparatorItemDecoration : RecyclerView.ItemDecoration
+	{
+		public SeparatorItemDecoration()
+		{
+			Color = Color.Transparent;
+			Size = 0;
+			SizeDp = 0;
+		}
+
+		public void Update(Color color, double size, double sizeDp)
+		{
+			Color = color;
+
+
+			Size = size;
+			SizeDp = (int)sizeDp;
+
+			if (divider == null)
+				divider = new ColorDrawable(Color);
+			else
+				divider.Color = color;
+		}
+
+		public PositionTemplateSelector TemplateSelector { get; set; }
+
+		public Color Color { get; private set; }
+		public double Size { get; private set; }
+
+		public int SizeDp { get; private set; }
+		ColorDrawable divider;
+
+		public override void GetItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state)
+		{
+			base.GetItemOffsets(outRect, view, parent, state);
+
+			var pos = parent.GetChildAdapterPosition(view);
+
+			var h = Size / 2;
+
+			if (pos == 0)
+			{
+				outRect.Bottom = (int)h;
+				return;
+
+			}
+			//var excluded = 1;
+
+			//if (pos == 0)
+			//	return;
+
+			//if (TemplateSelector?.HasGlobalHeader ?? false)
+			//	excluded++;
+			//if (TemplateSelector?.HasSectionHeader ?? false)
+			//	excluded++;
+
+
+			//if (pos <= excluded)
+			//	return;
+
+			
+			outRect.Top = (int)h;
+			outRect.Bottom = (int)h;
+		}
+
+		public override void OnDraw(Canvas c, RecyclerView parent, RecyclerView.State state)
+		{
+			int dividerLeft = parent.PaddingLeft;
+			int dividerRight = parent.Width - parent.PaddingRight;
+
+			int childCount = parent.ChildCount;
+
+			var halfSize = (int)(SizeDp / 2);
+
+			for (int i = 0; i < childCount - 1; i++)
+			{
+				View child = parent.GetChildAt(i);
+
+				var p = (RecyclerView.LayoutParams)child.LayoutParameters;
+
+				int dividerTop = child.Bottom + p.BottomMargin + halfSize;
+				int dividerBottom = dividerTop + (int)SizeDp;
+
+				//Console.WriteLine($"Divider Bounds: {dividerTop}, {dividerBottom}, {Size}");
+				divider.SetBounds(dividerLeft, dividerTop, dividerRight, dividerBottom);
+				divider.Draw(c);
+			}
 		}
 	}
 }
