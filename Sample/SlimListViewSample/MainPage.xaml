@@ -1,55 +1,54 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             
-             xmlns:local="clr-namespace:SlimListViewSample" xmlns:xfslimlistview="clr-namespace:XFSlimListView"
-             x:Class="SlimListViewSample.MainPage">
-    <ContentPage.Resources>
-        <ResourceDictionary>
-            <local:ItemSelector x:Key="itemSelector" />
-        </ResourceDictionary>
-    </ContentPage.Resources>
-    <Grid>
-        <xfslimlistview:SlimListView
-            HorizontalOptions="FillAndExpand"
-            VerticalOptions="FillAndExpand"
-            BackgroundColor="Pink"
-            Adapter="{Binding Adapter}"
-            SeparatorColor="HotPink"
-            SeparatorSize="20"
-            ItemTemplateSelector="{StaticResource itemSelector}">
+			 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+			 
+			 xmlns:local="clr-namespace:SlimListViewSample"
+			 xmlns:xfslimlistview="clr-namespace:XFSlimListView"
+			 x:Class="SlimListViewSample.MainPage">
+	<ContentPage.Resources>
+		<ResourceDictionary>
+			<local:ItemSelector x:Key="itemSelector" />
+		</ResourceDictionary>
+	</ContentPage.Resources>
+	<Grid>
+		<xfslimlistview:SlimListView
+			HorizontalOptions="FillAndExpand"
+			VerticalOptions="FillAndExpand"
+			BackgroundColor="Pink"
+			Adapter="{Binding Adapter}"
+			ItemTemplateSelector="{StaticResource itemSelector}">
 
-            <xfslimlistview:SlimListView.SectionHeaderTemplate>
-                <DataTemplate>
-                    <Grid HorizontalOptions="FillAndExpand">
-                        <Label BackgroundColor="DarkGreen" Padding="20" Text="{Binding GroupName}" TextColor="White" />
-                    </Grid>
-                </DataTemplate>
-            </xfslimlistview:SlimListView.SectionHeaderTemplate>
+			<xfslimlistview:SlimListView.SectionHeaderTemplate>
+				<DataTemplate>
+					<Grid HorizontalOptions="FillAndExpand">
+						<Label BackgroundColor="DarkGreen" Padding="20" Text="{Binding GroupName}" TextColor="White" />
+					</Grid>
+				</DataTemplate>
+			</xfslimlistview:SlimListView.SectionHeaderTemplate>
 
-            <xfslimlistview:SlimListView.SectionFooterTemplate>
-                <DataTemplate>
-                    <Grid>
-                        <Label BackgroundColor="LightGreen" Padding="20" Text="{Binding GroupCount}" TextColor="White" />
-                    </Grid>
-                </DataTemplate>
-            </xfslimlistview:SlimListView.SectionFooterTemplate>
+			<xfslimlistview:SlimListView.SectionFooterTemplate>
+				<DataTemplate>
+					<Grid>
+						<Label BackgroundColor="LightGreen" Padding="20" Text="{Binding GroupCount}" TextColor="White" />
+					</Grid>
+				</DataTemplate>
+			</xfslimlistview:SlimListView.SectionFooterTemplate>
 
-            <xfslimlistview:SlimListView.HeaderTemplate>
-                <DataTemplate>
-                    <Grid HorizontalOptions="FillAndExpand">
-                        <Label BackgroundColor="Navy" Padding="20" Text="Header" TextColor="White" />
-                    </Grid>
-                </DataTemplate>
-            </xfslimlistview:SlimListView.HeaderTemplate>
+			<xfslimlistview:SlimListView.HeaderTemplate>
+				<DataTemplate>
+					<Grid HorizontalOptions="FillAndExpand">
+						<Label BackgroundColor="Navy" Padding="20" Text="Header" TextColor="White" />
+					</Grid>
+				</DataTemplate>
+			</xfslimlistview:SlimListView.HeaderTemplate>
 
-            <xfslimlistview:SlimListView.FooterTemplate>
-                <DataTemplate>
-                    <Grid>
-                        <Label BackgroundColor="Navy" Padding="20" Text="Footer" TextColor="White" />
-                    </Grid>
-                </DataTemplate>
-            </xfslimlistview:SlimListView.FooterTemplate>
-        </xfslimlistview:SlimListView>
-        </Grid>
+			<xfslimlistview:SlimListView.FooterTemplate>
+				<DataTemplate>
+					<Grid>
+						<Label BackgroundColor="Navy" Padding="20" Text="Footer" TextColor="White" />
+					</Grid>
+				</DataTemplate>
+			</xfslimlistview:SlimListView.FooterTemplate>
+		</xfslimlistview:SlimListView>
+		</Grid>
 </ContentPage>

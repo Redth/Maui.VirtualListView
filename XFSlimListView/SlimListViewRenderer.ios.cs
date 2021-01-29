@@ -229,6 +229,7 @@ namespace XFSlimListView
 			DataTemplate template;
 			object item;
 			NSString reuseId;
+			PositionInfo positionInfo = null;
 
 			// If we had a section for the global header, all our sections are
 			// off by one and actually + 1 from the data source's perspective
@@ -240,12 +241,23 @@ namespace XFSlimListView
 				template = TemplateSelector.HeaderTemplate;
 				item = Adapter.Section(adapterSection);
 				reuseId = itemIdManager.GetReuseId(collectionView, template);
+
+				positionInfo = new PositionInfo
+				{
+					Kind = PositionKind.Header,
+				};
 			}
 			else if (section == (CachedNumberOfSections - 1) && TemplateSelector?.FooterTemplate != null)
 			{
 				template = TemplateSelector.FooterTemplate;
 				item = Adapter.Section(adapterSection);
 				reuseId = itemIdManager.GetReuseId(collectionView, template);
+
+				positionInfo = new PositionInfo
+				{
+					Kind = PositionKind.Footer,
+					//NumberOfSections = numberSections
+				};
 			}
 			else
 			{
@@ -253,13 +265,22 @@ namespace XFSlimListView
 					?? TemplateSelector.ItemTemplate;
 				item = Adapter.Item(adapterSection, itemIndex);
 				reuseId = itemIdManager.GetReuseId(collectionView, template);
+
+				positionInfo = new PositionInfo
+				{
+					Kind = PositionKind.Item,
+					NumberOfSections = Adapter.Sections,
+					ItemIndex = itemIndex,
+					SectionIndex = adapterSection,
+					ItemsInSection = Adapter.ItemsForSection(adapterSection)
+				};
 			}
 
 			var cell = collectionView.DequeueReusableCell(reuseId, indexPath)
 				as SlimListViewCollectionViewCell;
 
 			cell.IndexPath = indexPath;
-			cell.EnsureFormsTemplate(template);
+			cell.EnsureFormsTemplate(template, positionInfo);
 			cell.UpdateFormsBindingContext(item);
 
 			return cell;
@@ -463,6 +484,8 @@ namespace XFSlimListView
 
 		public NSIndexPath IndexPath { get; set; }
 
+		public PositionData Position { get; set; }
+
 		UIContainerView containerView = null;
 
 		[Export("initWithFrame:")]
@@ -489,10 +512,25 @@ namespace XFSlimListView
 			return attr;
 		}
 
-		public void EnsureFormsTemplate(DataTemplate template)
+		public void EnsureFormsTemplate(DataTemplate template, PositionInfo positionInfo)
 		{
 			if (FormsView == null)
 				FormsView = template.CreateContent() as View;
+
+			if (Position == null)
+			{
+				foreach (var kvp in FormsView.Resources)
+				{
+					if (kvp.Value is PositionData pc)
+					{
+						Position = pc;
+						break;
+					}
+				}
+			}
+
+			if (Position != null)
+				Position.Update(positionInfo);
 
 			if (containerView == null)
 			{

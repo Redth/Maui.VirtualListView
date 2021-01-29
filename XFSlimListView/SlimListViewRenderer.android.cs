@@ -72,52 +72,14 @@ namespace XFSlimListView
 					adapter = new RvAdapter(Context, e.NewElement.Adapter);
 					adapter.TemplateSelector = templateSelector;
 
-					separatorItemDecoration = new RvSeparatorItemDecoration(Context, true);
-					separatorItemDecoration.Adapter = e.NewElement.Adapter;
-					separatorItemDecoration.TemplateSelector = templateSelector;
-					recyclerView.AddItemDecoration(separatorItemDecoration);
-
-					
-					SetSeparator();
-
 					recyclerView.SetLayoutManager(layoutManager);
 					recyclerView.SetAdapter(adapter);
 					recyclerView.LayoutParameters = new LayoutParams(
-						LayoutParams.FillParent, LayoutParams.FillParent);
-
-					var d = new DividerItemDecoration(recyclerView.Context, DividerItemDecoration.Vertical);
-
-					SetSeparator();
-
-					recyclerView.AddItemDecoration(d);
+						LayoutParams.MatchParent, LayoutParams.MatchParent);
 
 					SetNativeControl(recyclerView);
 				}
 			}
-		}
-
-		RvSeparatorItemDecoration separatorItemDecoration;
-
-		void SetSeparator()
-		{
-			var c = Xamarin.Forms.Platform.Android.ColorExtensions.ToAndroid(Element.SeparatorColor);
-
-			separatorItemDecoration.Drawable = new ColorDrawable(c);
-			separatorItemDecoration.Invalidate();
-			return;
-
-			if (recyclerView == null)
-				return;
-
-			//var c = Xamarin.Forms.Platform.Android.ColorExtensions.ToAndroid(Element.SeparatorColor);
-
-			var size = Element.SeparatorSize;
-			var sizeDp = TypedValue.ApplyDimension(ComplexUnitType.Dip, (int)Element.SeparatorSize, Resources.DisplayMetrics);
-
-			separatorItemDecoration.Invalidate();
-//			separatorItemDecoration.Update(c, size, sizeDp);
-
-			recyclerView.AddItemDecoration(separatorItemDecoration);
 		}
 
 		PositionTemplateSelector CreateTemplateSelector()
@@ -139,7 +101,6 @@ namespace XFSlimListView
 
 			if (e.PropertyName == SlimListView.AdapterProperty.PropertyName)
 			{
-				separatorItemDecoration.Invalidate();
 				adapter?.NotifyDataSetChanged();
 			}
 			else if (e.PropertyName == SlimListView.HeaderTemplateProperty.PropertyName
@@ -153,15 +114,8 @@ namespace XFSlimListView
 				|| e.PropertyName == SlimListView.SectionHeaderTemplateSelectorProperty.PropertyName)
 			{
 				var templateSelector = CreateTemplateSelector();
-				separatorItemDecoration.TemplateSelector = templateSelector;
 				adapter.TemplateSelector = templateSelector;
 				adapter?.NotifyDataSetChanged();
-			}
-			else if (e.PropertyName == SlimListView.SeparatorColorProperty.PropertyName
-				|| e.PropertyName == SlimListView.SeparatorSizeProperty.PropertyName)
-			{
-				separatorItemDecoration.Invalidate();
-				SetSeparator();
 			}
 		}
 	}
@@ -170,8 +124,13 @@ namespace XFSlimListView
 	{
 		public Xamarin.Forms.View FormsView { get; }
 
-		public RvHolder(Xamarin.Forms.View formsView, View itemView) : base(itemView)
-			=> FormsView = formsView;
+		public PositionData PositionInfo { get; set; }
+
+		public RvHolder(Xamarin.Forms.View formsView, View itemView, PositionData positionContainer) : base(itemView)
+		{
+			FormsView = formsView;
+			PositionInfo = positionContainer;
+		}
 
 		public int ItemPosition { get; set; } = -1;
 	}
@@ -242,6 +201,18 @@ namespace XFSlimListView
 				fHolder.ItemPosition = position;
 				fHolder.ItemView.Tag = new Java.Lang.Integer(position);
 
+				if (fHolder.PositionInfo == null)
+				{
+					foreach (var kvp in fHolder.FormsView.Resources)
+					{
+						if (kvp.Value is PositionData pc)
+							fHolder.PositionInfo = pc;
+					}
+				}
+
+				if (fHolder.PositionInfo != null)
+					fHolder.PositionInfo.Update(info);
+
 				fHolder.FormsView.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
 				//fHolder.ItemView.SetOnClickListener(this);
 			}
@@ -275,6 +246,19 @@ namespace XFSlimListView
 			var template = templates.ElementAtOrDefault(viewType);
 
 			var xfView = template.CreateContent() as Xamarin.Forms.View;
+			PositionData positionContainer = null;
+
+			if (xfView is Xamarin.Forms.Layout xfLayout)
+			{
+				foreach (var xfChild in xfLayout.Children)
+				{
+					if (xfChild is PositionData pc)
+					{
+						positionContainer = pc;
+						break;
+					}
+				}
+			}
 
 			var container = new Xamarin.Forms.Platform.Android.ContainerView(parent.Context, xfView)
 			{
@@ -284,7 +268,7 @@ namespace XFSlimListView
 					ViewGroup.LayoutParams.WrapContent)
 			};
 
-			return new RvHolder(xfView, container);
+			return new RvHolder(xfView, container, positionContainer);
 		}
 
 		public void OnClick(View v)
@@ -293,7 +277,7 @@ namespace XFSlimListView
 			{
 				var info = TemplateSelector.GetInfo(adapter, position.IntValue());
 
-				if (info.Type == PositionInfo.PositionType.Item)
+				if (info.Kind == PositionKind.Item)
 					ItemClicked?.Invoke(this, position.IntValue());
 			}
 				
@@ -345,7 +329,7 @@ namespace XFSlimListView
 
 			var info = TemplateSelector.GetInfo(Adapter, pos);
 
-			if (info.Type == PositionInfo.PositionType.SectionHeader)
+			if (info.Kind == PositionKind.SectionHeader)
 				return;
 
 			base.GetItemOffsets(outRect, view, parent, state);
