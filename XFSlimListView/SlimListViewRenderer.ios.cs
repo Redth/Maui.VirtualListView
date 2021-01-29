@@ -138,17 +138,7 @@ namespace XFSlimListView
 			get
 			{
 				if (!cachedNumberOfSections.HasValue)
-				{
-					var s = Adapter.Sections;
-
-					if (TemplateSelector?.HeaderTemplate != null)
-						s++;
-
-					if (TemplateSelector?.FooterTemplate != null)
-						s++;
-
-					cachedNumberOfSections = s;
-				}
+					cachedNumberOfSections = Adapter.Sections;
 
 				return cachedNumberOfSections.Value;
 			}
@@ -159,34 +149,22 @@ namespace XFSlimListView
 
 		public override UICollectionReusableView GetViewForSupplementaryElement(UICollectionView collectionView, NSString elementKind, NSIndexPath indexPath)
 		{
-			var section = indexPath.Section;
-
-			var addedSections = 0;
-			var realSection = section;
-
-			// Empty section header for the global header section/cell
-			if (TemplateSelector?.HasGlobalHeader ?? false)
-			{
-				if (section == 0)
-					return new UICollectionReusableView();
-
-				addedSections++;
-				realSection--;
-			}
-
-			if (TemplateSelector?.HasGlobalFooter ?? false)
-			{
-				addedSections++;
-
-				if (realSection >= CachedNumberOfSections - addedSections)
-					return new UICollectionReusableView();
-			}
-
 			DataTemplate template = null;
+			DataTemplate globalTemplate = null;
+			PositionKind kind = PositionKind.Item;
+
 			NSString reuseId = null;
 
 			if (elementKind == CvConsts.ElementKindSectionHeader)
 			{
+				kind = PositionKind.SectionHeader;
+
+				if (indexPath.Section == 0 && (TemplateSelector?.HasGlobalHeader ?? false))
+				{
+					globalTemplate = TemplateSelector.HeaderTemplate;
+					kind = PositionKind.Header;
+				}
+				
 				template = TemplateSelector?.SectionHeaderTemplateSelector?.SelectGroupTemplate(Adapter, indexPath.Section)
 					?? TemplateSelector.SectionHeaderTemplate;
 
@@ -194,6 +172,14 @@ namespace XFSlimListView
 			}
 			else if (elementKind == CvConsts.ElementKindSectionFooter)
 			{
+				kind = PositionKind.SectionFooter;
+
+				if (indexPath.Section >= CachedNumberOfSections - 1 && (TemplateSelector?.HasGlobalFooter ?? false))
+				{
+					globalTemplate = TemplateSelector.FooterTemplate;
+					kind = PositionKind.Footer;
+				}
+				
 				template = TemplateSelector?.SectionFooterTemplateSelector?.SelectGroupTemplate(Adapter, indexPath.Section)
 					?? TemplateSelector.SectionFooterTemplate;
 
@@ -209,11 +195,9 @@ namespace XFSlimListView
 						reuseId,
 						indexPath) as SlimListViewCollectionReusableView;
 
-			supplementary.IsHeader = elementKind == CvConsts.ElementKindSectionHeader;
+			supplementary.EnsureFormsTemplate(template, globalTemplate, kind);
 
-			supplementary.EnsureFormsTemplate(template);
-
-			var bindingContext = Adapter.Section(realSection);
+			var bindingContext = Adapter.Section(indexPath.Section);
 			supplementary.UpdateFormsBindingContext(bindingContext);
 
 			return supplementary;
@@ -223,58 +207,21 @@ namespace XFSlimListView
 		public override UICollectionViewCell GetCell(UICollectionView collectionView, NSIndexPath indexPath)
 		{
 			var section = indexPath.Section;
-			var adapterSection = section;
 			var itemIndex = (int)indexPath.Item;
 
-			DataTemplate template;
-			object item;
-			NSString reuseId;
-			PositionInfo positionInfo = null;
-
-			// If we had a section for the global header, all our sections are
-			// off by one and actually + 1 from the data source's perspective
-			if (TemplateSelector?.HeaderTemplate != null)
-				adapterSection++;
-
-			if (section == 0 && TemplateSelector?.HeaderTemplate != null)
-			{
-				template = TemplateSelector.HeaderTemplate;
-				item = Adapter.Section(adapterSection);
-				reuseId = itemIdManager.GetReuseId(collectionView, template);
-
-				positionInfo = new PositionInfo
-				{
-					Kind = PositionKind.Header,
-				};
-			}
-			else if (section == (CachedNumberOfSections - 1) && TemplateSelector?.FooterTemplate != null)
-			{
-				template = TemplateSelector.FooterTemplate;
-				item = Adapter.Section(adapterSection);
-				reuseId = itemIdManager.GetReuseId(collectionView, template);
-
-				positionInfo = new PositionInfo
-				{
-					Kind = PositionKind.Footer,
-					//NumberOfSections = numberSections
-				};
-			}
-			else
-			{
-				template = TemplateSelector?.ItemTemplateSelector?.SelectItemTemplate(Adapter, adapterSection, itemIndex)
+			var template = TemplateSelector?.ItemTemplateSelector?.SelectItemTemplate(Adapter, section, itemIndex)
 					?? TemplateSelector.ItemTemplate;
-				item = Adapter.Item(adapterSection, itemIndex);
-				reuseId = itemIdManager.GetReuseId(collectionView, template);
+			var item = Adapter.Item(section, itemIndex);
+			var reuseId = itemIdManager.GetReuseId(collectionView, template);
 
-				positionInfo = new PositionInfo
-				{
-					Kind = PositionKind.Item,
-					NumberOfSections = Adapter.Sections,
-					ItemIndex = itemIndex,
-					SectionIndex = adapterSection,
-					ItemsInSection = Adapter.ItemsForSection(adapterSection)
-				};
-			}
+			var positionInfo = new PositionInfo
+			{
+				Kind = PositionKind.Item,
+				NumberOfSections = Adapter.Sections,
+				ItemIndex = itemIndex,
+				SectionIndex = section,
+				ItemsInSection = Adapter.ItemsForSection(section)
+			};
 
 			var cell = collectionView.DequeueReusableCell(reuseId, indexPath)
 				as SlimListViewCollectionViewCell;
@@ -288,31 +235,7 @@ namespace XFSlimListView
 
 		public override nint GetItemsCount(UICollectionView collectionView, nint section)
 		{
-			var s = section;
-			var addedSections = 0;
-
-			// Global header
-			if (TemplateSelector?.HasGlobalHeader ?? false)
-			{
-				if (section == 0)
-					return 1;
-
-				addedSections++;
-				s--;
-			}
-
-			// Global footer
-			if (TemplateSelector?.HasGlobalFooter ?? false)
-			{
-				addedSections++;
-
-				if (s >= CachedNumberOfSections - addedSections)
-				{
-					return 1;
-				}
-			}
-
-			return (nint)Adapter.ItemsForSection((int)s);
+			return (nint)Adapter.ItemsForSection((int)section);
 		}
 
 		public void ResetTemplates(UICollectionView collectionView)
@@ -330,58 +253,44 @@ namespace XFSlimListView
 	{
 		internal PositionTemplateSelector TemplateSelector { get; set; }
 
-		public override CGSize GetReferenceSizeForHeader(UICollectionView collectionView, UICollectionViewLayout layout, nint section)
+		CGSize GetSizeForSupplementary(SlimListViewCollectionReusableView view, nfloat collectionViewWidth)
 		{
-			if (section == 0 && (TemplateSelector?.HasGlobalHeader ?? false))
-				return new CGSize();
-
-			var footer = collectionView.DataSource.GetViewForSupplementaryElement(collectionView,
-				new NSString(CvConsts.ElementKindSectionHeader), NSIndexPath.FromItemSection(0, section))
-				as SlimListViewCollectionReusableView;
-
-			if (footer != null)
+			if (view != null)
 			{
-				var formsSize = footer.FormsView.Measure(collectionView.Frame.Width, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
+				var formsSize = view.FormsView.Measure(collectionViewWidth, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
 
-				return new CGSize(Math.Max(formsSize.Request.Width, collectionView.Frame.Width), formsSize.Request.Height);
+				var height = formsSize.Request.Height;
+				var width = (nfloat)Math.Max(collectionViewWidth, formsSize.Request.Width);
+
+				if (view.FormsViewGlobal != null)
+				{
+					var formsGlobalSize = view.FormsViewGlobal.Measure(collectionViewWidth, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
+					height += formsGlobalSize.Request.Height;
+					width = (nfloat)Math.Max(width, formsGlobalSize.Request.Width);
+				}
+
+				return new CGSize(width, height);
 			}
 
 			return new CGSize();
 		}
 
-		public override CGSize GetReferenceSizeForFooter(UICollectionView collectionView, UICollectionViewLayout layout, nint section)
+		public override CGSize GetReferenceSizeForHeader(UICollectionView collectionView, UICollectionViewLayout layout, nint section)
 		{
-			var s = section;
-			var addedSections = 0;
-
-			if (TemplateSelector?.HasGlobalHeader ?? false)
-			{
-				addedSections++;
-				s--;
-			}
-
-			// Global footer
-			if (TemplateSelector?.HasGlobalFooter ?? false)
-			{
-				addedSections++;
-
-				if (collectionView.DataSource is CvDataSource ds
-					&& s >= (ds.CachedNumberOfSections - addedSections))
-					return new CGSize();
-			}
-
 			var header = collectionView.DataSource.GetViewForSupplementaryElement(collectionView,
 				new NSString(CvConsts.ElementKindSectionHeader), NSIndexPath.FromItemSection(0, section))
 				as SlimListViewCollectionReusableView;
 
-			if (header != null)
-			{
-				var formsSize = header.FormsView.Measure(collectionView.Frame.Width, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
+			return GetSizeForSupplementary(header, collectionView.Frame.Width);
+		}
 
-				return new CGSize(Math.Max(formsSize.Request.Width, collectionView.Frame.Width), formsSize.Request.Height);
-			}
+		public override CGSize GetReferenceSizeForFooter(UICollectionView collectionView, UICollectionViewLayout layout, nint section)
+		{
+			var footer = collectionView.DataSource.GetViewForSupplementaryElement(collectionView,
+				new NSString(CvConsts.ElementKindSectionHeader), NSIndexPath.FromItemSection(0, section))
+				as SlimListViewCollectionReusableView;
 
-			return new CGSize();
+			return GetSizeForSupplementary(footer, collectionView.Frame.Width);
 		}
 	}
 
@@ -470,8 +379,8 @@ namespace XFSlimListView
 				//}
 			}
 
-			if (supplementaryAttributeObjects.Any())
-				return layoutAttributesObjects.Concat(supplementaryAttributeObjects).ToArray();
+			//if (supplementaryAttributeObjects.Any())
+			//	return layoutAttributesObjects.Concat(supplementaryAttributeObjects).ToArray();
 
 			return layoutAttributesObjects;
 		}
@@ -557,11 +466,16 @@ namespace XFSlimListView
 	public class SlimListViewCollectionReusableView : UICollectionReusableView
 	{
 		public object FormsBindingContext { get; private set; }
+
 		public View FormsView { get; private set; }
+
+		public View FormsViewGlobal { get; private set; }
 
 		UIContainerView containerView = null;
 
-		public bool IsHeader { get; set; } = false;
+		UIContainerView containerViewGlobal = null;
+
+		PositionKind Kind { get; set; } = PositionKind.SectionHeader;
 
 		[Export("initWithFrame:")]
 		public SlimListViewCollectionReusableView(CGRect frame) : base(frame)
@@ -572,32 +486,62 @@ namespace XFSlimListView
 		{
 			var attr = base.PreferredLayoutAttributesFittingAttributes(layoutAttributes);
 
-			LayoutIfNeeded();
-
 			FormsView.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
 
 			var formsSize = FormsView.Measure(attr.Bounds.Width, double.MaxValue - 100, MeasureFlags.IncludeMargins);
 
-			var h = formsSize.Request.Height;
+			var formsViewHeight = formsSize.Request.Height;
+			var formsViewGlobalHeight = 0d;
 
-			attr.Frame = new CGRect(attr.Frame.X, 0, attr.Bounds.Width, h);
+			var globalFooter = Kind == PositionKind.Footer;
 
-			containerView.Frame = attr.Frame;
+			if (FormsViewGlobal != null)
+			{
+				FormsViewGlobal.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
+
+				var formsSizeGlobal = FormsViewGlobal.Measure(attr.Bounds.Width, double.MaxValue - 100, MeasureFlags.IncludeMargins);
+
+				formsViewGlobalHeight = formsSizeGlobal.Request.Height;
+			}
+
+			attr.Frame = new CGRect(attr.Frame.X, 0, attr.Bounds.Width, formsViewHeight + formsViewGlobalHeight);
+
+			if (containerViewGlobal != null)
+				containerViewGlobal.Frame = new CGRect(attr.Frame.X, globalFooter ? formsViewGlobalHeight : 0, attr.Bounds.Width, formsViewGlobalHeight);
+
+			containerView.Frame = new CGRect(attr.Frame.X, globalFooter ? 0 : formsViewGlobalHeight, attr.Bounds.Width, formsViewHeight);
 
 			return attr;
 		}
 
-		public void EnsureFormsTemplate(DataTemplate template)
+		public void EnsureFormsTemplate(DataTemplate template, DataTemplate globalTemplate, PositionKind kind)
 		{
 			if (FormsView == null)
 				FormsView = template.CreateContent() as View;
+
+			if (globalTemplate != null)
+			{
+				if (FormsViewGlobal == null && globalTemplate != null)
+					FormsViewGlobal = globalTemplate.CreateContent() as View;
+
+				if (containerViewGlobal == null)
+				{
+					containerViewGlobal = new UIContainerView(FormsViewGlobal)
+					{
+						Frame = this.Frame,
+						//AutoresizingMask = UIViewAutoresizing.FlexibleWidth | UIViewAutoresizing.FlexibleHeight
+					};
+
+					AddSubview(containerViewGlobal);
+				}
+			}
 
 			if (containerView == null)
 			{
 				containerView = new UIContainerView(FormsView)
 				{
 					Frame = this.Frame,
-					AutoresizingMask = UIViewAutoresizing.FlexibleWidth | UIViewAutoresizing.FlexibleHeight
+					//AutoresizingMask = UIViewAutoresizing.FlexibleWidth | UIViewAutoresizing.FlexibleHeight
 				};
 
 				AddSubview(containerView);
@@ -630,7 +574,7 @@ namespace XFSlimListView
 		readonly List<DataTemplate> templates;
 		readonly object lockObj;
 
-		NSString GetReuseId(int i)
+		NSString GetReuseId(int i, string idModifier = null)
 			=> new NSString($"_{UniquePrefix}_{nameof(SlimListView)}_{i}");
 
 		public NSString GetReuseId(UICollectionView collectionView, DataTemplate template)
