@@ -163,5 +163,35 @@ namespace Xamarin.CommunityToolkit.UI.Views
 
 			return FooterTemplate;
 		}
+
+		public int GetTotalCount(IVirtualListViewAdapter adapter)
+		{
+			if (adapter == null)
+				return 0;
+
+			var sum = 0;
+
+			if (HeaderTemplate != null)
+				sum += 1;
+
+			if (adapter != null)
+			{
+				for (int i = 0; i < adapter.Sections; i++)
+				{
+					if (SectionHeaderTemplate != null || SectionHeaderTemplateSelector != null)
+						sum += 1;
+
+					sum += adapter.ItemsForSection(i);
+
+					if (SectionFooterTemplate != null || SectionFooterTemplateSelector != null)
+						sum += 1;
+				}
+			}
+
+			if (FooterTemplate != null)
+				sum += 1;
+
+			return sum;
+		}
 	}
 }
