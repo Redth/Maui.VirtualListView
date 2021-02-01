@@ -61,7 +61,7 @@ namespace VirtualListViewSample
 		public ItemSelector()
 		{
 			PersonTemplate = new DataTemplate(typeof(PersonView));
-			AnimalTemplate = new DataTemplate(typeof(AnimalView));
+			//AnimalTemplate = new DataTemplate(typeof(AnimalView));
 		}
 
 		public override DataTemplate SelectItemTemplate(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex)

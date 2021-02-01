@@ -134,7 +134,7 @@
       <Name>VirtualListView</Name>
     </ProjectReference>
     <ProjectReference Include="..\VirtualListViewSample\VirtualListViewSample.csproj">
-      <Project>{120A8666-8EAD-40D3-BD57-ADC935961FDF}</Project>
+      <Project>{120a8666-8ead-40d3-bd57-adc935961fdf}</Project>
       <Name>VirtualListViewSample</Name>
     </ProjectReference>
   </ItemGroup>

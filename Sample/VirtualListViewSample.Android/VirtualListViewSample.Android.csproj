@@ -93,9 +93,14 @@
       <Name>VirtualListView</Name>
     </ProjectReference>
     <ProjectReference Include="..\VirtualListViewSample\VirtualListViewSample.csproj">
-      <Project>{569E38A8-4B74-443E-8F46-7456ACE69944}</Project>
+      <Project>{120a8666-8ead-40d3-bd57-adc935961fdf}</Project>
       <Name>VirtualListViewSample</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties TriggeredFromHotReload="False" />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>

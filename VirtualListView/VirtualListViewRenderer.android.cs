@@ -294,7 +294,7 @@ namespace Xamarin.CommunityToolkit.UI.Views
 
 			public void OnClick(View v)
 			{
-				if (ViewHolder.PositionInfo.Kind == PositionKind.Item)
+				if (ViewHolder?.PositionInfo != null && ViewHolder.PositionInfo.Kind == PositionKind.Item)
 					ClickHandler?.Invoke(ViewHolder);
 			}
 		}

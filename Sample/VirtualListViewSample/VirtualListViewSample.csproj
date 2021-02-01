@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -18,9 +18,6 @@
     <PackageReference Include="Xamarin.Forms" Version="5.0.0.1931" />
     <PackageReference Include="Xamarin.Essentials" Version="1.6.1" />
     <PackageReference Include="sqlite-net-pcl" Version="1.7.335" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- <Compile Include="..\..\VirtualListView\**\*.cs"> -->
   </ItemGroup>
   <ItemGroup>
     <None Remove="contacts-20000.db" />
