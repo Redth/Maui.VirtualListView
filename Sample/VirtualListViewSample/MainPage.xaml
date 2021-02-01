@@ -4,7 +4,7 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
 	xmlns:local="clr-namespace:VirtualListViewSample"
 	xmlns:xct="clr-namespace:Xamarin.CommunityToolkit.UI.Views;assembly=VirtualListView"
-	BackgroundColor="White"
+	BackgroundColor="#045FB4"
 	x:Class="VirtualListViewSample.MainPage">
 	<ContentPage.Resources>
 		<ResourceDictionary>
@@ -18,7 +18,7 @@
 			VerticalOptions="FillAndExpand"
 			Adapter="{Binding Adapter}"
 			SelectionMode="Multiple"
-			BackgroundColor="White"
+			BackgroundColor="#045FB4"
 			SelectedItemsChanged="VirtualListView_SelectedItemsChanged"
 			ItemTemplateSelector="{StaticResource itemTemplateSelector}">
 
@@ -43,7 +43,7 @@
 			<xct:VirtualListView.SectionFooterTemplate>
 				<DataTemplate>
 					<xct:VirtualViewCell>
-						<StackLayout Padding="0,6,0,10">
+						<StackLayout Padding="0,6,0,10" BackgroundColor="White">
 							<Label Text="{Binding TrackCount, StringFormat='{0} Tracks'}" TextColor="LightGray" HorizontalOptions="Center" />
 						</StackLayout>
 					</xct:VirtualViewCell>
