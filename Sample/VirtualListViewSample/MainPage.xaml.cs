@@ -8,8 +8,8 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using SQLite;
+using Xamarin.CommunityToolkit.UI.Views;
 using Xamarin.Forms;
-using XFSlimListView;
 
 namespace SlimListViewSample
 {
@@ -24,7 +24,7 @@ namespace SlimListViewSample
 			BindingContext = vm;
 		}
 
-		void SlimListView_SelectedItemsChanged(System.Object sender, XFSlimListView.SelectedItemsChangedEventArgs e)
+		void SlimListView_SelectedItemsChanged(System.Object sender, SelectedItemsChangedEventArgs e)
 		{
 			Console.WriteLine($"Selected Items:");
 			foreach (var s in e.NewSelection)
@@ -53,7 +53,7 @@ namespace SlimListViewSample
 		}
 	}
 
-	public class ItemSelector : XFSlimListView.AdapterItemDataTemplateSelector
+	public class ItemSelector : AdapterItemDataTemplateSelector
 	{
 		public DataTemplate PersonTemplate { get; set; }
 		public DataTemplate AnimalTemplate { get; set; }
@@ -64,7 +64,7 @@ namespace SlimListViewSample
 			AnimalTemplate = new DataTemplate(typeof(AnimalView));
 		}
 
-		public override DataTemplate SelectItemTemplate(ISlimListViewAdapter adapter, int sectionIndex, int itemIndex)
+		public override DataTemplate SelectItemTemplate(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex)
 		{
 			var item = adapter.Item(sectionIndex, itemIndex);
 
@@ -87,7 +87,7 @@ namespace SlimListViewSample
 		public event PropertyChangedEventHandler PropertyChanged;
 	}
 
-	public class ListAdapter<T> : ISlimListViewAdapter
+	public class ListAdapter<T> : IVirtualListViewAdapter
 	{
 		public List<T> Items { get; set; } = new List<T>();
 
@@ -103,7 +103,7 @@ namespace SlimListViewSample
 			=> null;
 	}
 
-	public class GroupedAdapter<TGroup, TItem> : ISlimListViewAdapter
+	public class GroupedAdapter<TGroup, TItem> : IVirtualListViewAdapter
 		where TGroup : IList<TItem> 
 	{
 		
@@ -122,7 +122,7 @@ namespace SlimListViewSample
 	}
 
 
-	public class SqliteGroupedAdapter<TGroup, TItem> : ISlimListViewAdapter
+	public class SqliteGroupedAdapter<TGroup, TItem> : IVirtualListViewAdapter
 		where TGroup : IList<TItem>
 	{
 

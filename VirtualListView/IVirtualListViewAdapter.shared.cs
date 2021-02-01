@@ -4,9 +4,9 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Xamarin.Forms;
 
-namespace XFSlimListView
+namespace Xamarin.CommunityToolkit.UI.Views
 {
-	public interface ISlimListViewAdapter
+	public interface IVirtualListViewAdapter
 	{
 		int Sections { get; }
 
@@ -19,15 +19,15 @@ namespace XFSlimListView
 
 	public abstract class AdapterItemDataTemplateSelector
 	{
-		public abstract DataTemplate SelectItemTemplate(ISlimListViewAdapter adapter, int sectionIndex, int itemIndex);
+		public abstract DataTemplate SelectItemTemplate(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex);
 	}
 
 	public abstract class AdapterSectionDataTemplateSelector
 	{
-		public abstract DataTemplate SelectGroupTemplate(ISlimListViewAdapter adapter, int sectionIndex);
+		public abstract DataTemplate SelectGroupTemplate(IVirtualListViewAdapter adapter, int sectionIndex);
 	}
 
-	public class GroupedListViewAdapter<TGroup, TItem> : ISlimListViewAdapter where TGroup : IList<TItem> where TItem : class
+	public class GroupedListViewAdapter<TGroup, TItem> : IVirtualListViewAdapter where TGroup : IList<TItem> where TItem : class
 	{
 		public List<TGroup> Source { get; } = new List<TGroup>();
 

@@ -8,13 +8,13 @@ using UIKit;
 using Xamarin.Forms;
 using Xamarin.Forms.Platform.iOS;
 
-[assembly: ExportRenderer(typeof(XFSlimListView.SlimListView), typeof(XFSlimListView.SlimListViewRenderer))]
+[assembly: ExportRenderer(typeof(Xamarin.CommunityToolkit.UI.Views.VirtualListView), typeof(Xamarin.CommunityToolkit.UI.Views.VirtualListViewRenderer))]
 
-namespace XFSlimListView
+namespace Xamarin.CommunityToolkit.UI.Views
 {
-	public class SlimListViewRenderer : ViewRenderer<SlimListView, UICollectionView>
+	public class VirtualListViewRenderer : ViewRenderer<VirtualListView, UICollectionView>
 	{
-		public SlimListViewRenderer()
+		public VirtualListViewRenderer()
 		{
 		}
 
@@ -23,7 +23,7 @@ namespace XFSlimListView
 		CvDelegate cvdelegate;
 		UICollectionView collectionView;
 
-		protected override void OnElementChanged(ElementChangedEventArgs<SlimListView> e)
+		protected override void OnElementChanged(ElementChangedEventArgs<VirtualListView> e)
 		{
 			base.OnElementChanged(e);
 
@@ -60,8 +60,8 @@ namespace XFSlimListView
 						e?.NewElement?.SetSelected(new ItemPosition(path.Section, (int)path.Item));
 
 						if (dataSource.GetCell(collectionView, path) is CvCell cell
-							&& cell?.Position != null)
-							cell.Position.IsSelected = true;
+							&& cell?.ViewCell != null)
+							cell.ViewCell.IsSelected = true;
 					};
 
 					cvdelegate.ItemDeselectedHandler = path =>
@@ -69,8 +69,8 @@ namespace XFSlimListView
 						e?.NewElement?.SetDeselected(new ItemPosition(path.Section, (int)path.Item));
 
 						if (dataSource.GetCell(collectionView, path) is CvCell cell
-							&& cell?.Position != null)
-							cell.Position.IsSelected = false;
+							&& cell?.ViewCell != null)
+							cell.ViewCell.IsSelected = false;
 					};
 
 					collectionView = new UICollectionView(this.Frame, layout);
@@ -287,16 +287,16 @@ namespace XFSlimListView
 
 		CGSize GetSizeForSupplementary(CvSupplementaryView view, nfloat collectionViewWidth)
 		{
-			if (view != null)
+			if (view?.ViewCell?.View != null)
 			{
-				var formsSize = view.FormsView.Measure(collectionViewWidth, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
+				var formsSize = view.ViewCell.View.Measure(collectionViewWidth, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
 
 				var height = formsSize.Request.Height;
 				var width = (nfloat)Math.Max(collectionViewWidth, formsSize.Request.Width);
 
-				if (view.FormsViewGlobal != null)
+				if (view?.GlobalViewCell?.View != null)
 				{
-					var formsGlobalSize = view.FormsViewGlobal.Measure(collectionViewWidth, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
+					var formsGlobalSize = view.GlobalViewCell.View.Measure(collectionViewWidth, double.MaxValue - 1000, MeasureFlags.IncludeMargins);
 					height += formsGlobalSize.Request.Height;
 					width = (nfloat)Math.Max(width, formsGlobalSize.Request.Width);
 				}
@@ -432,12 +432,9 @@ namespace XFSlimListView
 
 	public class CvCell : UICollectionViewCell
 	{
-		public object FormsBindingContext { get; private set; }
-		public View FormsView { get; private set; }
+		public VirtualViewCell ViewCell { get; private set; }
 
 		public NSIndexPath IndexPath { get; set; }
-
-		public PositionData Position { get; set; }
 
 		UIContainerView containerView = null;
 
@@ -450,11 +447,12 @@ namespace XFSlimListView
 		{
 			var attr = base.PreferredLayoutAttributesFittingAttributes(layoutAttributes);
 
-			LayoutIfNeeded();
+			if (ViewCell?.View == null)
+				return attr;
 
-			FormsView.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
+			ViewCell.View.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
 
-			var formsSize = FormsView.Measure(attr.Frame.Width, double.MaxValue - 100, MeasureFlags.IncludeMargins);
+			var formsSize = ViewCell.View.Measure(attr.Frame.Width, double.MaxValue - 100, MeasureFlags.IncludeMargins);
 
 			var w = formsSize.Request.Width;
 			var h = formsSize.Request.Height;
@@ -467,27 +465,21 @@ namespace XFSlimListView
 
 		public void EnsureFormsTemplate(DataTemplate template, PositionInfo positionInfo)
 		{
-			if (FormsView == null)
-				FormsView = template.CreateContent() as View;
-
-			if (Position == null)
+			if (ViewCell?.View == null)
 			{
-				foreach (var kvp in FormsView.Resources)
-				{
-					if (kvp.Value is PositionData pc)
-					{
-						Position = pc;
-						break;
-					}
-				}
+				var templateContent = template.CreateContent();
+
+				if (templateContent is VirtualViewCell vc)
+					ViewCell = vc;
+				else
+					VirtualViewCell.ThrowInvalidDataTemplateException();
 			}
 
-			if (Position != null)
-				Position.Update(positionInfo);
+			ViewCell.Update(positionInfo);
 
 			if (containerView == null)
 			{
-				containerView = new UIContainerView(FormsView)
+				containerView = new UIContainerView(ViewCell.View)
 				{
 					Frame = ContentView.Frame,
 					AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth
@@ -499,9 +491,9 @@ namespace XFSlimListView
 
 		public void UpdateFormsBindingContext(object bindingContext)
 		{
-			if (FormsView != null)
+			if (ViewCell != null)
 			{
-				FormsView.BindingContext = bindingContext;
+				ViewCell.BindingContext = bindingContext;
 				//FormsView.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
 			}
 		}
@@ -511,9 +503,9 @@ namespace XFSlimListView
 	{
 		public object FormsBindingContext { get; private set; }
 
-		public View FormsView { get; private set; }
+		public ViewCell ViewCell { get; private set; }
 
-		public View FormsViewGlobal { get; private set; }
+		public ViewCell GlobalViewCell { get; private set; }
 
 		UIContainerView containerView = null;
 
@@ -530,47 +522,66 @@ namespace XFSlimListView
 		{
 			var attr = base.PreferredLayoutAttributesFittingAttributes(layoutAttributes);
 
-			FormsView.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
+			double viewCellSize = 0d;
+			double globalViewCellSize = 0d;
 
-			var formsSize = FormsView.Measure(attr.Bounds.Width, double.MaxValue - 100, MeasureFlags.IncludeMargins);
+			if (ViewCell?.View != null)
+			{
+				ViewCell.View.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
 
-			var formsViewHeight = formsSize.Request.Height;
-			var formsViewGlobalHeight = 0d;
+				var formsSize = ViewCell.View.Measure(attr.Bounds.Width, double.MaxValue - 100, MeasureFlags.IncludeMargins);
+
+				viewCellSize = formsSize.Request.Height;
+			}
 
 			var globalFooter = Kind == PositionKind.Footer;
 
-			if (FormsViewGlobal != null)
+			if (GlobalViewCell?.View != null)
 			{
-				FormsViewGlobal.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
+				GlobalViewCell.View.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
 
-				var formsSizeGlobal = FormsViewGlobal.Measure(attr.Bounds.Width, double.MaxValue - 100, MeasureFlags.IncludeMargins);
+				var globalFormsSize = GlobalViewCell.View.Measure(attr.Bounds.Width, double.MaxValue - 100, MeasureFlags.IncludeMargins);
 
-				formsViewGlobalHeight = formsSizeGlobal.Request.Height;
+				globalViewCellSize = globalFormsSize.Request.Height;
 			}
 
-			attr.Frame = new CGRect(attr.Frame.X, 0, attr.Bounds.Width, formsViewHeight + formsViewGlobalHeight);
+			attr.Frame = new CGRect(attr.Frame.X, 0, attr.Bounds.Width, viewCellSize + globalViewCellSize);
 
 			if (containerViewGlobal != null)
-				containerViewGlobal.Frame = new CGRect(attr.Frame.X, globalFooter ? formsViewGlobalHeight : 0, attr.Bounds.Width, formsViewGlobalHeight);
+				containerViewGlobal.Frame = new CGRect(attr.Frame.X, globalFooter ? globalViewCellSize : 0, attr.Bounds.Width, globalViewCellSize);
 
-			containerView.Frame = new CGRect(attr.Frame.X, globalFooter ? 0 : formsViewGlobalHeight, attr.Bounds.Width, formsViewHeight);
+			containerView.Frame = new CGRect(attr.Frame.X, globalFooter ? 0 : globalViewCellSize, attr.Bounds.Width, viewCellSize);
 
 			return attr;
 		}
 
 		public void EnsureFormsTemplate(DataTemplate template, DataTemplate globalTemplate, PositionKind kind)
 		{
-			if (FormsView == null)
-				FormsView = template.CreateContent() as View;
+			if (ViewCell?.View == null)
+			{
+				var templateContent = template.CreateContent();
+
+				if (templateContent is VirtualViewCell vc)
+					ViewCell = vc;
+				else
+					VirtualViewCell.ThrowInvalidDataTemplateException();
+			}
 
 			if (globalTemplate != null)
 			{
-				if (FormsViewGlobal == null && globalTemplate != null)
-					FormsViewGlobal = globalTemplate.CreateContent() as View;
+				if (GlobalViewCell?.View == null)
+				{
+					var templateContent = globalTemplate.CreateContent() as VirtualViewCell;
+
+					if (templateContent is VirtualViewCell vc)
+						GlobalViewCell = vc;
+					else
+						VirtualViewCell.ThrowInvalidDataTemplateException();
+				}
 
 				if (containerViewGlobal == null)
 				{
-					containerViewGlobal = new UIContainerView(FormsViewGlobal)
+					containerViewGlobal = new UIContainerView(GlobalViewCell.View)
 					{
 						Frame = this.Frame,
 						//AutoresizingMask = UIViewAutoresizing.FlexibleWidth | UIViewAutoresizing.FlexibleHeight
@@ -582,7 +593,7 @@ namespace XFSlimListView
 
 			if (containerView == null)
 			{
-				containerView = new UIContainerView(FormsView)
+				containerView = new UIContainerView(ViewCell.View)
 				{
 					Frame = this.Frame,
 					//AutoresizingMask = UIViewAutoresizing.FlexibleWidth | UIViewAutoresizing.FlexibleHeight
@@ -594,10 +605,10 @@ namespace XFSlimListView
 
 		public void UpdateFormsBindingContext(object bindingContext)
 		{
-			if (FormsView != null)
+			if (ViewCell?.View != null)
 			{
-				FormsView.BindingContext = bindingContext;
-				FormsView.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
+				ViewCell.BindingContext = bindingContext;
+				ViewCell.View.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
 			}
 		}
 	}

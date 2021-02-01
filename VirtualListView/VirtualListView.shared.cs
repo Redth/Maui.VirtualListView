@@ -5,15 +5,12 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Xamarin.Forms;
 
-namespace XFSlimListView
+namespace Xamarin.CommunityToolkit.UI.Views
 {
-	public class PositionData : Element
+	public class VirtualViewCell : ViewCell
 	{
-		public PositionData()
-		{ }
-
 		public static readonly BindableProperty SectionIndexProperty =
-			BindableProperty.Create(nameof(SectionIndex), typeof(int), typeof(SlimListView), -1);
+			BindableProperty.Create(nameof(SectionIndex), typeof(int), typeof(VirtualViewCell), -1);
 
 		public int SectionIndex
 		{
@@ -22,7 +19,7 @@ namespace XFSlimListView
 		}
 
 		public static readonly BindableProperty ItemIndexProperty =
-			BindableProperty.Create(nameof(ItemIndex), typeof(int), typeof(SlimListView), -1);
+			BindableProperty.Create(nameof(ItemIndex), typeof(int), typeof(VirtualViewCell), -1);
 
 		public int ItemIndex
 		{
@@ -31,7 +28,7 @@ namespace XFSlimListView
 		}
 
 		public static readonly BindableProperty IsGlobalHeaderProperty =
-			BindableProperty.Create(nameof(IsGlobalHeader), typeof(bool), typeof(SlimListView), false);
+			BindableProperty.Create(nameof(IsGlobalHeader), typeof(bool), typeof(VirtualViewCell), false);
 
 		public bool IsGlobalHeader
 		{
@@ -41,7 +38,7 @@ namespace XFSlimListView
 
 
 		public static readonly BindableProperty IsGlobalFooterProperty =
-			BindableProperty.Create(nameof(IsGlobalFooter), typeof(bool), typeof(SlimListView), false);
+			BindableProperty.Create(nameof(IsGlobalFooter), typeof(bool), typeof(VirtualViewCell), false);
 
 		public bool IsGlobalFooter
 		{
@@ -50,7 +47,7 @@ namespace XFSlimListView
 		}
 
 		public static readonly BindableProperty IsSectionHeaderProperty =
-			BindableProperty.Create(nameof(IsSectionHeader), typeof(bool), typeof(SlimListView), false);
+			BindableProperty.Create(nameof(IsSectionHeader), typeof(bool), typeof(VirtualViewCell), false);
 
 		public bool IsSectionHeader
 		{
@@ -60,7 +57,7 @@ namespace XFSlimListView
 
 
 		public static readonly BindableProperty IsSectionFooterProperty =
-			BindableProperty.Create(nameof(IsSectionFooter), typeof(bool), typeof(SlimListView), false);
+			BindableProperty.Create(nameof(IsSectionFooter), typeof(bool), typeof(VirtualViewCell), false);
 
 		public bool IsSectionFooter
 		{
@@ -70,7 +67,7 @@ namespace XFSlimListView
 
 
 		public static readonly BindableProperty IsItemProperty =
-			BindableProperty.Create(nameof(IsItem), typeof(bool), typeof(SlimListView), false);
+			BindableProperty.Create(nameof(IsItem), typeof(bool), typeof(VirtualViewCell), false);
 
 		public bool IsItem
 		{
@@ -80,7 +77,7 @@ namespace XFSlimListView
 
 
 		public static readonly BindableProperty IsLastItemInSectionProperty =
-			BindableProperty.Create(nameof(IsLastItemInSection), typeof(bool), typeof(SlimListView), false);
+			BindableProperty.Create(nameof(IsLastItemInSection), typeof(bool), typeof(VirtualViewCell), false);
 
 		public bool IsLastItemInSection
 		{
@@ -89,7 +86,7 @@ namespace XFSlimListView
 		}
 
 		public static readonly BindableProperty IsNotLastItemInSectionProperty =
-			BindableProperty.Create(nameof(IsNotLastItemInSection), typeof(bool), typeof(SlimListView), true);
+			BindableProperty.Create(nameof(IsNotLastItemInSection), typeof(bool), typeof(VirtualViewCell), true);
 
 		public bool IsNotLastItemInSection
 		{
@@ -99,7 +96,7 @@ namespace XFSlimListView
 
 
 		public static readonly BindableProperty IsFirstItemInSectionProperty =
-			BindableProperty.Create(nameof(IsFirstItemInSection), typeof(bool), typeof(SlimListView), false);
+			BindableProperty.Create(nameof(IsFirstItemInSection), typeof(bool), typeof(VirtualViewCell), false);
 
 		public bool IsFirstItemInSection
 		{
@@ -109,7 +106,7 @@ namespace XFSlimListView
 
 
 		public static readonly BindableProperty IsNotFirstItemInSectionProperty =
-			BindableProperty.Create(nameof(IsNotFirstItemInSection), typeof(bool), typeof(SlimListView), true);
+			BindableProperty.Create(nameof(IsNotFirstItemInSection), typeof(bool), typeof(VirtualViewCell), true);
 
 		public bool IsNotFirstItemInSection
 		{
@@ -119,7 +116,7 @@ namespace XFSlimListView
 
 
 		public static readonly BindableProperty PositionKindProperty =
-			BindableProperty.Create(nameof(PositionKind), typeof(PositionKind), typeof(SlimListView), PositionKind.Item);
+			BindableProperty.Create(nameof(PositionKind), typeof(PositionKind), typeof(VirtualViewCell), PositionKind.Item);
 
 		public PositionKind PositionKind
 		{
@@ -157,17 +154,11 @@ namespace XFSlimListView
 			IsGlobalFooter = info.Kind == PositionKind.Footer;
 			IsSectionHeader = info.Kind == PositionKind.SectionHeader;
 			IsSectionFooter = info.Kind == PositionKind.SectionFooter;
-
-			OnNeedsInvalidating?.Invoke(this, new EventArgs());
 		}
 
 
 		public static readonly BindableProperty IsSelectedProperty =
-			BindableProperty.Create(nameof(IsSelected), typeof(bool), typeof(SlimListView), false,
-				propertyChanged: (e, oldVal, newVal) => {
-					if (e is PositionData pd)
-						pd?.OnNeedsInvalidating?.Invoke(e, new EventArgs());
-				});
+			BindableProperty.Create(nameof(IsSelected), typeof(bool), typeof(VirtualViewCell), false);
 
 		public bool IsSelected
 		{
@@ -175,23 +166,24 @@ namespace XFSlimListView
 			set => SetValue(IsSelectedProperty, value);
 		}
 
-		public event EventHandler OnNeedsInvalidating;
+		public static void ThrowInvalidDataTemplateException()
+			=> throw new NotSupportedException($"Item DataTemplate must contain a {nameof(VirtualViewCell)}.");
 	}
 
-	public class SlimListView : Xamarin.Forms.View
+	public class VirtualListView : Xamarin.Forms.View
 	{
-		public SlimListView() : base()
+		public VirtualListView() : base()
 		{
 		}
 
-		public ISlimListViewAdapter Adapter
+		public IVirtualListViewAdapter Adapter
 		{
-			get => (ISlimListViewAdapter)GetValue(AdapterProperty);
+			get => (IVirtualListViewAdapter)GetValue(AdapterProperty);
 			set => SetValue(AdapterProperty, value);
 		}
 
 		public static readonly BindableProperty AdapterProperty =
-			BindableProperty.Create(nameof(Adapter), typeof(ISlimListViewAdapter), typeof(SlimListView), default);
+			BindableProperty.Create(nameof(Adapter), typeof(IVirtualListViewAdapter), typeof(VirtualListView), default);
 
 
 		public DataTemplate HeaderTemplate
@@ -201,7 +193,7 @@ namespace XFSlimListView
 		}
 
 		public static readonly BindableProperty HeaderTemplateProperty =
-			BindableProperty.Create(nameof(HeaderTemplate), typeof(DataTemplate), typeof(SlimListView), default);
+			BindableProperty.Create(nameof(HeaderTemplate), typeof(DataTemplate), typeof(VirtualListView), default);
 
 		public DataTemplate FooterTemplate
 		{
@@ -210,7 +202,7 @@ namespace XFSlimListView
 		}
 
 		public static readonly BindableProperty FooterTemplateProperty =
-			BindableProperty.Create(nameof(FooterTemplate), typeof(DataTemplate), typeof(SlimListView), default);
+			BindableProperty.Create(nameof(FooterTemplate), typeof(DataTemplate), typeof(VirtualListView), default);
 
 
 		public DataTemplate ItemTemplate
@@ -220,7 +212,7 @@ namespace XFSlimListView
 		}
 
 		public static readonly BindableProperty ItemTemplateProperty =
-			BindableProperty.Create(nameof(ItemTemplate), typeof(DataTemplate), typeof(SlimListView), default);
+			BindableProperty.Create(nameof(ItemTemplate), typeof(DataTemplate), typeof(VirtualListView), default);
 
 		public DataTemplate SectionHeaderTemplate
 		{
@@ -229,7 +221,7 @@ namespace XFSlimListView
 		}
 
 		public static readonly BindableProperty SectionHeaderTemplateProperty =
-			BindableProperty.Create(nameof(SectionHeaderTemplate), typeof(DataTemplate), typeof(SlimListView), default);
+			BindableProperty.Create(nameof(SectionHeaderTemplate), typeof(DataTemplate), typeof(VirtualListView), default);
 
 		public DataTemplate SectionFooterTemplate
 		{
@@ -238,7 +230,7 @@ namespace XFSlimListView
 		}
 
 		public static readonly BindableProperty SectionFooterTemplateProperty =
-			BindableProperty.Create(nameof(SectionFooterTemplate), typeof(DataTemplate), typeof(SlimListView), default);
+			BindableProperty.Create(nameof(SectionFooterTemplate), typeof(DataTemplate), typeof(VirtualListView), default);
 
 
 		public AdapterItemDataTemplateSelector ItemTemplateSelector
@@ -248,7 +240,7 @@ namespace XFSlimListView
 		}
 
 		public static readonly BindableProperty ItemTemplateSelectorProperty =
-			BindableProperty.Create(nameof(ItemTemplateSelector), typeof(AdapterItemDataTemplateSelector), typeof(SlimListView), default);
+			BindableProperty.Create(nameof(ItemTemplateSelector), typeof(AdapterItemDataTemplateSelector), typeof(VirtualListView), default);
 
 		public AdapterSectionDataTemplateSelector SectionHeaderTemplateSelector
 		{
@@ -257,7 +249,7 @@ namespace XFSlimListView
 		}
 
 		public static readonly BindableProperty SectionHeaderTemplateSelectorProperty =
-			BindableProperty.Create(nameof(SectionHeaderTemplateSelector), typeof(AdapterSectionDataTemplateSelector), typeof(SlimListView), default);
+			BindableProperty.Create(nameof(SectionHeaderTemplateSelector), typeof(AdapterSectionDataTemplateSelector), typeof(VirtualListView), default);
 
 		public AdapterSectionDataTemplateSelector SectionFooterTemplateSelector
 		{
@@ -266,7 +258,7 @@ namespace XFSlimListView
 		}
 
 		public static readonly BindableProperty SectionFooterTemplateSelectorProperty =
-			BindableProperty.Create(nameof(SectionHeaderTemplateSelector), typeof(AdapterSectionDataTemplateSelector), typeof(SlimListView), default);
+			BindableProperty.Create(nameof(SectionHeaderTemplateSelector), typeof(AdapterSectionDataTemplateSelector), typeof(VirtualListView), default);
 
 
 		public SelectionMode SelectionMode
@@ -276,7 +268,7 @@ namespace XFSlimListView
 		}
 
 		public static readonly BindableProperty SelectionModeProperty =
-			BindableProperty.Create(nameof(SelectionMode), typeof(SelectionMode), typeof(SlimListView), SelectionMode.None);
+			BindableProperty.Create(nameof(SelectionMode), typeof(SelectionMode), typeof(VirtualListView), SelectionMode.None);
 
 		public event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
 
@@ -436,8 +428,11 @@ namespace XFSlimListView
 		public bool HasGlobalFooter
 			=> FooterTemplate != null;
 
-		public PositionInfo GetInfo(ISlimListViewAdapter adapter, int position)
+		public PositionInfo GetInfo(IVirtualListViewAdapter adapter, int position)
 		{
+			if (adapter == null)
+				return null;
+
 			var linear = 0;
 
 			var numberSections = adapter.Sections;
@@ -515,7 +510,7 @@ namespace XFSlimListView
 			};
 		}
 
-		public DataTemplate GetTemplate(ISlimListViewAdapter adapter, int position)
+		public DataTemplate GetTemplate(IVirtualListViewAdapter adapter, int position)
 		{
 			if (position == 0)
 			{

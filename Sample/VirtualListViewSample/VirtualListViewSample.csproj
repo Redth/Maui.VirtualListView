@@ -20,17 +20,15 @@
     <PackageReference Include="sqlite-net-pcl" Version="1.7.335" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\XFSlimListView\ISlimViewAdapter.shared.cs">
-      <Link>ISlimViewAdapter.shared.cs</Link>
-    </Compile>
-    <Compile Include="..\..\XFSlimListView\SlimListView.shared.cs">
-      <Link>SlimListView.shared.cs</Link>
-    </Compile>
+    <!-- <Compile Include="..\..\VirtualListView\**\*.cs"> -->
   </ItemGroup>
   <ItemGroup>
     <None Remove="contacts-20000.db" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="sampledata.db" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj" />
   </ItemGroup>
 </Project>

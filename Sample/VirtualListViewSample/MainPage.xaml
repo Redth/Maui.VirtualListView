@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+			 
+			 xmlns:local="clr-namespace:SlimListViewSample"
+			 xmlns:xct="clr-namespace:Xamarin.CommunityToolkit.UI.Views"
+			 x:Class="SlimListViewSample.MainPage">
+	<ContentPage.Resources>
+		<ResourceDictionary>
+			<local:SelectedColorConverter x:Key="selectedColorConverter" />
+			<local:ItemSelector x:Key="itemSelector" />
+		</ResourceDictionary>
+	</ContentPage.Resources>
+	<Grid>
+		<xct:VirtualListView
+			HorizontalOptions="FillAndExpand"
+			VerticalOptions="FillAndExpand"
+			BackgroundColor="Pink"
+			Adapter="{Binding Adapter}"
+			SelectionMode="Multiple"
+			SelectedItemsChanged="SlimListView_SelectedItemsChanged"
+			ItemTemplateSelector="{StaticResource itemSelector}">
+
+			<xct:VirtualListView.SectionHeaderTemplate>
+				<DataTemplate>
+					<xct:VirtualViewCell>
+						<Grid HorizontalOptions="FillAndExpand">
+							<Label BackgroundColor="DarkGreen" Padding="20" Text="{Binding GroupName}" TextColor="White" />
+						</Grid>
+					</xct:VirtualViewCell>
+				</DataTemplate>
+			</xct:VirtualListView.SectionHeaderTemplate>
+
+			<xct:VirtualListView.SectionFooterTemplate>
+				<DataTemplate>
+					<xct:VirtualViewCell>
+						<Grid>
+							<Label BackgroundColor="LightGreen" Padding="20" Text="{Binding GroupCount}" TextColor="White" />
+						</Grid>
+					</xct:VirtualViewCell>
+				</DataTemplate>
+			</xct:VirtualListView.SectionFooterTemplate>
+
+			<xct:VirtualListView.HeaderTemplate>
+				<DataTemplate>
+					<xct:VirtualViewCell>
+						<Grid HorizontalOptions="FillAndExpand">
+							<Label BackgroundColor="Navy" Padding="20" Text="Header" TextColor="White" />
+						</Grid>
+					</xct:VirtualViewCell>
+				</DataTemplate>
+			</xct:VirtualListView.HeaderTemplate>
+
+			<xct:VirtualListView.FooterTemplate>
+				<DataTemplate>
+					<xct:VirtualViewCell>
+						<Grid>
+							<Label BackgroundColor="Navy" Padding="20" Text="Footer" TextColor="White" />
+						</Grid>
+					</xct:VirtualViewCell>
+				</DataTemplate>
+			</xct:VirtualListView.FooterTemplate>
+		</xct:VirtualListView>
+		</Grid>
+</ContentPage>
