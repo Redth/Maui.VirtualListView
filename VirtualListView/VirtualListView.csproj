@@ -5,7 +5,7 @@
     <AssemblyName>VirtualListView</AssemblyName>
     <RootNamespace>Xamarin.CommunityToolkit.UI.Views</RootNamespace>
     <PackageId>Xamarin.Forms.CommunityToolkit.VirtualListView</PackageId>
-    <Summary>A Slim ListView for Xamarin.Forms</Summary>
+    <Summary>A virtual ListView for Xamarin.Forms</Summary>
     <Title>VirtualListView for Xamarin Forms</Title>
     <Product>$(AssemblyName) ($(TargetFramework))</Product>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
