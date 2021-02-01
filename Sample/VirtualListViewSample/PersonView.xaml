@@ -4,7 +4,7 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
 	xmlns:xct="clr-namespace:Xamarin.CommunityToolkit.UI.Views"
 	x:Name="self"
-	x:Class="SlimListViewSample.PersonView">
+	x:Class="VirtualListViewSample.PersonView">
 	<xct:VirtualViewCell.View>
 		<StackLayout
 			Spacing="0"

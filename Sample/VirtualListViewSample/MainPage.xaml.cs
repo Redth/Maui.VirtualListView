@@ -11,7 +11,7 @@ using SQLite;
 using Xamarin.CommunityToolkit.UI.Views;
 using Xamarin.Forms;
 
-namespace SlimListViewSample
+namespace VirtualListViewSample
 {
 	public partial class MainPage : ContentPage
 	{
@@ -24,7 +24,7 @@ namespace SlimListViewSample
 			BindingContext = vm;
 		}
 
-		void SlimListView_SelectedItemsChanged(System.Object sender, SelectedItemsChangedEventArgs e)
+		void VirtualListView_SelectedItemsChanged(System.Object sender, SelectedItemsChangedEventArgs e)
 		{
 			Console.WriteLine($"Selected Items:");
 			foreach (var s in e.NewSelection)
@@ -141,7 +141,7 @@ namespace SlimListViewSample
 			{
 				// note that the prefix includes the trailing period '.' that is required
 				var assembly = IntrospectionExtensions.GetTypeInfo(typeof(App)).Assembly;
-				using (var stream = assembly.GetManifestResourceStream(nameof(SlimListViewSample) + ".sampledata.db"))
+				using (var stream = assembly.GetManifestResourceStream(nameof(VirtualListViewSample) + ".sampledata.db"))
 				using (var outStream = File.Create(path))
 					stream.CopyTo(outStream);
 			}

@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Application xmlns="http://xamarin.com/schemas/2014/forms"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:SlimListViewSample"
-             x:Class="SlimListViewSample.App">
+             xmlns:local="clr-namespace:VirtualListViewSample"
+             x:Class="VirtualListViewSample.App">
     <Application.Resources>
         <local:SelectedColorConverter x:Key="selectedColorConverter" />
     </Application.Resources>

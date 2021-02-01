@@ -2,11 +2,11 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;Xamarin.iOS10;MonoAndroid10.0</TargetFrameworks>
     <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);uap10.0.16299;</TargetFrameworks>
-    <AssemblyName>XFSlimListView</AssemblyName>
+    <AssemblyName>VirtualListView</AssemblyName>
     <RootNamespace>Xamarin.CommunityToolkit.UI.Views</RootNamespace>
-    <PackageId>XFSlimListView</PackageId>
+    <PackageId>Xamarin.Forms.CommunityToolkit.VirtualListView</PackageId>
     <Summary>A Slim ListView for Xamarin.Forms</Summary>
-    <Title>XFSlimListView</Title>
+    <Title>VirtualListView for Xamarin Forms</Title>
     <Product>$(AssemblyName) ($(TargetFramework))</Product>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <AssemblyFileVersion>1.0.0.0</AssemblyFileVersion>
@@ -15,7 +15,7 @@
     <Authors>Redth</Authors>
     <NeutralLanguage>en</NeutralLanguage>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
-    <RepositoryUrl>https://github.com/redth/XFSlimListView</RepositoryUrl>
+    <RepositoryUrl>https://github.com/redth/Xamarin.Forms.VirtualListView</RepositoryUrl>
     <DefineConstants>$(DefineConstants);</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <DebugType>portable</DebugType>

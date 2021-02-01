@@ -2,9 +2,9 @@
 <ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
 			 
-			 xmlns:local="clr-namespace:SlimListViewSample"
+			 xmlns:local="clr-namespace:VirtualListViewSample"
 			 xmlns:xct="clr-namespace:Xamarin.CommunityToolkit.UI.Views"
-			 x:Class="SlimListViewSample.MainPage">
+			 x:Class="VirtualListViewSample.MainPage">
 	<ContentPage.Resources>
 		<ResourceDictionary>
 			<local:SelectedColorConverter x:Key="selectedColorConverter" />
@@ -18,7 +18,7 @@
 			BackgroundColor="Pink"
 			Adapter="{Binding Adapter}"
 			SelectionMode="Multiple"
-			SelectedItemsChanged="SlimListView_SelectedItemsChanged"
+			SelectedItemsChanged="VirtualListView_SelectedItemsChanged"
 			ItemTemplateSelector="{StaticResource itemSelector}">
 
 			<xct:VirtualListView.SectionHeaderTemplate>
