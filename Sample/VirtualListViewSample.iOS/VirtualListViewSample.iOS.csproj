@@ -11,7 +11,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>VirtualListViewSample.iOS</RootNamespace>
     <IPhoneResourcePrefix>Resources</IPhoneResourcePrefix>
-    <AssemblyName>SlimListViewSample.iOS</AssemblyName>
+    <AssemblyName>VirtualListViewSample.iOS</AssemblyName>
     <MtouchEnableSGenConc>true</MtouchEnableSGenConc>
     <MtouchHttpClientHandler>NSUrlSessionHandler</MtouchHttpClientHandler>
     <ProvisioningType>automatic</ProvisioningType>

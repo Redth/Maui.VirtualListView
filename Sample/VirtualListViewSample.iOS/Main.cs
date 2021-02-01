@@ -5,7 +5,7 @@ using System.Linq;
 using Foundation;
 using UIKit;
 
-namespace SlimListViewSample.iOS
+namespace VirtualListViewSample.iOS
 {
 	public class Application
 	{

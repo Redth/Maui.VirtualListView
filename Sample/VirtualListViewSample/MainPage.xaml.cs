@@ -141,7 +141,7 @@ namespace VirtualListViewSample
 			{
 				// note that the prefix includes the trailing period '.' that is required
 				var assembly = IntrospectionExtensions.GetTypeInfo(typeof(App)).Assembly;
-				using (var stream = assembly.GetManifestResourceStream(nameof(SlimListViewSample) + ".sampledata.db"))
+				using (var stream = assembly.GetManifestResourceStream(nameof(VirtualListViewSample) + ".sampledata.db"))
 				using (var outStream = File.Create(path))
 					stream.CopyTo(outStream);
 			}
