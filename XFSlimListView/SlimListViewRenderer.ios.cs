@@ -50,11 +50,32 @@ namespace XFSlimListView
 
 					dataSource = new CvDataSource(e.NewElement.Adapter);
 					dataSource.TemplateSelector = templateSelector;
+					dataSource.IsSelectedHandler = path =>
+						e?.NewElement?.IsItemSelected(path.Section, (int)path.Item) ?? false;
 
 					cvdelegate = new CvDelegate();
 					cvdelegate.TemplateSelector = templateSelector;
+					cvdelegate.ItemSelectedHandler = path =>
+					{
+						e?.NewElement?.SetSelected(new ItemPosition(path.Section, (int)path.Item));
+
+						if (dataSource.GetCell(collectionView, path) is CvCell cell
+							&& cell?.Position != null)
+							cell.Position.IsSelected = true;
+					};
+
+					cvdelegate.ItemDeselectedHandler = path =>
+					{
+						e?.NewElement?.SetDeselected(new ItemPosition(path.Section, (int)path.Item));
+
+						if (dataSource.GetCell(collectionView, path) is CvCell cell
+							&& cell?.Position != null)
+							cell.Position.IsSelected = false;
+					};
 
 					collectionView = new UICollectionView(this.Frame, layout);
+					collectionView.AllowsSelection = e.NewElement.SelectionMode != SelectionMode.None;
+					collectionView.AllowsMultipleSelection = e.NewElement.SelectionMode == SelectionMode.Multiple;
 					collectionView.DataSource = dataSource;
 					collectionView.ContentInset = new UIEdgeInsets(0, 0, 0, 0);
 					collectionView.Delegate = cvdelegate;
@@ -85,6 +106,11 @@ namespace XFSlimListView
 
 			if (e.PropertyName == SlimListView.AdapterProperty.PropertyName)
 				collectionView.ReloadData();
+			else if (e.PropertyName == SlimListView.SelectionModeProperty.PropertyName)
+			{
+				collectionView.AllowsSelection = Element.SelectionMode != SelectionMode.None;
+				collectionView.AllowsMultipleSelection = Element.SelectionMode == SelectionMode.Multiple;
+			}
 			else if (e.PropertyName == SlimListView.HeaderTemplateProperty.PropertyName
 				|| e.PropertyName == SlimListView.FooterTemplateProperty.PropertyName
 				|| e.PropertyName == SlimListView.ItemTemplateProperty.PropertyName
@@ -126,6 +152,8 @@ namespace XFSlimListView
 
 		public ISlimListViewAdapter Adapter { get; set; }
 		internal PositionTemplateSelector TemplateSelector { get; set; }
+
+		public Func<NSIndexPath, bool> IsSelectedHandler { get; set; }
 
 		readonly ReusableIdManager itemIdManager = new ReusableIdManager("Item");
 		readonly ReusableIdManager sectionHeaderIdManager = new ReusableIdManager("SectionHeader", new NSString("UICollectionElementKindSectionHeader"));
@@ -193,7 +221,7 @@ namespace XFSlimListView
 					collectionView.DequeueReusableSupplementaryView(
 						elementKind,
 						reuseId,
-						indexPath) as SlimListViewCollectionReusableView;
+						indexPath) as CvSupplementaryView;
 
 			supplementary.EnsureFormsTemplate(template, globalTemplate, kind);
 
@@ -220,11 +248,12 @@ namespace XFSlimListView
 				NumberOfSections = Adapter.Sections,
 				ItemIndex = itemIndex,
 				SectionIndex = section,
-				ItemsInSection = Adapter.ItemsForSection(section)
+				ItemsInSection = Adapter.ItemsForSection(section),
+				IsSelected = IsSelectedHandler?.Invoke(indexPath) ?? false
 			};
 
 			var cell = collectionView.DequeueReusableCell(reuseId, indexPath)
-				as SlimListViewCollectionViewCell;
+				as CvCell;
 
 			cell.IndexPath = indexPath;
 			cell.EnsureFormsTemplate(template, positionInfo);
@@ -253,7 +282,10 @@ namespace XFSlimListView
 	{
 		internal PositionTemplateSelector TemplateSelector { get; set; }
 
-		CGSize GetSizeForSupplementary(SlimListViewCollectionReusableView view, nfloat collectionViewWidth)
+		public Action<NSIndexPath> ItemSelectedHandler { get; set; }
+		public Action<NSIndexPath> ItemDeselectedHandler { get; set; }
+
+		CGSize GetSizeForSupplementary(CvSupplementaryView view, nfloat collectionViewWidth)
 		{
 			if (view != null)
 			{
@@ -279,7 +311,7 @@ namespace XFSlimListView
 		{
 			var header = collectionView.DataSource.GetViewForSupplementaryElement(collectionView,
 				new NSString(CvConsts.ElementKindSectionHeader), NSIndexPath.FromItemSection(0, section))
-				as SlimListViewCollectionReusableView;
+				as CvSupplementaryView;
 
 			return GetSizeForSupplementary(header, collectionView.Frame.Width);
 		}
@@ -288,10 +320,22 @@ namespace XFSlimListView
 		{
 			var footer = collectionView.DataSource.GetViewForSupplementaryElement(collectionView,
 				new NSString(CvConsts.ElementKindSectionHeader), NSIndexPath.FromItemSection(0, section))
-				as SlimListViewCollectionReusableView;
+				as CvSupplementaryView;
 
 			return GetSizeForSupplementary(footer, collectionView.Frame.Width);
 		}
+
+		public override void ItemSelected(UICollectionView collectionView, NSIndexPath indexPath)
+			=> ItemSelectedHandler?.Invoke(indexPath);
+
+		public override void ItemDeselected(UICollectionView collectionView, NSIndexPath indexPath)
+			=> ItemDeselectedHandler?.Invoke(indexPath);
+
+		public override bool ShouldSelectItem(UICollectionView collectionView, NSIndexPath indexPath)
+			=> true;
+
+		public override bool ShouldDeselectItem(UICollectionView collectionView, NSIndexPath indexPath)
+			=> true;
 	}
 
 	public class CvLayout : UICollectionViewFlowLayout
@@ -346,7 +390,7 @@ namespace XFSlimListView
 		public override UICollectionViewLayoutAttributes[] LayoutAttributesForElementsInRect(CGRect rect)
 		{
 			var layoutAttributesObjects = base.LayoutAttributesForElementsInRect(rect);
-			var supplementaryAttributeObjects = new List<UICollectionViewLayoutAttributes>();
+			//var supplementaryAttributeObjects = new List<UICollectionViewLayoutAttributes>();
 
 			foreach (var layoutAttributes in layoutAttributesObjects)
 			{
@@ -386,7 +430,7 @@ namespace XFSlimListView
 		}
 	}
 
-	public class SlimListViewCollectionViewCell : UICollectionViewCell
+	public class CvCell : UICollectionViewCell
 	{
 		public object FormsBindingContext { get; private set; }
 		public View FormsView { get; private set; }
@@ -398,7 +442,7 @@ namespace XFSlimListView
 		UIContainerView containerView = null;
 
 		[Export("initWithFrame:")]
-		public SlimListViewCollectionViewCell(CGRect frame) : base(frame)
+		public CvCell(CGRect frame) : base(frame)
 		{
 		}
 
@@ -463,7 +507,7 @@ namespace XFSlimListView
 		}
 	}
 
-	public class SlimListViewCollectionReusableView : UICollectionReusableView
+	public class CvSupplementaryView : UICollectionReusableView
 	{
 		public object FormsBindingContext { get; private set; }
 
@@ -478,7 +522,7 @@ namespace XFSlimListView
 		PositionKind Kind { get; set; } = PositionKind.SectionHeader;
 
 		[Export("initWithFrame:")]
-		public SlimListViewCollectionReusableView(CGRect frame) : base(frame)
+		public CvSupplementaryView(CGRect frame) : base(frame)
 		{
 		}
 
@@ -592,12 +636,12 @@ namespace XFSlimListView
 
 					if (SupplementaryKind != null)
 						collectionView.RegisterClassForSupplementaryView(
-							typeof(SlimListViewCollectionReusableView),
+							typeof(CvSupplementaryView),
 							SupplementaryKind,
 							GetReuseId(viewType));
 					else
 						collectionView.RegisterClassForCell(
-							typeof(SlimListViewCollectionViewCell),
+							typeof(CvCell),
 							GetReuseId(viewType));
 				}
 			}

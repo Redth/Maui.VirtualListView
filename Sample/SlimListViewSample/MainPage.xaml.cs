@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -21,6 +22,34 @@ namespace SlimListViewSample
 			InitializeComponent();
 			vm = new MainViewModel();
 			BindingContext = vm;
+		}
+
+		void SlimListView_SelectedItemsChanged(System.Object sender, XFSlimListView.SelectedItemsChangedEventArgs e)
+		{
+			Console.WriteLine($"Selected Items:");
+			foreach (var s in e.NewSelection)
+			{
+				Console.WriteLine($"  -> {s.SectionIndex} ... {s.ItemIndex}");
+			}
+		}
+	}
+
+	public class SelectedColorConverter : IValueConverter
+	{
+		static readonly Color SelectedColor = Color.DarkBlue;
+		static readonly Color UnselectedColor = Color.Transparent;
+
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (value is bool b && b)
+				return SelectedColor;
+
+			return UnselectedColor;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
 		}
 	}
 

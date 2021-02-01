@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Xamarin.Forms;
 
@@ -12,7 +13,7 @@ namespace XFSlimListView
 		{ }
 
 		public static readonly BindableProperty SectionIndexProperty =
-			BindableProperty.Create(nameof(SectionIndex), typeof(int), typeof(SlimListView),-1);
+			BindableProperty.Create(nameof(SectionIndex), typeof(int), typeof(SlimListView), -1);
 
 		public int SectionIndex
 		{
@@ -138,6 +139,7 @@ namespace XFSlimListView
 				IsNotFirstItemInSection = !IsFirstItemInSection;
 				ItemIndex = info.ItemIndex;
 				SectionIndex = info.SectionIndex;
+				IsSelected = info.IsSelected;
 			}
 			else
 			{
@@ -147,6 +149,7 @@ namespace XFSlimListView
 				IsNotFirstItemInSection = false;
 				ItemIndex = -1;
 				SectionIndex = -1;
+				IsSelected = false;
 			}
 
 			IsItem = info.Kind == PositionKind.Item;
@@ -154,7 +157,25 @@ namespace XFSlimListView
 			IsGlobalFooter = info.Kind == PositionKind.Footer;
 			IsSectionHeader = info.Kind == PositionKind.SectionHeader;
 			IsSectionFooter = info.Kind == PositionKind.SectionFooter;
+
+			OnNeedsInvalidating?.Invoke(this, new EventArgs());
 		}
+
+
+		public static readonly BindableProperty IsSelectedProperty =
+			BindableProperty.Create(nameof(IsSelected), typeof(bool), typeof(SlimListView), false,
+				propertyChanged: (e, oldVal, newVal) => {
+					if (e is PositionData pd)
+						pd?.OnNeedsInvalidating?.Invoke(e, new EventArgs());
+				});
+
+		public bool IsSelected
+		{
+			get => (bool)GetValue(IsSelectedProperty);
+			set => SetValue(IsSelectedProperty, value);
+		}
+
+		public event EventHandler OnNeedsInvalidating;
 	}
 
 	public class SlimListView : Xamarin.Forms.View
@@ -246,6 +267,108 @@ namespace XFSlimListView
 
 		public static readonly BindableProperty SectionFooterTemplateSelectorProperty =
 			BindableProperty.Create(nameof(SectionHeaderTemplateSelector), typeof(AdapterSectionDataTemplateSelector), typeof(SlimListView), default);
+
+
+		public SelectionMode SelectionMode
+		{
+			get => (SelectionMode)GetValue(SelectionModeProperty);
+			set => SetValue(SelectionModeProperty, value);
+		}
+
+		public static readonly BindableProperty SelectionModeProperty =
+			BindableProperty.Create(nameof(SelectionMode), typeof(SelectionMode), typeof(SlimListView), SelectionMode.None);
+
+		public event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
+
+		readonly object selectedItemsLocker = new object();
+		readonly List<ItemPosition> selectedItems = new List<ItemPosition>();
+
+		public IReadOnlyList<ItemPosition> SelectedItems
+		{
+			get
+			{
+				if (SelectionMode == SelectionMode.None)
+					return new List<ItemPosition>();
+
+				lock (selectedItemsLocker)
+					return selectedItems.AsReadOnly();
+			}
+		}
+
+		public bool IsItemSelected(int sectionIndex, int itemIndex)
+		{
+			if (SelectionMode == SelectionMode.None)
+				return false;
+
+			lock (selectedItemsLocker)
+				return selectedItems.Contains(new ItemPosition(sectionIndex, itemIndex));
+		}
+
+
+
+		public void SetSelected(params ItemPosition[] paths)
+		{
+			if (SelectionMode == SelectionMode.None)
+				return;
+
+			var prev = new List<ItemPosition>(SelectedItems);
+
+			IReadOnlyList<ItemPosition> current;
+
+			lock (selectedItemsLocker)
+			{
+				foreach (var path in paths)
+				{
+					if (!selectedItems.Contains(path))
+						selectedItems.Add(path);
+				}
+
+				current = SelectedItems ?? new List<ItemPosition>();
+			}
+
+			// Raise event
+			SelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(prev, current));
+		}
+
+		public void SetDeselected(params ItemPosition[] paths)
+		{
+			if (SelectionMode == SelectionMode.None)
+				return;
+
+			var prev = new List<ItemPosition>(SelectedItems);
+
+			IReadOnlyList<ItemPosition> current;
+
+			lock (selectedItemsLocker)
+			{
+				foreach (var path in paths)
+				{
+					if (selectedItems.Contains(path))
+						selectedItems.Remove(path);
+				}
+
+				current = SelectedItems ?? new List<ItemPosition>();
+			}
+
+			// Raise event
+			SelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(prev, current));
+		}
+	}
+
+	public class SelectedItemsChangedEventArgs : EventArgs
+	{
+		public SelectedItemsChangedEventArgs(
+			IReadOnlyList<ItemPosition> previousSelection,
+			IReadOnlyList<ItemPosition> newSelection)
+			: base()
+		{
+			PreviousSelection = previousSelection;
+			NewSelection = newSelection;
+		}
+
+		public IReadOnlyList<ItemPosition> PreviousSelection { get; }
+
+		public IReadOnlyList<ItemPosition> NewSelection { get; }
 	}
 
 	public enum PositionKind
@@ -255,6 +378,18 @@ namespace XFSlimListView
 		Item,
 		SectionFooter,
 		Footer
+	}
+
+	public struct ItemPosition
+	{
+		public ItemPosition(int sectionIndex = 0, int itemIndex = 0)
+		{
+			SectionIndex = sectionIndex;
+			ItemIndex = itemIndex;
+		}
+
+		public int SectionIndex { get; }
+		public int ItemIndex { get; }
 	}
 
 	public class PositionInfo
@@ -272,6 +407,8 @@ namespace XFSlimListView
 		public int ItemIndex { get; set; } = -1;
 
 		public int ItemsInSection { get; set; } = 0;
+
+		public bool IsSelected { get; set; } = false;
 	}
 
 	public class PositionTemplateSelector

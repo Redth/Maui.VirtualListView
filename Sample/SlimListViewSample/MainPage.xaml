@@ -7,6 +7,7 @@
 			 x:Class="SlimListViewSample.MainPage">
 	<ContentPage.Resources>
 		<ResourceDictionary>
+			<local:SelectedColorConverter x:Key="selectedColorConverter" />
 			<local:ItemSelector x:Key="itemSelector" />
 		</ResourceDictionary>
 	</ContentPage.Resources>
@@ -16,6 +17,8 @@
 			VerticalOptions="FillAndExpand"
 			BackgroundColor="Pink"
 			Adapter="{Binding Adapter}"
+			SelectionMode="Multiple"
+			SelectedItemsChanged="SlimListView_SelectedItemsChanged"
 			ItemTemplateSelector="{StaticResource itemSelector}">
 
 			<xfslimlistview:SlimListView.SectionHeaderTemplate>
