@@ -8,7 +8,7 @@ using Xamarin.CommunityToolkit.UI.Views;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
-namespace SlimListViewSample
+namespace VirtualListViewSample
 {
 	[XamlCompilation(XamlCompilationOptions.Compile)]
 	public partial class PersonView : VirtualViewCell

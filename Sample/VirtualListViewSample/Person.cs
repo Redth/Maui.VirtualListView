@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using SQLite;
 
-namespace SlimListViewSample
+namespace VirtualListViewSample
 {
 	public class PersonGroup : List<Person>
 	{

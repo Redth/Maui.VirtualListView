@@ -70,9 +70,6 @@
     <None Include="Entitlements.plist" />
     <None Include="Info.plist" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="..\..\VirtualListView\VirtualListViewRenderer.ios.cs">
-      <Link>VirtualListViewRenderer.ios.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="Resources\LaunchScreen.storyboard" />
@@ -132,6 +129,10 @@
     <PackageReference Include="Xamarin.Essentials" Version="1.6.1" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj">
+      <Project>{a9a8db17-c520-4c3a-b078-6b611c0087a4}</Project>
+      <Name>VirtualListView</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VirtualListViewSample\VirtualListViewSample.csproj">
       <Project>{120A8666-8EAD-40D3-BD57-ADC935961FDF}</Project>
       <Name>VirtualListViewSample</Name>

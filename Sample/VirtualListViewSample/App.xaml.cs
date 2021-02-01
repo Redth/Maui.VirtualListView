@@ -4,7 +4,7 @@ using System.Reflection;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
-namespace SlimListViewSample
+namespace VirtualListViewSample
 {
 	public partial class App : Application
 	{
