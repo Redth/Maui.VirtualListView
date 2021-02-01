@@ -104,21 +104,21 @@ namespace Xamarin.CommunityToolkit.UI.Views
 		{
 			base.OnElementPropertyChanged(sender, e);
 
-			if (e.PropertyName == SlimListView.AdapterProperty.PropertyName)
+			if (e.PropertyName == VirtualListView.AdapterProperty.PropertyName)
 				collectionView.ReloadData();
-			else if (e.PropertyName == SlimListView.SelectionModeProperty.PropertyName)
+			else if (e.PropertyName == VirtualListView.SelectionModeProperty.PropertyName)
 			{
 				collectionView.AllowsSelection = Element.SelectionMode != SelectionMode.None;
 				collectionView.AllowsMultipleSelection = Element.SelectionMode == SelectionMode.Multiple;
 			}
-			else if (e.PropertyName == SlimListView.HeaderTemplateProperty.PropertyName
-				|| e.PropertyName == SlimListView.FooterTemplateProperty.PropertyName
-				|| e.PropertyName == SlimListView.ItemTemplateProperty.PropertyName
-				|| e.PropertyName == SlimListView.ItemTemplateSelectorProperty.PropertyName
-				|| e.PropertyName == SlimListView.SectionFooterTemplateProperty.PropertyName
-				|| e.PropertyName == SlimListView.SectionFooterTemplateSelectorProperty.PropertyName
-				|| e.PropertyName == SlimListView.SectionHeaderTemplateProperty.PropertyName
-				|| e.PropertyName == SlimListView.SectionHeaderTemplateSelectorProperty.PropertyName)
+			else if (e.PropertyName == VirtualListView.HeaderTemplateProperty.PropertyName
+				|| e.PropertyName == VirtualListView.FooterTemplateProperty.PropertyName
+				|| e.PropertyName == VirtualListView.ItemTemplateProperty.PropertyName
+				|| e.PropertyName == VirtualListView.ItemTemplateSelectorProperty.PropertyName
+				|| e.PropertyName == VirtualListView.SectionFooterTemplateProperty.PropertyName
+				|| e.PropertyName == VirtualListView.SectionFooterTemplateSelectorProperty.PropertyName
+				|| e.PropertyName == VirtualListView.SectionHeaderTemplateProperty.PropertyName
+				|| e.PropertyName == VirtualListView.SectionHeaderTemplateSelectorProperty.PropertyName)
 			{
 				var templateSelector = CreateTemplateSelector();
 
@@ -145,12 +145,12 @@ namespace Xamarin.CommunityToolkit.UI.Views
 
 	internal class CvDataSource : UICollectionViewDataSource
 	{
-		public CvDataSource(ISlimListViewAdapter adapter)
+		public CvDataSource(IVirtualListViewAdapter adapter)
 		{
 			Adapter = adapter;
 		}
 
-		public ISlimListViewAdapter Adapter { get; set; }
+		public IVirtualListViewAdapter Adapter { get; set; }
 		internal PositionTemplateSelector TemplateSelector { get; set; }
 
 		public Func<NSIndexPath, bool> IsSelectedHandler { get; set; }
@@ -630,7 +630,7 @@ namespace Xamarin.CommunityToolkit.UI.Views
 		readonly object lockObj;
 
 		NSString GetReuseId(int i, string idModifier = null)
-			=> new NSString($"_{UniquePrefix}_{nameof(SlimListView)}_{i}");
+			=> new NSString($"_{UniquePrefix}_{nameof(VirtualListView)}_{i}");
 
 		public NSString GetReuseId(UICollectionView collectionView, DataTemplate template)
 		{
