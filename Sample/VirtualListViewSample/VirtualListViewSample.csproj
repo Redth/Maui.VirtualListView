@@ -20,12 +20,26 @@
     <PackageReference Include="sqlite-net-pcl" Version="1.7.335" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="chinook.db" />
     <None Remove="contacts-20000.db" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="sampledata.db" />
+    <EmbeddedResource Include="chinook.db" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="PopViewCell.xaml.cs">
+      <DependentUpon>PopViewCell.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="FilmViewCell.xaml">
+      <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
+    </EmbeddedResource>
+    <EmbeddedResource Update="GenericViewCell.xaml">
+      <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>
