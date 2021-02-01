@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Xamarin.CommunityToolkit.UI.Views
 {
-	public class PositionInfo
+	internal class PositionInfo
 	{
 		public int Position { get; set; } = -1;
 

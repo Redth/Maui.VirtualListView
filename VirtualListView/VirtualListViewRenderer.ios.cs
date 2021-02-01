@@ -276,9 +276,7 @@ namespace Xamarin.CommunityToolkit.UI.Views
 			cachedNumberOfSections = null;
 		}
 	}
-
-
-	public class CvDelegate : UICollectionViewDelegateFlowLayout
+	internal class CvDelegate : UICollectionViewDelegateFlowLayout
 	{
 		internal PositionTemplateSelector TemplateSelector { get; set; }
 
@@ -337,8 +335,7 @@ namespace Xamarin.CommunityToolkit.UI.Views
 		public override bool ShouldDeselectItem(UICollectionView collectionView, NSIndexPath indexPath)
 			=> true;
 	}
-
-	public class CvLayout : UICollectionViewFlowLayout
+	internal class CvLayout : UICollectionViewFlowLayout
 	{
 		public CvLayout() : base()
 		{
@@ -430,7 +427,7 @@ namespace Xamarin.CommunityToolkit.UI.Views
 		}
 	}
 
-	public class CvCell : UICollectionViewCell
+	internal class CvCell : UICollectionViewCell
 	{
 		public VirtualViewCell ViewCell { get; private set; }
 
@@ -499,7 +496,7 @@ namespace Xamarin.CommunityToolkit.UI.Views
 		}
 	}
 
-	public class CvSupplementaryView : UICollectionReusableView
+	internal class CvSupplementaryView : UICollectionReusableView
 	{
 		public object FormsBindingContext { get; private set; }
 

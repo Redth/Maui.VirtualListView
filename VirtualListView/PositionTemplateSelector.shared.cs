@@ -5,7 +5,7 @@ using Xamarin.Forms;
 
 namespace Xamarin.CommunityToolkit.UI.Views
 {
-	public class PositionTemplateSelector
+	internal class PositionTemplateSelector
 	{
 		public DataTemplate HeaderTemplate { get; set; }
 		public DataTemplate FooterTemplate { get; set; }

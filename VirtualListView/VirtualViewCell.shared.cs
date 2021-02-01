@@ -122,7 +122,7 @@ namespace Xamarin.CommunityToolkit.UI.Views
 			set => SetValue(PositionKindProperty, value);
 		}
 
-		public void Update(PositionInfo info)
+		internal void Update(PositionInfo info)
 		{
 			PositionKind = info.Kind;
 
@@ -164,7 +164,7 @@ namespace Xamarin.CommunityToolkit.UI.Views
 			set => SetValue(IsSelectedProperty, value);
 		}
 
-		public static void ThrowInvalidDataTemplateException()
+		internal static void ThrowInvalidDataTemplateException()
 			=> throw new NotSupportedException($"Item DataTemplate must contain a {nameof(VirtualViewCell)}.");
 	}
 }
