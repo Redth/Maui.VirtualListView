@@ -62,6 +62,8 @@ namespace Xamarin.CommunityToolkit.UI.Views
 					if (position == linear)
 						return new PositionInfo
 						{
+							SectionIndex = s,
+							ItemIndex = 0,
 							Position = position,
 							BindingContext = adapter.Section(s),
 							Kind = PositionKind.SectionHeader
@@ -96,6 +98,8 @@ namespace Xamarin.CommunityToolkit.UI.Views
 					if (position == linear)
 						return new PositionInfo
 						{
+							SectionIndex = s,
+							ItemIndex = 0,
 							Position = position,
 							BindingContext = adapter.Section(s),
 							Kind = PositionKind.SectionFooter
