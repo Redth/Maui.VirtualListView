@@ -8,7 +8,7 @@ using Xamarin.Forms.Platform.UWP;
 
 namespace Xamarin.CommunityToolkit.UI.Views
 {
-	internal class UwpControlWrapper : ContentControl
+	internal class UwpControlWrapper : Windows.UI.Xaml.Controls.Primitives.SelectorItem
 	{
 		readonly View _view;
 
@@ -62,8 +62,8 @@ namespace Xamarin.CommunityToolkit.UI.Views
 			Platform.SetRenderer(view, renderer);
 
 			FrameworkElement = renderer.ContainerElement;
-			//Children.Add(renderer.ContainerElement);
 
+			//Children.Add(renderer.ContainerElement);
 			Content = renderer.ContainerElement;
 
 			// make sure we re-measure once the template is applied
