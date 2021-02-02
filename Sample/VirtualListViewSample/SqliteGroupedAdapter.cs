@@ -46,7 +46,7 @@ namespace VirtualListViewSample
 	{
 		public SqliteGroupedAdapter()
 		{
-			var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "chinook.db");
+			var path = Path.Combine(Xamarin.Essentials.FileSystem.CacheDirectory, "chinook.db");
 
 			if (!File.Exists(path))
 			{
