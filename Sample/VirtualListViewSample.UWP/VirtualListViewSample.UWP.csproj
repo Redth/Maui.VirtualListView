@@ -143,16 +143,16 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Xamarin.Forms" Version="4.8.0.1451" />
+    <PackageReference Include="Xamarin.Forms" Version="5.0.0.1931" />
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform" Version="6.2.10" />
-    <PackageReference Include="Xamarin.Essentials" Version="1.5.3.2" />
+    <PackageReference Include="Xamarin.Essentials" Version="1.6.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\VirtualListView\VirtualListView.csproj">
+    <ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj">
       <Project>{a9a8db17-c520-4c3a-b078-6b611c0087a4}</Project>
       <Name>VirtualListView</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\VirtualListViewSample\VirtualListViewSample.csproj">
+    <ProjectReference Include="..\VirtualListViewSample\VirtualListViewSample.csproj">
       <Project>{120a8666-8ead-40d3-bd57-adc935961fdf}</Project>
       <Name>VirtualListViewSample</Name>
     </ProjectReference>
