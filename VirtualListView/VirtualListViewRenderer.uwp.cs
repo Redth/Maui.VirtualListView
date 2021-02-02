@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using Windows.UI.Xaml.Controls;
 using Xamarin.Forms.Platform.UWP;
+
+[assembly: ExportRenderer(typeof(Xamarin.CommunityToolkit.UI.Views.VirtualListView), typeof(Xamarin.CommunityToolkit.UI.Views.VirtualListViewRenderer))]
 
 namespace Xamarin.CommunityToolkit.UI.Views
 {
@@ -30,7 +34,13 @@ namespace Xamarin.CommunityToolkit.UI.Views
 			if (e.OldElement != null)
 			{
 				// Unsubscribe from event handlers and cleanup any resources
+				listView.ChoosingItemContainer -= ListView_ChoosingItemContainer;
+				dataSource.Adapter = null;
+				dataSource.TemplateSelector = null;
+				dataSource = null;
 
+				templateSelector = null;
+				listView = null;
 			}
 
 			// Setup new
@@ -45,6 +55,9 @@ namespace Xamarin.CommunityToolkit.UI.Views
 
 					dataSource = new UwpDataSource();
 					dataSource.TemplateSelector = templateSelector;
+					dataSource.Adapter = e.NewElement.Adapter;
+
+					listView.ItemsSource = dataSource;
 
 					listView.ChoosingItemContainer += ListView_ChoosingItemContainer;
 
@@ -53,8 +66,6 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				}
 			}
 		}
-
-		Dictionary<int, List<VirtualViewCell>> cachedTemplates = new Dictionary<int, List<VirtualViewCell>>();
 
 		private void ListView_ChoosingItemContainer(ListViewBase sender, ChoosingItemContainerEventArgs args)
 		{
@@ -66,17 +77,13 @@ namespace Xamarin.CommunityToolkit.UI.Views
 			// Can we reuse the container?
 			if (args?.ItemContainer?.Tag is int tagViewType && tagViewType == viewType)
 			{
-				if (args.ItemContainer.Content is UwpControlWrapper container)
+				if (args.ItemContainer is UwpControlWrapper container)
 				{
 					container.ViewCell.Update(info);
 				}
-
 			}
 			else
 			{
-				var c = new ListViewItem();
-				c.Tag = viewType;
-
 				var template = templateSelector.GetTemplate(Element.Adapter, args.ItemIndex);
 
 				var viewCell = template.CreateContent() as VirtualViewCell;
@@ -84,10 +91,12 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				var container = new UwpControlWrapper(viewCell.View);
 				container.ViewCell = viewCell;
 				container.ViewCell.Update(info);
+				args.IsContainerPrepared = true;
+				
+				//c.Content = container;
 
-				c.Content = container;
-
-				args.ItemContainer = c;
+				args.ItemContainer = container;
+				args.ItemContainer.Tag = viewType;
 			}
 		}
 
@@ -110,7 +119,9 @@ namespace Xamarin.CommunityToolkit.UI.Views
 
 			if (e.PropertyName == VirtualListView.AdapterProperty.PropertyName)
 			{
-				// TODO:
+				dataSource.TemplateSelector = templateSelector;
+				dataSource.Adapter = Element.Adapter;
+				dataSource.RaiseCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
 			}
 			else if (e.PropertyName == VirtualListView.HeaderTemplateProperty.PropertyName
 				|| e.PropertyName == VirtualListView.HeaderTemplateProperty.PropertyName
@@ -123,13 +134,14 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				|| e.PropertyName == VirtualListView.SectionHeaderTemplateSelectorProperty.PropertyName)
 			{
 				var templateSelector = CreateTemplateSelector();
-				
-				// TODO:
+
+				dataSource.TemplateSelector = templateSelector;
+				dataSource.RaiseCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
 			}
 		}
 
 
-		internal class UwpDataSource
+		internal class UwpDataSource : IList, INotifyCollectionChanged
 		{
 			public UwpDataSource()
 			{
@@ -139,9 +151,13 @@ namespace Xamarin.CommunityToolkit.UI.Views
 			public IVirtualListViewAdapter Adapter { get; set; }
 			public PositionTemplateSelector TemplateSelector { get; set; }
 
-
 			readonly List<Xamarin.Forms.DataTemplate> templates;
 			readonly object lockObj = new object();
+
+			public event NotifyCollectionChangedEventHandler CollectionChanged;
+
+			internal void RaiseCollectionChanged(NotifyCollectionChangedEventArgs args)
+				=> CollectionChanged?.Invoke(this, args);
 
 			public int GetItemViewType(int position)
 			{
@@ -163,6 +179,64 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				return viewType;
 			}
 
+			public bool IsFixedSize
+				=> true;
+
+			public bool IsReadOnly
+				=> true;
+
+			public int Count
+				=> TemplateSelector?.GetTotalCount(Adapter) ?? 0;
+
+			public bool IsSynchronized
+				=> false;
+
+			public object SyncRoot
+				=> null;
+
+			public object this[int index]
+			{
+				get
+				{
+					var info = TemplateSelector?.GetInfo(Adapter, index);
+
+					if (info == null)
+						return null;
+
+					if (info.Kind == PositionKind.Item)
+						return Adapter.Item(info.SectionIndex, info.ItemIndex);
+					else
+						return Adapter.Section(info.SectionIndex);
+				}
+				set => throw new NotImplementedException();
+			}
+
+			public int Add(object value)
+				=> throw new NotImplementedException();
+
+			public void Clear()
+				=> throw new NotImplementedException();
+
+			public bool Contains(object value)
+				=> throw new NotImplementedException();
+
+			public int IndexOf(object value)
+				=> throw new NotImplementedException();
+
+			public void Insert(int index, object value)
+				=> throw new NotImplementedException();
+
+			public void Remove(object value)
+				=> throw new NotImplementedException();
+
+			public void RemoveAt(int index)
+				=> throw new NotImplementedException();
+
+			public void CopyTo(Array array, int index)
+				=> throw new NotImplementedException();
+
+			public IEnumerator GetEnumerator()
+				=> throw new NotImplementedException();
 		}
 
 	}
