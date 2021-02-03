@@ -60,10 +60,20 @@ namespace Xamarin.CommunityToolkit.UI.Views
 					listView.ItemsSource = dataSource;
 
 					listView.ChoosingItemContainer += ListView_ChoosingItemContainer;
-
+					listView.ContainerContentChanging += ListView_ContainerContentChanging;
 
 					SetNativeControl(listView);
 				}
+			}
+		}
+
+		private void ListView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+		{
+			if (args.ItemContainer is UwpControlWrapper container)
+			{
+				var info = templateSelector.GetInfo(Element.Adapter, args.ItemIndex);
+
+				container.ViewCell.Update(info);
 			}
 		}
 
@@ -79,7 +89,8 @@ namespace Xamarin.CommunityToolkit.UI.Views
 			{
 				if (args.ItemContainer is UwpControlWrapper container)
 				{
-					container.ViewCell.Update(info);
+					//if (listViewItem.Content is UwpControlWrapper container)
+						container.ViewCell.Update(info);
 				}
 			}
 			else
@@ -91,9 +102,11 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				var container = new UwpControlWrapper(viewCell.View);
 				container.ViewCell = viewCell;
 				container.ViewCell.Update(info);
-				args.IsContainerPrepared = true;
-				
+				//args.IsContainerPrepared = true;
+
 				//c.Content = container;
+				//var listViewItem = new ListViewItem();
+				//listViewItem.Content = container.Content;
 
 				args.ItemContainer = container;
 				args.ItemContainer.Tag = viewType;
@@ -206,7 +219,13 @@ namespace Xamarin.CommunityToolkit.UI.Views
 					if (info.Kind == PositionKind.Item)
 						return Adapter.Item(info.SectionIndex, info.ItemIndex);
 					else
-						return Adapter.Section(info.SectionIndex);
+					{
+						if (info.SectionIndex >= 0)
+							return Adapter.Section(info.SectionIndex);
+						else
+							return null;
+					}
+						
 				}
 				set => throw new NotImplementedException();
 			}
