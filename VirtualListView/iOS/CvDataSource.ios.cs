@@ -50,9 +50,6 @@ namespace Xamarin.CommunityToolkit.UI.Views
 
 			var (template, info) = Renderer.TemplateSelector.GetTemplateAndInfo(Renderer.Adapter, section, itemIndex);
 
-			Console.WriteLine($"GetCell: section:{section}, index:{itemIndex}, realSection:{info.SectionIndex}, realIndex:{info.ItemIndex}");
-
-
 			var reuseId = info.Kind switch
 			{
 				PositionKind.Item => itemIdManager.GetReuseId(collectionView, template),
@@ -62,9 +59,6 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				PositionKind.Footer => globalIdManager.GetReuseId(collectionView, template),
 				_ => itemIdManager.GetReuseId(collectionView, template)
 			};
-
-			Console.WriteLine($"GetCell: itemsInSection:{info.ItemsInSection}, sections:{info.NumberOfSections}, realSection:{info.SectionIndex}, reuseId:{reuseId}");
-
 
 			if (info.SectionIndex < 0 || info.ItemIndex < 0)
 				info.IsSelected = false;
@@ -77,7 +71,6 @@ namespace Xamarin.CommunityToolkit.UI.Views
 
 			cell.IndexPath = indexPath;
 			cell.EnsureFormsTemplate(template, info);
-			cell.UpdateFormsBindingContext(info.BindingContext);
 
 			return cell;
 		}

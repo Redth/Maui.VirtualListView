@@ -31,11 +31,9 @@ namespace Xamarin.CommunityToolkit.UI.Views
 
 			var formsSize = ViewCell.View.Measure(attr.Frame.Width, double.MaxValue - 100, MeasureFlags.IncludeMargins);
 
-			var w = formsSize.Request.Width;
 			var h = formsSize.Request.Height;
 
-			attr.Frame = new CGRect(attr.Frame.X, attr.Frame.Y, attr.Frame.Width, h);
-			attr.Size = new CGSize(w, h);
+			attr.Frame = new CGRect(0, attr.Frame.Y, attr.Frame.Width, h);
 
 			return attr;
 		}
@@ -54,6 +52,8 @@ namespace Xamarin.CommunityToolkit.UI.Views
 
 			ViewCell.Update(positionInfo);
 
+			ViewCell.BindingContext = positionInfo.BindingContext;
+
 			if (containerView == null)
 			{
 				containerView = new UIContainerView(ViewCell.View)
@@ -63,15 +63,6 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				};
 
 				ContentView.AddSubview(containerView);
-			}
-		}
-
-		public void UpdateFormsBindingContext(object bindingContext)
-		{
-			if (ViewCell != null)
-			{
-				ViewCell.BindingContext = bindingContext;
-				//FormsView.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
 			}
 		}
 	}
