@@ -1,0 +1,78 @@
+﻿using System;
+using CoreGraphics;
+using Foundation;
+using UIKit;
+using Xamarin.Forms;
+using Xamarin.Forms.Platform.iOS;
+
+namespace Xamarin.CommunityToolkit.UI.Views
+{
+	internal class CvCell : UICollectionViewCell
+	{
+		public VirtualViewCell ViewCell { get; private set; }
+
+		public NSIndexPath IndexPath { get; set; }
+
+		UIContainerView containerView = null;
+
+		[Export("initWithFrame:")]
+		public CvCell(CGRect frame) : base(frame)
+		{
+		}
+
+		public override UICollectionViewLayoutAttributes PreferredLayoutAttributesFittingAttributes(UICollectionViewLayoutAttributes layoutAttributes)
+		{
+			var attr = base.PreferredLayoutAttributesFittingAttributes(layoutAttributes);
+
+			if (ViewCell?.View == null)
+				return attr;
+
+			ViewCell.View.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
+
+			var formsSize = ViewCell.View.Measure(attr.Frame.Width, double.MaxValue - 100, MeasureFlags.IncludeMargins);
+
+			var w = formsSize.Request.Width;
+			var h = formsSize.Request.Height;
+
+			attr.Frame = new CGRect(attr.Frame.X, attr.Frame.Y, attr.Frame.Width, h);
+			attr.Size = new CGSize(w, h);
+
+			return attr;
+		}
+
+		public void EnsureFormsTemplate(DataTemplate template, PositionInfo positionInfo)
+		{
+			if (ViewCell?.View == null)
+			{
+				var templateContent = template.CreateContent();
+
+				if (templateContent is VirtualViewCell vc)
+					ViewCell = vc;
+				else
+					VirtualViewCell.ThrowInvalidDataTemplateException();
+			}
+
+			ViewCell.Update(positionInfo);
+
+			if (containerView == null)
+			{
+				containerView = new UIContainerView(ViewCell.View)
+				{
+					Frame = ContentView.Frame,
+					AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth
+				};
+
+				ContentView.AddSubview(containerView);
+			}
+		}
+
+		public void UpdateFormsBindingContext(object bindingContext)
+		{
+			if (ViewCell != null)
+			{
+				ViewCell.BindingContext = bindingContext;
+				//FormsView.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
+			}
+		}
+	}
+}

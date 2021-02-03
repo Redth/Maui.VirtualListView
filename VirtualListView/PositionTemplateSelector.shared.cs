@@ -44,10 +44,6 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				if (position == 0)
 					return new PositionInfo
 					{
-						SectionIndex = 0,
-						NumberOfSections = -1,
-						ItemIndex = 0,
-						ItemsInSection = 1,
 						Position = position,
 						Kind = PositionKind.Header
 					};
@@ -63,7 +59,6 @@ namespace Xamarin.CommunityToolkit.UI.Views
 						return new PositionInfo
 						{
 							SectionIndex = s,
-							ItemIndex = 0,
 							Position = position,
 							BindingContext = adapter.Section(s),
 							Kind = PositionKind.SectionHeader
@@ -99,7 +94,6 @@ namespace Xamarin.CommunityToolkit.UI.Views
 						return new PositionInfo
 						{
 							SectionIndex = s,
-							ItemIndex = 0,
 							Position = position,
 							BindingContext = adapter.Section(s),
 							Kind = PositionKind.SectionFooter
@@ -114,6 +108,135 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				Position = position,
 				Kind = PositionKind.Footer
 			};
+		}
+
+		public (int realSectionIndex, int realItemIndex) GetRealIndexPath(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex)
+		{
+			var realSectionIndex = sectionIndex;
+
+			if (HasGlobalHeader)
+			{
+				if (sectionIndex == 0)
+					return (-1, -1);
+
+				// Global header takes up a section, real adapter is 1 less
+				realSectionIndex--;
+			}
+
+			var realNumberOfSections = adapter.Sections;
+
+			if (HasGlobalFooter)
+			{
+				if (realSectionIndex >= realNumberOfSections)
+					return (-1, -1);
+			}
+
+			var realItemsInSection = adapter.ItemsForSection(realSectionIndex);
+
+			var realItemIndex = itemIndex;
+
+			if (HasSectionHeader)
+			{
+				realItemIndex--;
+
+				if (itemIndex == 0)
+					return (-1, -1);
+			}
+
+			if (HasSectionFooter)
+			{
+				if (realItemIndex >= realItemsInSection)
+					return (-1, -1);
+			}
+
+			return (realSectionIndex, realItemIndex);
+		}
+
+		public (DataTemplate template, PositionInfo info) GetTemplateAndInfo(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex)
+		{
+			var realSectionIndex = sectionIndex;
+
+			if (HasGlobalHeader)
+			{
+				if (sectionIndex == 0)
+				{
+					return (HeaderTemplate, new PositionInfo
+					{
+						Kind = PositionKind.Header
+					});
+				}
+
+				// Global header takes up a section, real adapter is 1 less
+				realSectionIndex--;
+			}
+
+			var realNumberOfSections = adapter.Sections;
+
+			if (HasGlobalFooter)
+			{
+				if (realSectionIndex >= realNumberOfSections)
+				{
+					return (FooterTemplate, new PositionInfo
+					{
+						Kind = PositionKind.Footer
+					});
+				}
+			}
+
+
+			var realItemsInSection = adapter.ItemsForSection(realSectionIndex);
+
+			var realItemIndex = itemIndex;
+
+			var itemsAdded = 0;
+
+			if (HasSectionHeader)
+			{
+				itemsAdded++;
+				realItemIndex--;
+
+				if (itemIndex == 0)
+				{
+					return (SectionHeaderTemplateSelector?.SelectGroupTemplate(adapter, realSectionIndex) ?? SectionHeaderTemplate,
+						new PositionInfo
+						{
+							Kind = PositionKind.SectionHeader,
+							ItemsInSection = realItemsInSection,
+							SectionIndex = realSectionIndex,
+							BindingContext = adapter.Section(realSectionIndex),
+							NumberOfSections = realNumberOfSections
+						});
+				}
+			}
+
+			if (HasSectionFooter)
+			{
+				itemsAdded++;
+
+				if (itemIndex >= realItemsInSection + itemsAdded - 1)
+				{
+					return (SectionFooterTemplateSelector?.SelectGroupTemplate(adapter, realSectionIndex) ?? SectionFooterTemplate,
+						new PositionInfo
+						{
+							Kind = PositionKind.SectionFooter,
+							ItemsInSection = realItemsInSection,
+							SectionIndex = realSectionIndex,
+							BindingContext = adapter.Section(realSectionIndex),
+							NumberOfSections = realNumberOfSections
+						});
+				}
+			}
+
+			return (ItemTemplateSelector?.SelectItemTemplate(adapter, realSectionIndex, realItemIndex) ?? ItemTemplate,
+				new PositionInfo
+				{
+					Kind = PositionKind.Item,
+					ItemsInSection = realItemsInSection,
+					SectionIndex = realSectionIndex,
+					ItemIndex = realItemIndex,
+					BindingContext = adapter.Item(realSectionIndex, realItemIndex),
+					NumberOfSections = realNumberOfSections,
+				});
 		}
 
 		public DataTemplate GetTemplate(IVirtualListViewAdapter adapter, int position)
@@ -151,7 +274,7 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				if (position < linear + itemsInSection)
 				{
 					var itemIndex = position - linear;
-					return ItemTemplateSelector?.SelectItemTemplate(adapter, s, itemIndex);
+					return ItemTemplateSelector?.SelectItemTemplate(adapter, s, itemIndex) ?? ItemTemplate;
 				}
 
 				linear += itemsInSection;

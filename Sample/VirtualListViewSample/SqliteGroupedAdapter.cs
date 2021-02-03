@@ -97,14 +97,7 @@ ORDER BY AlbumId
 		int? sectionCount = null;
 
 		public int Sections
-		{
-			get
-			{
-				if (!sectionCount.HasValue)
-					sectionCount = Db.ExecuteScalar<int>("SELECT COUNT(AlbumId) FROM Album");
-				return sectionCount ?? 0;
-			}
-		}
+			=> sectionCount ??= Db.ExecuteScalar<int>("SELECT COUNT(AlbumId) FROM Album");
 
 		const string TrackSQL = @"
 SELECT
