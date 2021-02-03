@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Text;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Controls.Primitives;
 using Xamarin.Forms;
 using Xamarin.Forms.Platform.UWP;
 
 namespace Xamarin.CommunityToolkit.UI.Views
 {
-	internal class UwpControlWrapper : Windows.UI.Xaml.Controls.Primitives.SelectorItem
+	internal class UwpControlWrapper : SelectorItem
 	{
 		readonly View _view;
 
