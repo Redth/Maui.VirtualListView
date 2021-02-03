@@ -14,6 +14,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using Xamarin.CommunityToolkit.UI.Views;
 
 namespace VirtualListViewSample.UWP
 {
@@ -57,7 +58,10 @@ namespace VirtualListViewSample.UWP
 
                 rootFrame.NavigationFailed += OnNavigationFailed;
 
-                Xamarin.Forms.Forms.Init(e);
+                Xamarin.Forms.Forms.Init(e, new List<System.Reflection.Assembly>
+                {
+                    typeof(VirtualListView).Assembly
+                });
 
                 if (e.PreviousExecutionState == ApplicationExecutionState.Terminated)
                 {

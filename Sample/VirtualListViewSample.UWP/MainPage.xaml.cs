@@ -21,7 +21,9 @@ namespace VirtualListViewSample.UWP
         {
             this.InitializeComponent();
 
-            LoadApplication(new VirtualListViewSample.App());
+            var app = new VirtualListViewSample.App();
+
+            LoadApplication(app);
         }
     }
 }
