@@ -1,6 +1,10 @@
 # VirtualListView for Xamarin.Forms
 This is an experiment in creating a ListView control for Xamarin Forms with virtualization as a first priority to support fast, template driven lists with speed as the priority.
 
+## Sample
+
+![iOS](Screenshots/XF.VirtualListView.iOS.gif) ![Android](Screenshots/XF.VirtualListView.Android.gif)
+
 ## Native controls
 The implementation uses fast native controls in its renderers and optimizes for the native platform's recycling strategies.  Items are cached through the platform's recycling mechanisms so that they can be reused efficiently.  This also means the Forms representation of items are cached as well.  Each type of template (Item, Section Header, Section Footer) is cached individually so that they are reused efficiently.
 
