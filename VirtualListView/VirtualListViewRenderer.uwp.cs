@@ -5,6 +5,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Xamarin.Forms.Platform.UWP;
 
@@ -59,6 +60,11 @@ namespace Xamarin.CommunityToolkit.UI.Views
 
 					listView.ItemsSource = dataSource;
 
+					var style = new Style(typeof(ListView));
+					
+					listView.Style = style;
+					listView.ItemContainerStyle = new Style(typeof(UwpListViewItem));
+					
 					listView.ChoosingItemContainer += ListView_ChoosingItemContainer;
 					listView.ContainerContentChanging += ListView_ContainerContentChanging;
 
@@ -67,13 +73,58 @@ namespace Xamarin.CommunityToolkit.UI.Views
 			}
 		}
 
+		static void Unparent(UIElement child)
+		{
+			DependencyObject visualParent = null;
+
+			var fe = child as FrameworkElement;
+			if (fe != null && fe.Parent != null)
+			{
+				visualParent = fe.Parent;
+			}
+			if (visualParent == null)
+			{
+				visualParent = Windows.UI.Xaml.Media.VisualTreeHelper.GetParent(child);
+			}
+			var parentContent = visualParent as ContentControl;
+			var parentPresenter = visualParent as ContentPresenter;
+			var parentBorder = visualParent as Border;
+			var parentPanel = visualParent as Panel;
+			if (parentPanel != null)
+			{
+				parentPanel.Children.Remove(child);
+			}
+			else if (parentContent != null)
+			{
+				parentContent.Content = null;
+			}
+			else if (parentBorder != null)
+			{
+				parentBorder.Child = null;
+			}
+			else if (parentPresenter != null)
+			{
+				parentPresenter.Content = null;
+			}
+		}
+
 		private void ListView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
 		{
-			if (args.ItemContainer is UwpControlWrapper container)
+			if (args.ItemContainer is ListViewItem lvi)
 			{
-				var info = templateSelector.GetInfo(Element.Adapter, args.ItemIndex);
+				if (lvi.Tag is WrapperItem wrapper)
+				{
 
-				container.ViewCell.Update(info);
+					var info = templateSelector.GetInfo(Element.Adapter, args.ItemIndex);
+
+					wrapper.Control.Update(info);
+
+					Unparent(wrapper.Control);
+
+					lvi.Content = wrapper.Control;
+					lvi.InvalidateMeasure();
+				}
+				
 			}
 		}
 
@@ -85,32 +136,54 @@ namespace Xamarin.CommunityToolkit.UI.Views
 
 
 			// Can we reuse the container?
-			if (args?.ItemContainer?.Tag is int tagViewType && tagViewType == viewType)
+			if (args?.ItemContainer?.Tag is WrapperItem wrapper)
 			{
-				if (args.ItemContainer is UwpControlWrapper container)
+
+				if (wrapper.ViewType == viewType)
 				{
-					//if (listViewItem.Content is UwpControlWrapper container)
-						container.ViewCell.Update(info);
+					if (args.ItemContainer is ListViewItem lvi)
+					{
+						wrapper.Control.Update(info);
+						lvi.Content = wrapper.Control;
+						lvi.InvalidateMeasure();
+					}
 				}
 			}
 			else
 			{
+				args.IsContainerPrepared = true;
 				var template = templateSelector.GetTemplate(Element.Adapter, args.ItemIndex);
 
 				var viewCell = template.CreateContent() as VirtualViewCell;
 
 				var container = new UwpControlWrapper(viewCell.View);
 				container.ViewCell = viewCell;
-				container.ViewCell.Update(info);
+				container.Update(info);
+
+				Unparent(container);
+
+
 				//args.IsContainerPrepared = true;
-
 				//c.Content = container;
-				//var listViewItem = new ListViewItem();
-				//listViewItem.Content = container.Content;
+				var listViewItem = new ListViewItem();
+				listViewItem.Content = container;
 
-				args.ItemContainer = container;
-				args.ItemContainer.Tag = viewType;
+				args.ItemContainer = listViewItem;
+				args.ItemContainer.Tag = new WrapperItem
+				{
+					Control = container,
+					ViewType = viewType
+
+				};
+				args.IsContainerPrepared = true;
 			}
+		}
+
+
+		public class WrapperItem
+		{
+			internal UwpControlWrapper Control { get; set; }
+			public int ViewType { get; set; }
 		}
 
 		PositionTemplateSelector CreateTemplateSelector()
