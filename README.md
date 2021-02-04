@@ -1,5 +1,5 @@
 # VirtualListView for Xamarin.Forms
-This is an experiment in creating a ListView control for Xamarin Forms with virtualization as a first priority to support fast, template driven lists with speed as the priority.
+This is an experiment in creating a virtualized ListView control for Xamarin Forms to support simple, fast, templated lists by not adding too many bells and whistles and using an adapter pattern data source.
 
 ## Sample
 
