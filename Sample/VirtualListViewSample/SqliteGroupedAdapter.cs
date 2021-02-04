@@ -58,7 +58,6 @@ namespace VirtualListViewSample
 			}
 
 			Db = new SQLiteConnection(path);
-			//Db.CreateTable<AlbumInfo>();
 		}
 
 		public SQLiteConnection Db { get; }
@@ -66,14 +65,11 @@ namespace VirtualListViewSample
 		public void ReloadData()
 		{
 			cachedAlbumInfo.Clear();
-			cachedAlbumSections = null;
 		}
 
 		Dictionary<int, AlbumInfo> cachedAlbumInfo = new Dictionary<int, AlbumInfo>();
 
-		List<AlbumInfo> cachedAlbumSections;
-
-		const string AlbumSectionsSQL = @"
+		const string AlbumSectionSQL = @"
 SELECT 
 	album.AlbumId AS AlbumId,
 	album.Title AS AlbumTitle,
@@ -85,19 +81,13 @@ FROM Album album
 	INNER JOIN Track track ON track.AlbumId = album.AlbumId
 GROUP BY album.AlbumId
 ORDER BY AlbumId
+LIMIT 1 OFFSET ?
 ";
-		List<AlbumInfo> GetAlbums()
-		{
-			if (cachedAlbumSections == null)
-				cachedAlbumSections = Db.Query<AlbumInfo>(AlbumSectionsSQL);
 
-			return cachedAlbumSections;
-		}
-
-		int? sectionCount = null;
+		int? sectionsCount = null;
 
 		public int Sections
-			=> sectionCount ??= Db.ExecuteScalar<int>("SELECT COUNT(AlbumId) FROM Album");
+			=> sectionsCount ??= Db.ExecuteScalar<int>("SELECT COUNT(AlbumId) FROM Album");
 
 		const string TrackSQL = @"
 SELECT
@@ -123,34 +113,27 @@ WHERE
 
 		public object Item(int sectionIndex, int itemIndex)
 		{
-			var albumInfo = GetAlbums()[sectionIndex];
+			var albumInfo = Section(sectionIndex) as AlbumInfo;
 
-			return Db.Query<TrackInfo>(
+			return Db.FindWithQuery<TrackInfo>(
 				TrackSQL,
 				albumInfo.AlbumId,
 				albumInfo.ArtistId,
-				itemIndex)
-				?.FirstOrDefault();
+				itemIndex);
 		}
 
 		public int ItemsForSection(int sectionIndex)
-		{
-			if (cachedAlbumInfo.ContainsKey(sectionIndex))
-				return cachedAlbumInfo[sectionIndex].TrackCount;
-
-			var albumInfo = GetAlbums()[sectionIndex];
-
-			cachedAlbumInfo.Add(sectionIndex, albumInfo);
-			return albumInfo.TrackCount;
-		}
+			=> (Section(sectionIndex) as AlbumInfo)?.TrackCount ?? 0;
 
 		public object Section(int sectionIndex)
 		{
 			if (cachedAlbumInfo.ContainsKey(sectionIndex))
 				return cachedAlbumInfo[sectionIndex];
 
-			var albumInfo = GetAlbums()[sectionIndex];
-			cachedAlbumInfo.Add(sectionIndex, albumInfo);
+			var albumInfo = Db.FindWithQuery<AlbumInfo>(AlbumSectionSQL, sectionIndex);
+
+			if (albumInfo != null)
+				cachedAlbumInfo.Add(sectionIndex, albumInfo);
 
 			return albumInfo;
 		}

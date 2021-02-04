@@ -1,5 +1,5 @@
 # VirtualListView for Xamarin.Forms
-This is an experiment in creating a virtualized ListView control for Xamarin Forms to support simple, fast, templated lists by not adding too many bells and whistles and using an adapter pattern data source.
+This is an experiment in creating a virtualized ListView control for Xamarin Forms to support simple, fast, multi-templated, uneven item sized lists by not adding too many bells and whistles and using an adapter pattern data source.
 
 ## Sample
 
@@ -66,17 +66,7 @@ public class DatabaseAdapter : IVirtualListViewAdapter
 	}
 
 	public int ItemsForSection(int sectionIndex)
-	{
-		if (cachedSectionSummaries.ContainsKey(sectionIndex))
-			return cachedSectionSummaries[sectionIndex].ItemCount;
-
-		var groupInfo = Section(sectionIndex);
-
-		if (groupInfo != null)
-			cachedSectionSummaries.Add(sectionIndex, groupInfo);
-		
-		return groupInfo.ItemCount;
-	}
+		=> (Section(sectionIndex) as GroupInfo)?.ItemCount ?? 0;
 
 	public object Section(int sectionIndex)
 	{
