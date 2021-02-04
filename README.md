@@ -3,7 +3,7 @@ This is an experiment in creating a ListView control for Xamarin Forms with virt
 
 ## Sample
 
-![iOS](Screenshots/XF.VirtualListView.iOS.gif) ![Android](Screenshots/XF.VirtualListView.Android.gif)
+![iOS](Screenshots/XF.VirtualListView.iOS.small.gif) ![Android](Screenshots/XF.VirtualListView.Android.small.gif)
 
 ## Native controls
 The implementation uses fast native controls in its renderers and optimizes for the native platform's recycling strategies.  Items are cached through the platform's recycling mechanisms so that they can be reused efficiently.  This also means the Forms representation of items are cached as well.  Each type of template (Item, Section Header, Section Footer) is cached individually so that they are reused efficiently.
