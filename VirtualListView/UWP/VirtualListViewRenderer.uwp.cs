@@ -57,54 +57,18 @@ namespace Xamarin.CommunityToolkit.UI.Views
 					dataSource = new UwpDataSource();
 					dataSource.TemplateSelector = templateSelector;
 					dataSource.Adapter = e.NewElement.Adapter;
+					dataSource.Container = e.NewElement;
 
 					listView.ItemsSource = dataSource;
 
-					var style = new Style(typeof(ListView));
-					
-					listView.Style = style;
-					listView.ItemContainerStyle = new Style(typeof(UwpListViewItem));
-					
+					//listView.Style = new Style(typeof(ListView));
+					//listView.ItemContainerStyle = new Style(typeof(VirtualItemContentControl));
+					//listView.ItemTemplate = Application.Current.Resources["ItemsViewDefaultTemplate"] as DataTemplate;
 					listView.ChoosingItemContainer += ListView_ChoosingItemContainer;
 					listView.ContainerContentChanging += ListView_ContainerContentChanging;
 
 					SetNativeControl(listView);
 				}
-			}
-		}
-
-		static void Unparent(UIElement child)
-		{
-			DependencyObject visualParent = null;
-
-			var fe = child as FrameworkElement;
-			if (fe != null && fe.Parent != null)
-			{
-				visualParent = fe.Parent;
-			}
-			if (visualParent == null)
-			{
-				visualParent = Windows.UI.Xaml.Media.VisualTreeHelper.GetParent(child);
-			}
-			var parentContent = visualParent as ContentControl;
-			var parentPresenter = visualParent as ContentPresenter;
-			var parentBorder = visualParent as Border;
-			var parentPanel = visualParent as Panel;
-			if (parentPanel != null)
-			{
-				parentPanel.Children.Remove(child);
-			}
-			else if (parentContent != null)
-			{
-				parentContent.Content = null;
-			}
-			else if (parentBorder != null)
-			{
-				parentBorder.Child = null;
-			}
-			else if (parentPresenter != null)
-			{
-				parentPresenter.Content = null;
 			}
 		}
 
@@ -115,18 +79,12 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				if (lvi.Tag is WrapperItem wrapper)
 				{
 
-					var info = templateSelector.GetInfo(Element.Adapter, args.ItemIndex);
-
-					wrapper.Control.Update(info);
-
-					Unparent(wrapper.Control);
-
-					lvi.Content = wrapper.Control;
-					lvi.InvalidateMeasure();
 				}
 				
 			}
 		}
+
+		DataTemplate itemTemplate = Application.Current.Resources["ItemsViewDefaultTemplate"] as DataTemplate;
 
 		private void ListView_ChoosingItemContainer(ListViewBase sender, ChoosingItemContainerEventArgs args)
 		{
@@ -138,51 +96,37 @@ namespace Xamarin.CommunityToolkit.UI.Views
 			// Can we reuse the container?
 			if (args?.ItemContainer?.Tag is WrapperItem wrapper)
 			{
-
 				if (wrapper.ViewType == viewType)
 				{
 					if (args.ItemContainer is ListViewItem lvi)
 					{
-						wrapper.Control.Update(info);
-						lvi.Content = wrapper.Control;
 						lvi.InvalidateMeasure();
 					}
 				}
 			}
 			else
 			{
-				args.IsContainerPrepared = true;
 				var template = templateSelector.GetTemplate(Element.Adapter, args.ItemIndex);
 
 				var viewCell = template.CreateContent() as VirtualViewCell;
-
-				var container = new UwpControlWrapper(viewCell.View);
-				container.ViewCell = viewCell;
-				container.Update(info);
-
-				Unparent(container);
-
-
-				//args.IsContainerPrepared = true;
-				//c.Content = container;
+				
 				var listViewItem = new ListViewItem();
-				listViewItem.Content = container;
+				listViewItem.ContentTemplate = itemTemplate;
 
 				args.ItemContainer = listViewItem;
 				args.ItemContainer.Tag = new WrapperItem
 				{
-					Control = container,
+					ViewCell = viewCell,
 					ViewType = viewType
 
 				};
-				args.IsContainerPrepared = true;
 			}
 		}
 
 
 		public class WrapperItem
 		{
-			internal UwpControlWrapper Control { get; set; }
+			internal VirtualViewCell ViewCell { get; set; }
 			public int ViewType { get; set; }
 		}
 
@@ -234,6 +178,7 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				templates = new List<Forms.DataTemplate>();
 			}
 
+			public Forms.Element Container { get; set; }
 			public IVirtualListViewAdapter Adapter { get; set; }
 			public PositionTemplateSelector TemplateSelector { get; set; }
 
@@ -289,12 +234,20 @@ namespace Xamarin.CommunityToolkit.UI.Views
 					if (info == null)
 						return null;
 
+					var template = TemplateSelector?.GetTemplate(Adapter, index);
+
 					if (info.Kind == PositionKind.Item)
-						return Adapter.Item(info.SectionIndex, info.ItemIndex);
+						return new VirtualItemTemplateContext(
+							template,
+							Adapter.Item(info.SectionIndex, info.ItemIndex),
+							Container);
 					else
 					{
 						if (info.SectionIndex >= 0)
-							return Adapter.Section(info.SectionIndex);
+							return new VirtualItemTemplateContext(
+								template,
+								Adapter.Section(info.SectionIndex),
+								Container);
 						else
 							return null;
 					}
@@ -331,5 +284,19 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				=> throw new NotImplementedException();
 		}
 
+	}
+
+	internal class VirtualItemTemplateContext
+	{
+		public Forms.DataTemplate FormsDataTemplate { get; }
+		public object Item { get; }
+		public Forms.BindableObject Container { get; }
+		
+		public VirtualItemTemplateContext(Forms.DataTemplate formsDataTemplate, object item, Forms.BindableObject container)
+		{
+			FormsDataTemplate = formsDataTemplate;
+			Item = item;
+			Container = container;
+		}
 	}
 }
