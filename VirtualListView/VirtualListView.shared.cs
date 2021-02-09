@@ -182,6 +182,11 @@ namespace Xamarin.CommunityToolkit.UI.Views
 			// Raise event
 			SelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(prev, current));
 		}
+
+		public event EventHandler<ScrolledEventArgs> Scrolled;
+
+		internal void RaiseScrolled(ScrolledEventArgs args)
+			=> Scrolled?.Invoke(this, args);
 	}
 
 	public class SelectedItemsChangedEventArgs : EventArgs

@@ -48,6 +48,7 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				if (recyclerView?.Parent is ViewGroup vg)
 					vg.RemoveView(recyclerView);
 
+				recyclerView.ClearOnScrollListeners();
 				recyclerView.SetAdapter(null);
 				recyclerView.Dispose();
 				recyclerView = null;
@@ -72,6 +73,13 @@ namespace Xamarin.CommunityToolkit.UI.Views
 					adapter = new RvAdapter(Context, e.NewElement.Adapter);
 					adapter.TemplateSelector = templateSelector;
 					adapter.Element = e.NewElement;
+
+					recyclerView.AddOnScrollListener(new RvScrollListener((rv, dx, dy) =>
+					{
+						var x = Xamarin.Forms.Platform.Android.ContextExtensions.FromPixels(rv.Context, dx);
+						var y = Xamarin.Forms.Platform.Android.ContextExtensions.FromPixels(rv.Context, dy);
+						Element?.RaiseScrolled(new Forms.ScrolledEventArgs(x, y));
+					}));
 
 					recyclerView.SetLayoutManager(layoutManager);
 					recyclerView.SetAdapter(adapter);
@@ -117,6 +125,23 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				var templateSelector = CreateTemplateSelector();
 				adapter.TemplateSelector = templateSelector;
 				adapter?.NotifyDataSetChanged();
+			}
+		}
+
+		class RvScrollListener : RecyclerView.OnScrollListener
+		{
+			public RvScrollListener(Action<RecyclerView, int, int> scrollHandler)
+			{
+				ScrollHandler = scrollHandler;
+			}
+
+			Action<RecyclerView, int, int> ScrollHandler { get; }
+
+			public override void OnScrolled(RecyclerView recyclerView, int dx, int dy)
+			{
+				base.OnScrolled(recyclerView, dx, dy);
+
+				ScrollHandler?.Invoke(recyclerView, dx, dy);
 			}
 		}
 	}

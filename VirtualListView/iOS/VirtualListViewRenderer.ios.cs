@@ -56,6 +56,8 @@ namespace Xamarin.CommunityToolkit.UI.Views
 						e?.NewElement?.IsItemSelected(realSection, realIndex) ?? false;
 
 					cvdelegate = new CvDelegate(this);
+					cvdelegate.ScrollHandler = (x, y) =>
+						Element?.RaiseScrolled(new ScrolledEventArgs(x, y));
 
 					collectionView = new UICollectionView(this.Frame, layout);
 					collectionView.AllowsSelection = e.NewElement.SelectionMode != SelectionMode.None;

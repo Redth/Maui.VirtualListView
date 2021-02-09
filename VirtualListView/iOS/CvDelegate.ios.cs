@@ -15,7 +15,7 @@ namespace Xamarin.CommunityToolkit.UI.Views
 
 		internal VirtualListViewRenderer Renderer { get; }
 
-		public Action<int, int> ItemDeselectedHandler { get; set; }
+		public Action<nfloat, nfloat> ScrollHandler { get; set; }
 
 		public override void ItemSelected(UICollectionView collectionView, NSIndexPath indexPath)
 			=> HandleSelection(collectionView, indexPath, true);
@@ -42,6 +42,9 @@ namespace Xamarin.CommunityToolkit.UI.Views
 				&& cell?.ViewCell != null)
 				cell.ViewCell.IsSelected = selected;
 		}
+
+		public override void Scrolled(UIScrollView scrollView)
+			=> ScrollHandler?.Invoke(scrollView.ContentOffset.X, scrollView.ContentOffset.Y);
 
 		public override bool ShouldSelectItem(UICollectionView collectionView, NSIndexPath indexPath)
 			=> IsRealItem(indexPath);
