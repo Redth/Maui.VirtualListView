@@ -1,11 +1,10 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<xct:VirtualViewCell
-	xmlns="http://xamarin.com/schemas/2014/forms" 
+<VirtualViewCell
+	xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-	xmlns:xct="clr-namespace:Xamarin.CommunityToolkit.UI.Views;assembly=VirtualListView"
 	x:Class="VirtualListViewSample.FilmViewCell"
 	x:Name="self">
-	<xct:VirtualViewCell.View>
+	<VirtualViewCell.View>
 		<StackLayout
 			Spacing="0"
 			BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}">
@@ -26,5 +25,5 @@
 			</Frame>
 
 		</StackLayout>
-	</xct:VirtualViewCell.View>
-</xct:VirtualViewCell>
+	</VirtualViewCell.View>
+</VirtualViewCell>

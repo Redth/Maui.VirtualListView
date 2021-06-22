@@ -1,15 +1,16 @@
-﻿using Xamarin.CommunityToolkit.UI.Views;
-using Xamarin.Forms;
+﻿using Microsoft.Maui;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Xaml;
 
 namespace VirtualListViewSample
 {
-	public class ItemTemplateSelector : AdapterItemDataTemplateSelector
+	public class ItemTemplateSelector : ItemTemplateSelector
 	{
-		public DataTemplate PopTemplate { get; set; }
+		public IReplaceableView PopTemplate { get; set; }
 		//public DataTemplate HeavyTemplate { get; set; }
-		public DataTemplate FilmTemplate { get; set; }
+		public IReplaceableView FilmTemplate { get; set; }
 
-		public DataTemplate GenericTemplate { get; set; }
+		public IReplaceableView GenericTemplate { get; set; }
 
 		public ItemTemplateSelector()
 		{

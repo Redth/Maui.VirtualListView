@@ -1,45 +1,26 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+    <TargetFrameworks>net6.0-ios;net6.0-android</TargetFrameworks>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Xamarin.Forms" Version="5.0.0.1931" />
-    <PackageReference Include="Xamarin.Essentials" Version="1.6.1" />
-    <PackageReference Include="sqlite-net-pcl" Version="1.7.335" />
+    <PackageReference Include="Microsoft.Maui" Version="6.0.100-preview.5.794" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="6.0.100-preview.5.794" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="chinook.db" />
-    <None Remove="contacts-20000.db" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="chinook.db" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Update="PopViewCell.xaml.cs">
-      <DependentUpon>PopViewCell.xaml</DependentUpon>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Update="FilmViewCell.xaml">
-      <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
-    </EmbeddedResource>
-    <EmbeddedResource Update="GenericViewCell.xaml">
-      <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
-    </EmbeddedResource>
   </ItemGroup>
 </Project>

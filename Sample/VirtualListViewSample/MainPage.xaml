@@ -1,9 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage
-	xmlns="http://xamarin.com/schemas/2014/forms"
+	xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
 	xmlns:local="clr-namespace:VirtualListViewSample"
-	xmlns:xct="clr-namespace:Xamarin.CommunityToolkit.UI.Views;assembly=VirtualListView"
 	BackgroundColor="#045FB4"
 	x:Class="VirtualListViewSample.MainPage">
 	<ContentPage.Resources>
@@ -13,7 +12,7 @@
 		</ResourceDictionary>
 	</ContentPage.Resources>
 	<Grid>
-		<xct:VirtualListView
+		<VirtualListView
 			HorizontalOptions="FillAndExpand"
 			VerticalOptions="FillAndExpand"
 			Adapter="{Binding Adapter}"
@@ -22,9 +21,9 @@
 			SelectedItemsChanged="VirtualListView_SelectedItemsChanged"
 			ItemTemplateSelector="{StaticResource itemTemplateSelector}">
 
-			<xct:VirtualListView.SectionHeaderTemplate>
+			<VirtualListView.SectionHeaderTemplate>
 				<DataTemplate>
-					<xct:VirtualViewCell>
+					<VirtualViewCell>
 						<Grid ColumnDefinitions="Auto,*" BackgroundColor="#0B2161" Padding="10" ColumnSpacing="10">
 							<Image
 								Source="https://community.mp3tag.de/uploads/default/original/2X/a/acf3edeb055e7b77114f9e393d1edeeda37e50c9.png"
@@ -36,39 +35,39 @@
 								<Label VerticalOptions="Center" Text="{Binding AlbumTitle}" FontSize="Caption" TextColor="White" />
 							</StackLayout>
 						</Grid>
-					</xct:VirtualViewCell>
+					</VirtualViewCell>
 				</DataTemplate>
-			</xct:VirtualListView.SectionHeaderTemplate>
+			</VirtualListView.SectionHeaderTemplate>
 
-			<xct:VirtualListView.SectionFooterTemplate>
+			<VirtualListView.SectionFooterTemplate>
 				<DataTemplate>
-					<xct:VirtualViewCell>
+					<VirtualViewCell>
 						<StackLayout Padding="0,6,0,10" BackgroundColor="White">
 							<Label Text="{Binding TrackCount, StringFormat='{0} Tracks'}" TextColor="LightGray" HorizontalOptions="Center" />
 						</StackLayout>
-					</xct:VirtualViewCell>
+					</VirtualViewCell>
 				</DataTemplate>
-			</xct:VirtualListView.SectionFooterTemplate>
+			</VirtualListView.SectionFooterTemplate>
 
-			<xct:VirtualListView.HeaderTemplate>
+			<VirtualListView.HeaderTemplate>
 				<DataTemplate>
-					<xct:VirtualViewCell>
+					<VirtualViewCell>
 						<Grid HorizontalOptions="FillAndExpand" BackgroundColor="#045FB4">
 							<Label Padding="20" Text="Music Library" TextColor="White" HorizontalOptions="Center" />
 						</Grid>
-					</xct:VirtualViewCell>
+					</VirtualViewCell>
 				</DataTemplate>
-			</xct:VirtualListView.HeaderTemplate>
+			</VirtualListView.HeaderTemplate>
 
-			<xct:VirtualListView.FooterTemplate>
+			<VirtualListView.FooterTemplate>
 				<DataTemplate>
-					<xct:VirtualViewCell>
+					<VirtualViewCell>
 						<Grid>
 							<Label BackgroundColor="Navy" Padding="20" Text="That's all folks!" TextColor="White" HorizontalOptions="Center" />
 						</Grid>
-					</xct:VirtualViewCell>
+					</VirtualViewCell>
 				</DataTemplate>
-			</xct:VirtualListView.FooterTemplate>
-		</xct:VirtualListView>
+			</VirtualListView.FooterTemplate>
+		</VirtualListView>
 	</Grid>
 </ContentPage>

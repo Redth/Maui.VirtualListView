@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Text;
 using System.Threading.Tasks;
-using Xamarin.CommunityToolkit.UI.Views;
-using Xamarin.Forms;
+using Microsoft.Maui;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Xaml;
 
 namespace VirtualListViewSample
 {

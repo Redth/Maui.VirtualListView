@@ -1,30 +1,27 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
-using Xamarin.Forms;
-using Xamarin.Forms.Xaml;
+using Microsoft.Maui;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Xaml;
 
 namespace VirtualListViewSample
 {
-	public partial class App : Application
+	public partial class App : Microsoft.Maui.Controls.Application
 	{
 		public App()
 		{
 			InitializeComponent();
-
-			MainPage = new MainPage();
 		}
 
-		protected override void OnStart()
+		protected override IWindow CreateWindow(IActivationState activationState)
 		{
-		}
+			Microsoft.Maui.Controls.Compatibility.Forms.Init(activationState);
 
-		protected override void OnSleep()
-		{
-		}
+			this.On<Microsoft.Maui.Controls.PlatformConfiguration.Windows>()
+				.SetImageDirectory("Assets");
 
-		protected override void OnResume()
-		{
+			return new Microsoft.Maui.Controls.Window(new MainPage());
 		}
 	}
 }
