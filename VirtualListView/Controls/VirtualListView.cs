@@ -66,32 +66,32 @@ namespace Microsoft.Maui.Controls
 			BindableProperty.Create(nameof(SectionFooterTemplate), typeof(DataTemplate), typeof(VirtualListView), default);
 
 
-		public AdapterItemDataTemplateSelector ItemTemplateSelector
+		public ItemTemplateSelector ItemTemplateSelector
 		{
-			get => (AdapterItemDataTemplateSelector)GetValue(ItemTemplateSelectorProperty);
+			get => (ItemTemplateSelector)GetValue(ItemTemplateSelectorProperty);
 			set => SetValue(ItemTemplateSelectorProperty, value);
 		}
 
 		public static readonly BindableProperty ItemTemplateSelectorProperty =
-			BindableProperty.Create(nameof(ItemTemplateSelector), typeof(AdapterItemDataTemplateSelector), typeof(VirtualListView), default);
+			BindableProperty.Create(nameof(ItemTemplateSelector), typeof(ItemTemplateSelector), typeof(VirtualListView), default);
 
-		public AdapterSectionDataTemplateSelector SectionHeaderTemplateSelector
+		public SectionTemplateSelector SectionHeaderTemplateSelector
 		{
-			get => (AdapterSectionDataTemplateSelector)GetValue(SectionHeaderTemplateSelectorProperty);
+			get => (SectionTemplateSelector)GetValue(SectionHeaderTemplateSelectorProperty);
 			set => SetValue(SectionHeaderTemplateSelectorProperty, value);
 		}
 
 		public static readonly BindableProperty SectionHeaderTemplateSelectorProperty =
-			BindableProperty.Create(nameof(SectionHeaderTemplateSelector), typeof(AdapterSectionDataTemplateSelector), typeof(VirtualListView), default);
+			BindableProperty.Create(nameof(SectionHeaderTemplateSelector), typeof(SectionTemplateSelector), typeof(VirtualListView), default);
 
-		public AdapterSectionDataTemplateSelector SectionFooterTemplateSelector
+		public SectionTemplateSelector SectionFooterTemplateSelector
 		{
-			get => (AdapterSectionDataTemplateSelector)GetValue(SectionFooterTemplateSelectorProperty);
+			get => (SectionTemplateSelector)GetValue(SectionFooterTemplateSelectorProperty);
 			set => SetValue(SectionFooterTemplateSelectorProperty, value);
 		}
 
 		public static readonly BindableProperty SectionFooterTemplateSelectorProperty =
-			BindableProperty.Create(nameof(SectionHeaderTemplateSelector), typeof(AdapterSectionDataTemplateSelector), typeof(VirtualListView), default);
+			BindableProperty.Create(nameof(SectionHeaderTemplateSelector), typeof(SectionTemplateSelector), typeof(VirtualListView), default);
 
 
 		public SelectionMode SelectionMode

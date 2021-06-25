@@ -2,7 +2,7 @@
 using Foundation;
 using UIKit;
 
-namespace Xamarin.CommunityToolkit.UI.Views
+namespace Microsoft.Maui
 {
 	internal class CvDelegate : UICollectionViewDelegateFlowLayout
 	{

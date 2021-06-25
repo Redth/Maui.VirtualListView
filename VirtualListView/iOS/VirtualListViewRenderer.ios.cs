@@ -5,12 +5,8 @@ using System.Linq;
 using CoreGraphics;
 using Foundation;
 using UIKit;
-using Xamarin.Forms;
-using Xamarin.Forms.Platform.iOS;
 
-[assembly: ExportRenderer(typeof(Xamarin.CommunityToolkit.UI.Views.VirtualListView), typeof(Xamarin.CommunityToolkit.UI.Views.VirtualListViewRenderer))]
-
-namespace Xamarin.CommunityToolkit.UI.Views
+namespace Microsoft.Maui
 {
 	public partial class VirtualListViewRenderer : ViewRenderer<VirtualListView, UICollectionView>
 	{

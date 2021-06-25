@@ -4,7 +4,7 @@ using Microsoft.Maui.Controls.Xaml;
 
 namespace VirtualListViewSample
 {
-	public class ItemTemplateSelector : ItemTemplateSelector
+	public class ItemTemplateSelector
 	{
 		public IReplaceableView PopTemplate { get; set; }
 		//public DataTemplate HeavyTemplate { get; set; }
@@ -19,7 +19,7 @@ namespace VirtualListViewSample
 			FilmTemplate = new DataTemplate(typeof(FilmViewCell));
 		}
 
-		public override DataTemplate SelectItemTemplate(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex)
+		public IReplaceableView SelectItemTemplate(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex)
 		{
 			var item = adapter.Item(sectionIndex, itemIndex);
 

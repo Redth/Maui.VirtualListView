@@ -22,6 +22,7 @@
     <LangVersion>latest</LangVersion>
 		<UseMaui>True</UseMaui>
     <SingleProject>True</SingleProject>
+    <UseMaui>True</UseMaui>
  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)'=='Debug' ">
     <DebugSymbols>true</DebugSymbols>

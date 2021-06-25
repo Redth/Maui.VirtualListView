@@ -178,14 +178,16 @@ namespace Microsoft.Maui
 		public override long GetItemId(int position)
 			=> position;
 
-		View CreateViewContainer(Context context, Xamarin.Forms.View formsView)
-			=> new Xamarin.Forms.Platform.Android.ContainerView(context, formsView)
+		View CreateViewContainer(Context context, IView formsView)
+		{
+			var wrapper = new WrapperView(context)
 			{
-				MatchWidth = true,
+				//MatchWidth = true,
 				LayoutParameters = new ViewGroup.LayoutParams(
 				ViewGroup.LayoutParams.MatchParent,
 				ViewGroup.LayoutParams.WrapContent)
-			};
+			};	
+		}
 
 		public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)
 		{

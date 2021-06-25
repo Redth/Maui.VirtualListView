@@ -190,7 +190,7 @@ namespace Microsoft.Maui
 
 				if (itemIndex == 0)
 				{
-					return ((sectionHeaderTemplate as SectionTemplateSelector)?.SelectGroupTemplate(adapter, realSectionIndex) ?? sectionHeaderTemplate,
+					return ((sectionHeaderTemplate as ISectionTemplateSelector)?.SelectGroupTemplate(adapter, realSectionIndex) ?? sectionHeaderTemplate,
 						new PositionInfo
 						{
 							Kind = PositionKind.SectionHeader,
@@ -208,7 +208,7 @@ namespace Microsoft.Maui
 
 				if (itemIndex >= realItemsInSection + itemsAdded - 1)
 				{
-					return ((sectionFooterTemplate as SectionTemplateSelector)?.SelectGroupTemplate(adapter, realSectionIndex) ?? sectionFooterTemplate,
+					return ((sectionFooterTemplate as ISectionTemplateSelector)?.SelectGroupTemplate(adapter, realSectionIndex) ?? sectionFooterTemplate,
 						new PositionInfo
 						{
 							Kind = PositionKind.SectionFooter,
@@ -220,7 +220,7 @@ namespace Microsoft.Maui
 				}
 			}
 
-			return ((itemTemplate as ItemTemplateSelector)?.SelectItemTemplate(adapter, realSectionIndex, realItemIndex) ?? itemTemplate,
+			return ((itemTemplate as IItemTemplateSelector)?.SelectItemTemplate(adapter, realSectionIndex, realItemIndex) ?? itemTemplate,
 				new PositionInfo
 				{
 					Kind = PositionKind.Item,
@@ -245,7 +245,7 @@ namespace Microsoft.Maui
 				if (header != null)
 					return header;
 
-				if (sectionHeaderTemplate is SectionTemplateSelector headerTemplateSelector)
+				if (sectionHeaderTemplate is ISectionTemplateSelector headerTemplateSelector)
 					return headerTemplateSelector.SelectGroupTemplate(adapter, 0);
 
 				if (sectionHeaderTemplate != null)
@@ -263,7 +263,7 @@ namespace Microsoft.Maui
 				{
 					if (position == linear)
 					{
-						return (sectionHeaderTemplate as SectionTemplateSelector)?.SelectGroupTemplate(adapter, s)
+						return (sectionHeaderTemplate as ISectionTemplateSelector)?.SelectGroupTemplate(adapter, s)
 							?? sectionHeaderTemplate;
 					}
 					linear++;
@@ -275,7 +275,7 @@ namespace Microsoft.Maui
 				if (position < linear + itemsInSection)
 				{
 					var itemIndex = position - linear;
-					return (itemTemplate as ItemTemplateSelector)?.SelectItemTemplate(adapter, s, itemIndex)
+					return (itemTemplate as IItemTemplateSelector)?.SelectItemTemplate(adapter, s, itemIndex)
 						?? itemTemplate;
 				}
 
@@ -284,7 +284,7 @@ namespace Microsoft.Maui
 				if (sectionFooterTemplate != null)
 				{
 					if (position == linear)
-						return (sectionFooterTemplate as SectionTemplateSelector)?.SelectGroupTemplate(adapter, s)
+						return (sectionFooterTemplate as ISectionTemplateSelector)?.SelectGroupTemplate(adapter, s)
 							?? sectionFooterTemplate;
 					linear++;
 				}

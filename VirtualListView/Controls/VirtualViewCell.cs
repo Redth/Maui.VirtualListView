@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Microsoft.Maui.Controls
 {
-	public class VirtualViewCell : ViewCell
+	public class VirtualViewCell : Layout2.GridLayout, IVirtualListViewCell
 	{
 		public static readonly BindableProperty SectionIndexProperty =
 			BindableProperty.Create(nameof(SectionIndex), typeof(int), typeof(VirtualViewCell), -1);
