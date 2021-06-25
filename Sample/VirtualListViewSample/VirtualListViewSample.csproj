@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net6.0-ios;net6.0-android</TargetFrameworks>
+    <UseMaui>True</UseMaui>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
@@ -10,10 +11,10 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
-  <ItemGroup>
+  <!-- <ItemGroup>
     <PackageReference Include="Microsoft.Maui" Version="6.0.100-preview.5.794" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="6.0.100-preview.5.794" />
-  </ItemGroup>
+  </ItemGroup> -->
   <ItemGroup>
     <None Remove="chinook.db" />
   </ItemGroup>

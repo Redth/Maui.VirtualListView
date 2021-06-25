@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using Foundation;
 using UIKit;
-using Xamarin.Forms;
 
-namespace Xamarin.CommunityToolkit.UI.Views
+namespace Microsoft.Maui
 {
 	internal class ReusableIdManager
 	{

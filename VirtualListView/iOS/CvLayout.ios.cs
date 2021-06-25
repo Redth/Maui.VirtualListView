@@ -3,7 +3,7 @@ using CoreGraphics;
 using Foundation;
 using UIKit;
 
-namespace Xamarin.CommunityToolkit.UI.Views
+namespace Microsoft.Maui
 {
 	internal class CvLayout : UICollectionViewFlowLayout
 	{

@@ -4,13 +4,14 @@ using System.Text;
 
 namespace Microsoft.Maui
 {
-	public abstract class ItemTemplateSelector : IReplaceableView
+	public interface IItemTemplateSelector : IView
 	{
-		public abstract IReplacableView SelectItemTemplate(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex);
+		IView SelectItemTemplate(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex);
 	}
 
-	public abstract class SectionTemplateSelector : IReplaceableView
+	public interface ISectionTemplateSelector : IView
 	{
-		public abstract IReplacableView SelectGroupTemplate(IVirtualListViewAdapter adapter, int sectionIndex);
+		// Type? return type of view to create instance with later, and 
+		IView SelectGroupTemplate(IVirtualListViewAdapter adapter, int sectionIndex);
 	}
 }

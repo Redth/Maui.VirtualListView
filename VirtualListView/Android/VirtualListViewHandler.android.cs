@@ -113,7 +113,7 @@ namespace Microsoft.Maui
 			Context = context;
 			this.adapter = adapter;
 
-			templates = new List<Xamarin.Forms.DataTemplate>();
+			templates = new List<IView>();
 		}
 
 		public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
@@ -162,14 +162,16 @@ namespace Microsoft.Maui
 		public override long GetItemId(int position)
 			=> position;
 
-		View CreateViewContainer(Context context, Xamarin.Forms.View formsView)
-			=> new Xamarin.Forms.Platform.Android.ContainerView(context, formsView)
+		View CreateViewContainer(Context context, IView formsView)
+		{
+			var wrapper = new WrapperView(context)
 			{
-				MatchWidth = true,
+				//MatchWidth = true,
 				LayoutParameters = new ViewGroup.LayoutParams(
 				ViewGroup.LayoutParams.MatchParent,
 				ViewGroup.LayoutParams.WrapContent)
-			};
+			};	
+		}
 
 		public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)
 		{

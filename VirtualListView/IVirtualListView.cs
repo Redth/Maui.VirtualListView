@@ -5,16 +5,14 @@ namespace Microsoft.Maui
 	{
 		IVirtualListView Adapter { get; }
 
-		IReplaceableView Header { get; }
+		IView Header { get; }
 
-		IReplaceableView Footer { get; }
+		IView Footer { get; }
 
+		IView SectionHeaderTemplate { get; }
 
-		IReplaceableView SectionHeaderTemplate { get; }
+		IView SectionFooterTemplate { get; }
 
-		IReplaceableView SectionFooterTemplate { get; }
-
-		IReplaceableView ItemTemplate { get; }
-
+		IView ItemTemplate { get; }
 	}
 }
