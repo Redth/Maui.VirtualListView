@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net6.0-ios;net6.0-android</TargetFrameworks>
-    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net6.0-windows10.0.18362;</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net6.0-windows10.0.19041.0;</TargetFrameworks>
     <AssemblyName>VirtualListView</AssemblyName>
     <RootNamespace>Microsoft.Maui.Controls</RootNamespace>
     <PackageId>Microsoft.Maui.Controls.VirtualListView</PackageId>
@@ -20,6 +20,7 @@
     <DebugType>portable</DebugType>
     <Configurations>Debug;Release</Configurations>
     <LangVersion>latest</LangVersion>
+		<UseMaui>True</UseMaui>
     <SingleProject>True</SingleProject>
  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)'=='Debug' ">
@@ -32,9 +33,5 @@
   <ItemGroup Condition=" !$(TargetFramework.StartsWith('netstandard')) ">
     <Compile Remove="**\*.netstandard.cs" />
     <Compile Remove="**\*.netstandard.*.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Maui" Version="6.0.100-preview.5.794" />
-    <PackageReference Include="Microsoft.Maui.Controls" Version="6.0.100-preview.5.794" />
   </ItemGroup>
 </Project>

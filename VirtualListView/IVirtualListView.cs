@@ -1,20 +1,31 @@
 
+using System;
+using System.Collections.Generic;
+
 namespace Microsoft.Maui
 {
 	public interface IVirtualListView : IView
 	{
-		IVirtualListView Adapter { get; }
+		IVirtualListViewAdapter Adapter { get; }
 
-		IReplaceableView Header { get; }
+		IViewTemplate HeaderTemplate { get; }
 
-		IReplaceableView Footer { get; }
+		IViewTemplate FooterTemplate { get; }
 
+		IViewTemplate SectionHeaderTemplate { get; }
 
-		IReplaceableView SectionHeaderTemplate { get; }
+		IViewTemplate SectionFooterTemplate { get; }
 
-		IReplaceableView SectionFooterTemplate { get; }
+		IViewTemplate ItemTemplate { get; }
 
-		IReplaceableView ItemTemplate { get; }
+		event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
 
+		IReadOnlyList<ItemPosition> SelectedItems { get; }
+
+		bool IsItemSelected(int sectionIndex, int itemIndex);
+
+		void SetSelected(params ItemPosition[] paths);
+
+		void SetDeselected(params ItemPosition[] paths);
 	}
 }

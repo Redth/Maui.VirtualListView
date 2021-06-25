@@ -10,7 +10,7 @@ namespace Microsoft.Maui
 			IVirtualListViewAdapter adapter,
 			int position,
 			bool hasGlobalHeader,
-			bool hasGlobalFooter,,
+			bool hasGlobalFooter,
 			bool hasSectionHeader,
 			bool hasSectionFooter)
 		{
@@ -139,13 +139,13 @@ namespace Microsoft.Maui
 			return (realSectionIndex, realItemIndex);
 		}
 
-		public static (IReplaceableView template, PositionInfo info) GetTemplateAndInfo(
+		public static (IViewTemplate template, PositionInfo info) GetTemplateAndInfo(
 			IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex,
-			IReplaceableView header,
-			IReplaceableView footer,
-			IReplaceableView sectionHeaderTemplate,
-			IReplaceableView sectionFooterTemplate,
-			IReplaceableView itemTemplate)
+			IViewTemplate header,
+			IViewTemplate footer,
+			IViewTemplate sectionHeaderTemplate,
+			IViewTemplate sectionFooterTemplate,
+			IViewTemplate itemTemplate)
 		{
 			var realSectionIndex = sectionIndex;
 
@@ -232,13 +232,13 @@ namespace Microsoft.Maui
 				});
 		}
 
-		public static IReplaceableView GetTemplate(
+		public static IViewTemplate GetTemplate(
 			IVirtualListViewAdapter adapter, int position,
-			IReplaceableView header,
-			IReplaceableView footer,
-			IReplaceableView sectionHeaderTemplate,
-			IReplaceableView sectionFooterTemplate,
-			IReplaceableView itemTemplate)
+			IViewTemplate header,
+			IViewTemplate footer,
+			IViewTemplate sectionHeaderTemplate,
+			IViewTemplate sectionFooterTemplate,
+			IViewTemplate itemTemplate)
 		{
 			if (position == 0)
 			{

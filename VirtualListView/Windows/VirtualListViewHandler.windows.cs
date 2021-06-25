@@ -1,22 +1,18 @@
-﻿using System;
+﻿using Microsoft.Maui.Handlers;
+using Microsoft.UI.Xaml.Controls;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using Windows.UI.Xaml;
-using Windows.UI.Xaml.Controls;
-using Xamarin.Forms.Platform.UWP;
 
-[assembly: ExportRenderer(typeof(Xamarin.CommunityToolkit.UI.Views.VirtualListView), typeof(Xamarin.CommunityToolkit.UI.Views.VirtualListViewRenderer))]
-
-namespace Xamarin.CommunityToolkit.UI.Views
+namespace Microsoft.Maui
 {
-	public class VirtualListViewRenderer : ViewRenderer<VirtualListView, ListView>
+	public class VirtualListViewHandler : ViewHandler<IVirtualListView, ItemsRepeater>
 	{
 
-		public VirtualListViewRenderer()
+		public VirtualListViewHandler()
 			: base()
 		{
 		}

@@ -8,6 +8,7 @@ using Android.Util;
 using Android.Views;
 using Android.Widget;
 using AndroidX.RecyclerView.Widget;
+using Microsoft.Maui.Handlers;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -31,7 +32,7 @@ namespace Microsoft.Maui
 			layoutManager = new LinearLayoutManager(Context);
 			//layoutManager.Orientation = LinearLayoutManager.Horizontal;
 
-			adapter = new RvAdapter(Context, e.NewElement.Adapter);
+			adapter = new RvAdapter(Context, this.VirtualView.Adapter, this);
 			
 			// recyclerView.AddOnScrollListener(new RvScrollListener((rv, dx, dy) =>
 			// {
@@ -42,8 +43,8 @@ namespace Microsoft.Maui
 
 			recyclerView.SetLayoutManager(layoutManager);
 			recyclerView.SetAdapter(adapter);
-			recyclerView.LayoutParameters = new LayoutParams(
-				LayoutParams.MatchParent, LayoutParams.MatchParent);
+			recyclerView.LayoutParameters = new ViewGroup.LayoutParams(
+				ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
 		}
 
 		protected override void DisconnectHandler(RecyclerView nativeView)
@@ -58,7 +59,7 @@ namespace Microsoft.Maui
 
 		public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{
-			handler.NativeView?.UpdateText(label);
+			handler.NativeView?.SwapAdapter(handler.adapter, true);
 		}
 
 		class RvScrollListener : RecyclerView.OnScrollListener
@@ -81,19 +82,21 @@ namespace Microsoft.Maui
 
 	internal class RvItemHolder : RecyclerView.ViewHolder
 	{
-		public VirtualViewCell ViewCell { get; }
+		public IView View { get; }
 		public PositionInfo PositionInfo { get; set; }
 
-		public RvItemHolder(VirtualViewCell viewCell, View itemView)
+		public RvItemHolder(IView view, View itemView)
 			: base(itemView)
 		{
-			ViewCell = viewCell;
+			View = view;
 		}
 	}
 
 	internal class RvAdapter : RecyclerView.Adapter
 	{
-		readonly List<IReplaceableView> templates;
+		readonly VirtualListViewHandler handler;
+
+		readonly List<IViewTemplate> templates;
 
 		readonly object lockObj = new object();
 
@@ -105,20 +108,26 @@ namespace Microsoft.Maui
 
 		public object BindingContext { get; set; }
 
-		public override int ItemCount
-			=> TemplateSelector?.GetTotalCount(adapter) ?? 0;
+		internal bool HasHeader => handler?.VirtualView?.HeaderTemplate != null;
+		internal bool HasFooter => handler?.VirtualView?.HeaderTemplate != null;
+		internal bool HasSectionHeader => handler?.VirtualView?.SectionHeaderTemplate != null;
+		internal bool HasSectionFooter => handler?.VirtualView?.SectionFooterTemplate != null;
 
-		internal RvAdapter(Context context, IVirtualListViewAdapter adapter)
+		public override int ItemCount
+			=> PositionTemplateSelector.GetTotalCount(adapter, HasHeader, HasFooter, HasSectionHeader, HasSectionFooter);
+
+		internal RvAdapter(Context context, IVirtualListViewAdapter adapter, VirtualListViewHandler handler)
 		{
 			Context = context;
 			this.adapter = adapter;
+			this.handler = handler;
 
-			templates = new List<Xamarin.Forms.DataTemplate>();
+			templates = new List<IViewTemplate>();
 		}
 
 		public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
 		{
-			var info = PositionTemplateSelector.GetInfo(adapter, position);
+			var info = PositionTemplateSelector.GetInfo(adapter, position, HasHeader, HasFooter, HasSectionHeader, HasSectionFooter);
 
 			if (info == null)
 				return;
@@ -126,16 +135,16 @@ namespace Microsoft.Maui
 			// The template selector doesn't infer selected properly
 			// so we need to ask the listview which tracks selections about the state
 			info.IsSelected = info.Kind == PositionKind.Item
-				&& (Element?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false);
+				&& (handler?.VirtualView?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false);
 
 			var item = info.BindingContext ?? BindingContext;
 
-			if (item != null && holder is RvItemHolder itemHolder && itemHolder.ViewCell != null)
+			if (item != null && holder is RvItemHolder itemHolder && itemHolder.View != null)
 			{
 				itemHolder.PositionInfo = info;
-				itemHolder.ViewCell.BindingContext = item;
-				itemHolder.ViewCell.Update(info);
-				itemHolder.ViewCell.View.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
+				if (itemHolder.View is IPositionInfo viewPositionInfo)
+					viewPositionInfo.PositionInfo = info;
+				//itemHolder.ViewCell.View.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
 			}
 		}
 
@@ -143,7 +152,14 @@ namespace Microsoft.Maui
 		{
 			int viewType = base.GetItemViewType(position);
 
-			var template = TemplateSelector.GetTemplate(adapter, position);
+			var template = PositionTemplateSelector.GetTemplate(
+				adapter,
+				position,
+				handler?.VirtualView?.HeaderTemplate,
+				handler?.VirtualView?.FooterTemplate,
+				handler?.VirtualView?.SectionHeaderTemplate,
+				handler?.VirtualView?.SectionFooterTemplate,
+				handler?.VirtualView?.ItemTemplate);
 
 			lock (lockObj)
 			{
@@ -175,7 +191,10 @@ namespace Microsoft.Maui
 		{
 			var template = templates.ElementAtOrDefault(viewType);
 
-			var templateContent = template.CreateContent();
+			var templateContent = Activator.CreateInstance(template.ViewType) as IView;
+
+			if (templateContent == null)
+				throw new InvalidCastException();
 
 			if (templateContent is VirtualViewCell viewCell)
 			{
@@ -203,7 +222,6 @@ namespace Microsoft.Maui
 				return viewHolder;
 			}
 
-			VirtualViewCell.ThrowInvalidDataTemplateException();
 			return null;
 		}
 
