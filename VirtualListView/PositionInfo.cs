@@ -53,6 +53,6 @@ namespace Microsoft.Maui
 
 		public int ItemsInSection { get; set; } = 0;
 
-		public bool IsSelected { get; set; } = false;
+		public bool IsSelected { get; internal set; } = false;
 	}
 }

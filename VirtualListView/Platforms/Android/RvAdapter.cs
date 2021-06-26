@@ -53,11 +53,7 @@ namespace Microsoft.Maui
 				&& (handler?.VirtualView?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false);
 
 			if (holder is RvItemHolder itemHolder && itemHolder.View != null)
-			{
-
 				itemHolder.Update(info);
-				//itemHolder.ViewCell.View.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
-			}
 		}
 
 		public override int GetItemViewType(int position)
@@ -90,19 +86,6 @@ namespace Microsoft.Maui
 		public override long GetItemId(int position)
 			=> position;
 
-		//View CreateViewContainer(Context context, IView mauiView)
-		//{
-		//	var wrapper = new WrapperView(context)
-		//	{
-		//		//MatchWidth = true,
-		//		LayoutParameters = new ViewGroup.LayoutParams(
-		//		ViewGroup.LayoutParams.MatchParent,
-		//		ViewGroup.LayoutParams.WrapContent)
-		//	};
-		//	wrapper.AddView(mauiView?.ToNative(mauiView?.Handler?.MauiContext));
-		//	return wrapper;
-		//}
-
 		public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)
 		{
 			var template = templates.ElementAtOrDefault(viewType);
@@ -124,15 +107,13 @@ namespace Microsoft.Maui
 
 				var p = new ItemPosition(rvh.PositionInfo.SectionIndex, rvh.PositionInfo.ItemIndex);
 
-				// TODO:
-				//var selected = !rvh.ViewCell.IsSelected;
+				rvh.PositionInfo.IsSelected = !rvh.PositionInfo.IsSelected;
+				rvh.Update(rvh.PositionInfo);
 
-				//rvh.ViewCell.IsSelected = selected;
-
-				//if (selected)
-				//	handler.VirtualView?.SetSelected(p);
-				//else
-				//	handler.VirtualView?.SetDeselected(p);
+				if (rvh.PositionInfo.IsSelected)
+					handler.VirtualView?.SetSelected(p);
+				else
+					handler.VirtualView?.SetDeselected(p);
 			});
 
 			viewHolder.ItemView.SetOnClickListener(clickListener);
