@@ -24,11 +24,7 @@ namespace Microsoft.Maui
 			if (hasGlobalHeader)
 			{
 				if (position == 0)
-					return new PositionInfo
-					{
-						Position = position,
-						Kind = PositionKind.Header
-					};
+					return PositionInfo.ForHeader(position);
 
 				linear++;
 			}
@@ -38,12 +34,7 @@ namespace Microsoft.Maui
 				if (hasSectionHeader)
 				{
 					if (position == linear)
-						return new PositionInfo
-						{
-							SectionIndex = s,
-							Position = position,
-							Kind = PositionKind.SectionHeader
-						};
+						return PositionInfo.ForSectionHeader(position, s);
 
 					linear++;
 				}
@@ -55,15 +46,7 @@ namespace Microsoft.Maui
 				{
 					var itemIndex = position - linear;
 
-					return new PositionInfo
-					{
-						SectionIndex = s,
-						NumberOfSections = numberSections,
-						ItemIndex = itemIndex,
-						ItemsInSection = itemsInSection,
-						Position = position,
-						Kind = PositionKind.Item
-					};
+					return PositionInfo.ForItem(position, s, itemIndex, itemsInSection, numberSections);
 				}
 
 				linear += itemsInSection;
@@ -71,12 +54,7 @@ namespace Microsoft.Maui
 				if (hasSectionFooter)
 				{
 					if (position == linear)
-						return new PositionInfo
-						{
-							SectionIndex = s,
-							Position = position,
-							Kind = PositionKind.SectionFooter
-						};
+						return PositionInfo.ForSectionFooter(position, s);
 
 					linear++;
 				}

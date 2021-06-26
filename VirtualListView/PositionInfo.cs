@@ -6,31 +6,37 @@ namespace Microsoft.Maui
 {
 	public record PositionInfo
 	{
-		public static PositionInfo ForHeader()
-			=> new () { Kind = PositionKind.Header };
+		internal static PositionInfo ForHeader(int position)
+			=> new () { Position = position, Kind = PositionKind.Header };
 
-		public static PositionInfo ForFooter()
-			=> new() { Kind = PositionKind.Footer };
+		internal static PositionInfo ForFooter(int position)
+			=> new() { Position = position, Kind = PositionKind.Footer };
 
-		public static PositionInfo ForSectionHeader(int sectionIndex, int itemsInSection = 0)
+		internal static PositionInfo ForSectionHeader(int positon, int sectionIndex, int itemsInSection = 0)
 			=> new()
 			{
+				Position = positon,
 				Kind = PositionKind.SectionHeader,
+				SectionIndex = sectionIndex,
 				ItemsInSection = itemsInSection
 			};
-		public static PositionInfo ForSectionFooter(int sectionIndex, int itemsInSection = 0)
+		internal static PositionInfo ForSectionFooter(int position, int sectionIndex, int itemsInSection = 0)
 			=> new()
 			{
+				Position = position,
 				Kind = PositionKind.SectionFooter,
+				SectionIndex = sectionIndex,
 				ItemsInSection = itemsInSection
 			};
 
-		public static PositionInfo ForItem(int sectionIndex, int itemIndex, bool selected = false, int numberOfSections = -1)
+		internal static PositionInfo ForItem(int position, int sectionIndex, int itemIndex, int itemsInSection, int numberOfSections, bool selected = false)
 			=> new()
 			{
+				Position = position,
 				Kind = PositionKind.Item,
 				SectionIndex = sectionIndex,
 				ItemIndex = itemIndex,
+				ItemsInSection = itemsInSection,
 				NumberOfSections = numberOfSections,
 				IsSelected = selected
 			};
