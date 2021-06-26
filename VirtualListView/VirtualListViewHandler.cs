@@ -4,11 +4,11 @@ namespace Microsoft.Maui
 {
 	public partial class VirtualListViewHandler
 	{
-		public static PropertyMapper<IVirtualListView, VirtualListViewHandler> VirtualListViewMapper = new PropertyMapper<IVirtualListView, VirtualListViewHandler>(ViewHandler.ViewMapper)
+		public static PropertyMapper<IVirtualListView, VirtualListViewHandler> VirtualListViewMapper = new PropertyMapper<IVirtualListView, VirtualListViewHandler>(VirtualListViewHandler.ViewMapper)
 		{
 			[nameof(IVirtualListView.Adapter)] = MapAdapter,
-			[nameof(IVirtualListView.HeaderTemplate)] = MapHeader,
-			[nameof(IVirtualListView.FooterTemplate)] = MapFooter,
+			[nameof(IVirtualListView.HeaderTemplate)] = MapHeaderTemplate,
+			[nameof(IVirtualListView.FooterTemplate)] = MapFooterTemplate,
 			[nameof(IVirtualListView.SectionHeaderTemplate)] = MapSectionHeaderTemplate,
 			[nameof(IVirtualListView.SectionFooterTemplate)] = MapSectionFooterTemplate,
 			[nameof(IVirtualListView.ItemTemplate)] = MapItemTemplate,

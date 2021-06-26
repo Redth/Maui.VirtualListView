@@ -3,13 +3,8 @@ using System;
 
 namespace Microsoft.Maui
 {
-	public interface IPositionInfo
+    public interface IViewTemplate
 	{
-		PositionInfo PositionInfo { get; }
-	}
-
-	public interface IViewTemplate
-	{
-		Type ViewType { get; }
+		IView CreateView(PositionInfo positionInfo);
 	}
 }

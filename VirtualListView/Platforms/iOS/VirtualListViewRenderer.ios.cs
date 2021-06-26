@@ -4,13 +4,14 @@ using System.ComponentModel;
 using System.Linq;
 using CoreGraphics;
 using Foundation;
+using Microsoft.Maui.Handlers;
 using UIKit;
 
 namespace Microsoft.Maui
 {
-	public partial class VirtualListViewRenderer : ViewRenderer<VirtualListView, UICollectionView>
+	public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICollectionView>
 	{
-		public VirtualListViewRenderer()
+		public VirtualListViewHandler()
 		{
 		}
 
