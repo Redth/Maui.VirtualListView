@@ -1,12 +1,13 @@
 ﻿using Android.Views;
 using AndroidX.RecyclerView.Widget;
+using Microsoft.Maui.HotReload;
 
 namespace Microsoft.Maui
 {
-    internal class RvItemHolder : RecyclerView.ViewHolder
+	internal class RvItemHolder : RecyclerView.ViewHolder
 	{
 		public ViewGroup NativeView { get; }
-		public IView View { get; private set; }
+		public IHotReloadableView View { get; private set; }
 		public IViewTemplate Template { get; }
 		public PositionInfo PositionInfo { get; set; }
 
@@ -18,16 +19,19 @@ namespace Microsoft.Maui
 		}
 
 		public void Update(PositionInfo positionInfo)
-        {
+		{
 			if (View == null)
 			{
-				View = Template.CreateView(positionInfo);
+				View = Template.CreateView(positionInfo) as IHotReloadableView;
 				NativeView.AddView(View?.ToNative(View?.Handler?.MauiContext));
 			}
 			else
-            {
-				// TODO: Swap view but keep handler
-            }
+			{
+				// Already created, let's recycle it
+				var newView = Template.CreateView(positionInfo);
+				View.TransferState(newView);
+				View.Reload();
+			}
 
 			if (View is IPositionInfo viewPositionInfo)
 				viewPositionInfo.SetPositionInfo(positionInfo);
