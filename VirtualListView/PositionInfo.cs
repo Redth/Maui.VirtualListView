@@ -35,7 +35,7 @@ namespace Microsoft.Maui
 				IsSelected = selected
 			};
 
-		internal int Position { get; } = -1;
+		internal int Position { get; set; } = -1;
 
 		public PositionKind Kind { get; init; } = PositionKind.Item;
 
