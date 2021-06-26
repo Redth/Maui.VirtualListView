@@ -9,12 +9,12 @@ namespace VirtualListViewSample
 {
 	public partial class App : Microsoft.Maui.Controls.Application
 	{
-		public App()
+		public App() : base()
 		{
-			InitializeComponent();
+			//InitializeComponent();
 		}
 
-		protected override IWindow CreateWindow(IActivationState activationState)
+		protected override Window CreateWindow(IActivationState activationState)
 		{
 			return new Microsoft.Maui.Controls.Window(new MainPage());
 		}

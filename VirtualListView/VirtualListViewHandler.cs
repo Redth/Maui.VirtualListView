@@ -19,7 +19,7 @@ namespace Microsoft.Maui
 
 		}
 
-		public VirtualListViewHandler(PropertyMapper? mapper = null) : base(mapper ?? VirtualListViewMapper)
+		public VirtualListViewHandler(PropertyMapper mapper = null) : base(mapper ?? VirtualListViewMapper)
 		{
 
 		}

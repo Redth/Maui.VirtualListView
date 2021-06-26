@@ -7,3 +7,4 @@
         <local:SelectedColorConverter x:Key="selectedColorConverter" />
     </Application.Resources>
 </Application>
+    

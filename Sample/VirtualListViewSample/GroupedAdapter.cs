@@ -9,8 +9,7 @@ namespace VirtualListViewSample
 	public class GroupedAdapter<TGroup, TItem> : IVirtualListViewAdapter
 		where TGroup : IList<TItem> 
 	{
-		
-		public List<TGroup> Groups { get; set; } = new List<TGroup>();
+        public List<TGroup> Groups { get; set; } = new List<TGroup>();
 
 		public int Sections => Groups.Count;
 
@@ -18,7 +17,7 @@ namespace VirtualListViewSample
 			=> Groups[sectionIndex][itemIndex];
 
 		public int ItemsForSection(int sectionIndex)
- 			=> Groups[sectionIndex].Count;
+			=> Groups[sectionIndex].Count;
 
 		public object Section(int sectionIndex)
 			=> Groups[sectionIndex];
