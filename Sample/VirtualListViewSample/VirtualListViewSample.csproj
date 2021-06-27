@@ -5,7 +5,7 @@
     <OutputType>Exe</OutputType>
 		<UseMaui>True</UseMaui>
 		<SingleProject>True</SingleProject>
-    <ApplicationId>com.microsoft.hellomaui</ApplicationId>
+    <ApplicationId>com.microsoft.virtuallistviewsample</ApplicationId>
     <ApplicationTitle>MAUI</ApplicationTitle>
     <ApplicationVersion>1.0</ApplicationVersion>
     <AndroidVersionCode>1</AndroidVersionCode>

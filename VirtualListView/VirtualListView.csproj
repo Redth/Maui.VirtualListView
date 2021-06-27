@@ -3,7 +3,7 @@
     <TargetFrameworks>net6.0-android</TargetFrameworks>
     <!--<TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net6.0-windows10.0.19041.0;</TargetFrameworks>-->
     <AssemblyName>VirtualListView</AssemblyName>
-    <RootNamespace>Microsoft.Maui.Controls</RootNamespace>
+    <RootNamespace>Microsoft.Maui.Controls.VirtualListViewControl</RootNamespace>
     <PackageId>Microsoft.Maui.Controls.VirtualListView</PackageId>
     <Summary>A virtual ListView for .NET MAUI</Summary>
     <Title>VirtualListView for .NET MAUI</Title>
