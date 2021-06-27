@@ -12,9 +12,12 @@ namespace Microsoft.Maui
 		public IViewTemplate Template { get; }
 		public PositionInfo PositionInfo { get; set; }
 
-		public RvItemHolder(ViewGroup nativeView, ReplaceableWrapperView wrapperView, IViewTemplate template)
+		public IMauiContext MauiContext { get; private set; }
+
+		public RvItemHolder(ViewGroup nativeView, ReplaceableWrapperView wrapperView, IViewTemplate template, IMauiContext mauiContext)
 			: base(nativeView)
 		{
+			MauiContext = mauiContext;
 			Template = template;
 			NativeView = nativeView;
 			WrapperView = wrapperView;
@@ -25,7 +28,7 @@ namespace Microsoft.Maui
 			if (View == null)
 			{
 				View = Template.CreateView(positionInfo) as IView;
-				NativeView.AddView(View?.ToNative(View?.Handler?.MauiContext));
+				NativeView.AddView(View?.ToNative(MauiContext));
 			}
 			else
 			{

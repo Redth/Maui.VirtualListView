@@ -98,7 +98,7 @@ namespace Microsoft.Maui
 				ViewGroup.LayoutParams.WrapContent)
 			};
 
-			var viewHolder = new RvItemHolder(wrapper, wrapper, template);
+			var viewHolder = new RvItemHolder(wrapper, wrapper, template, handler.MauiContext);
 
 			clickListener = new RvViewHolderClickListener(viewHolder, rvh =>
 			{
