@@ -1,13 +1,13 @@
 ﻿using Android.Content;
 using Android.Views;
 using AndroidX.RecyclerView.Widget;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Microsoft.Maui
 {
-    internal class RvAdapter : RecyclerView.Adapter
+
+	internal partial class RvAdapter : RecyclerView.Adapter
 	{
 		readonly VirtualListViewHandler handler;
 
@@ -52,7 +52,7 @@ namespace Microsoft.Maui
 			info.IsSelected = info.Kind == PositionKind.Item
 				&& (handler?.VirtualView?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false);
 
-			if (holder is RvItemHolder itemHolder && itemHolder.View != null)
+			if (holder is RvItemHolder itemHolder && itemHolder.WrapperView != null)
 				itemHolder.Update(info);
 		}
 
@@ -90,7 +90,7 @@ namespace Microsoft.Maui
 		{
 			var template = templates.ElementAtOrDefault(viewType);
 
-			var wrapper = new WrapperView(parent.Context)
+			var wrapper = new ReplaceableWrapperView(parent.Context)
 			{
 				//MatchWidth = true,
 				LayoutParameters = new ViewGroup.LayoutParams(
@@ -98,7 +98,7 @@ namespace Microsoft.Maui
 				ViewGroup.LayoutParams.WrapContent)
 			};
 
-			var viewHolder = new RvItemHolder(wrapper, template);
+			var viewHolder = new RvItemHolder(wrapper, wrapper, template);
 
 			clickListener = new RvViewHolderClickListener(viewHolder, rvh =>
 			{
@@ -119,25 +119,6 @@ namespace Microsoft.Maui
 			viewHolder.ItemView.SetOnClickListener(clickListener);
 
 			return viewHolder;
-		}
-
-		class RvViewHolderClickListener : Java.Lang.Object, View.IOnClickListener
-		{
-			public RvViewHolderClickListener(RvItemHolder viewHolder, Action<RvItemHolder> clickHandler)
-			{
-				ViewHolder = viewHolder;
-				ClickHandler = clickHandler;
-			}
-
-			public RvItemHolder ViewHolder { get; }
-
-			public Action<RvItemHolder> ClickHandler { get; }
-
-			public void OnClick(View v)
-			{
-				if (ViewHolder?.PositionInfo != null && ViewHolder.PositionInfo.Kind == PositionKind.Item)
-					ClickHandler?.Invoke(ViewHolder);
-			}
 		}
 	}
 }

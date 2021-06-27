@@ -35,14 +35,4 @@
     <Compile Remove="**\*.netstandard.cs" />
     <Compile Remove="**\*.netstandard.*.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <_MauiCompileToAdd Remove="Platforms\Android\RvAdapter.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Platforms\Android\RvAdapter.cs" />
-    <None Include="Platforms\Android\RvItemHolder.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <_MauiCompileToAdd Remove="Platforms\Android\RvItemHolder.cs" />
-  </ItemGroup>
 </Project>
