@@ -3,9 +3,6 @@
   <PropertyGroup>
     <_KeepLaunchProfiles>true</_KeepLaunchProfiles>
   </PropertyGroup>
-  <ItemGroup>
-    <ProjectCapability Include="MauiSingleProject" />
-  </ItemGroup>
   <!-- 
     Temporarily disable the linker on CI for Apple platforms until we
     get machine pools with Big Sur and Xcode 12.5.
