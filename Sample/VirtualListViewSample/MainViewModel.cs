@@ -6,10 +6,10 @@ namespace VirtualListViewSample
 	{
 		public MainViewModel()
 		{
-			Adapter = new SqliteGroupedAdapter<AlbumInfo, TrackInfo>();
+			Adapter = new JsonGroupedAdapter();
 		}
 
-		public SqliteGroupedAdapter<AlbumInfo, TrackInfo> Adapter { get; set; }
+		public JsonGroupedAdapter Adapter { get; set; }
 
 		public void NotifyPropertyChanged(string propertyName)
 			=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

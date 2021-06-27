@@ -1,25 +1,26 @@
 ﻿using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Xaml;
+using MauiCoreItemTemplateSelector = Microsoft.Maui.ItemTemplateSelector;
 
 namespace VirtualListViewSample
 {
-	public class ItemTemplateSelector
+	public class ItemTemplateSelector : MauiCoreItemTemplateSelector
 	{
-		public IReplaceableView PopTemplate { get; set; }
+		public IViewTemplate PopTemplate { get; set; }
 		//public DataTemplate HeavyTemplate { get; set; }
-		public IReplaceableView FilmTemplate { get; set; }
+		public IViewTemplate FilmTemplate { get; set; }
 
-		public IReplaceableView GenericTemplate { get; set; }
+		public IViewTemplate GenericTemplate { get; set; }
 
 		public ItemTemplateSelector()
 		{
-			PopTemplate = new DataTemplate(typeof(PopViewCell));
-			GenericTemplate = new DataTemplate(typeof(GenericViewCell));
-			FilmTemplate = new DataTemplate(typeof(FilmViewCell));
+			PopTemplate = new PopViewCell();
+			GenericTemplate = new GenericViewCell();
+			FilmTemplate = new FilmViewCell();
 		}
 
-		public IReplaceableView SelectItemTemplate(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex)
+		public override IViewTemplate SelectItemTemplate(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex)
 		{
 			var item = adapter.Item(sectionIndex, itemIndex);
 
@@ -37,5 +38,5 @@ namespace VirtualListViewSample
 
 			return GenericTemplate;
 		}
-	}
+    }
 }
