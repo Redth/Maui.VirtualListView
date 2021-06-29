@@ -2,13 +2,19 @@
 <vlv:VirtualViewCell
 	xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
-    xmlns:local="clr-namespace:VirtualListViewSample"
+	xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
+	xmlns:local="clr-namespace:VirtualListViewSample"
 	x:Class="VirtualListViewSample.GenericViewCell"
 	x:Name="self"
-    x:DataType="local:TrackInfo">
+	x:DataType="local:TrackInfo">
+	<vlv:VirtualViewCell.Resources>
+		<ResourceDictionary>
+			<local:SelectedColorConverter x:Key="selectedColorConverter" />
+			<local:ItemTemplateSelector x:Key="itemTemplateSelector" />
+		</ResourceDictionary>
+	</vlv:VirtualViewCell.Resources>
   <vlv:VirtualViewCell.Content>
-		<StackLayout
+		<StackLayout HorizontalOptions="FillAndExpand"
 			Spacing="0"
 			BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}">
 

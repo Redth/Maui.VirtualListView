@@ -5,11 +5,12 @@ using System;
 
 namespace Microsoft.Maui
 {
-    public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, RecyclerView>
+	public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, RecyclerView>
 	{
 		RvAdapter adapter;
 		RecyclerView recyclerView;
 		LinearLayoutManager layoutManager;
+		PositionalViewSelector positionalViewSelector;
 
 		protected override RecyclerView CreateNativeView()
 			=> recyclerView ??= new RecyclerView(Context);
@@ -19,7 +20,12 @@ namespace Microsoft.Maui
 			layoutManager = new LinearLayoutManager(Context);
 			//layoutManager.Orientation = LinearLayoutManager.Horizontal;
 
-			adapter = new RvAdapter(Context, this.VirtualView.Adapter, this);
+			positionalViewSelector = new PositionalViewSelector(VirtualView.Adapter,
+				VirtualView.ViewSelector,
+				() => VirtualView?.Header != null,
+				() => VirtualView?.Footer != null);
+
+			adapter = new RvAdapter(Context, this, positionalViewSelector);
 			
 			recyclerView.AddOnScrollListener(new RvScrollListener((rv, dx, dy) =>
 			{
@@ -30,7 +36,7 @@ namespace Microsoft.Maui
 				// VirtualView?.RaiseScrolled((x, y));
 			}));
 
-            recyclerView.SetLayoutManager(layoutManager);
+			recyclerView.SetLayoutManager(layoutManager);
 			recyclerView.SetAdapter(adapter);
 			recyclerView.LayoutParameters = new ViewGroup.LayoutParams(
 				ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
@@ -46,22 +52,22 @@ namespace Microsoft.Maui
 			layoutManager = null;
 		}
 
+		public void InvalidateData()
+		{
+			positionalViewSelector.Reset();
+			adapter?.NotifyDataSetChanged();
+		}
+
 		public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler.NativeView?.SwapAdapter(handler.adapter, true);
 
-		public static void MapHeaderTemplate(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler.adapter?.NotifyDataSetChanged();
 
-		public static void MapFooterTemplate(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		public static void MapFooter(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler.adapter?.NotifyDataSetChanged();
 
-		public static void MapSectionHeaderTemplate(VirtualListViewHandler handler, IVirtualListView virtualListView)
-			=> handler.adapter?.NotifyDataSetChanged();
-		
-		public static void MapSectionFooterTemplate(VirtualListViewHandler handler, IVirtualListView virtualListView)
-			=> handler.adapter?.NotifyDataSetChanged();
-
-		public static void MapItemTemplate(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		public static void MapViewSelector(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler.adapter?.NotifyDataSetChanged();
 
 		class RvScrollListener : RecyclerView.OnScrollListener

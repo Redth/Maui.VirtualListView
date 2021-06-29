@@ -1,7 +1,10 @@
-﻿namespace VirtualListViewSample
+﻿using LiteDB;
+
+namespace VirtualListViewSample
 {
     public class AlbumInfo
     {
+        [BsonId]
         public int AlbumId { get; set; }
 
         public string AlbumTitle { get; set; }

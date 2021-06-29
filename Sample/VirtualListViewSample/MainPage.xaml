@@ -3,9 +3,9 @@
 	xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
 	xmlns:local="clr-namespace:VirtualListViewSample"
-    xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
+	xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
 	BackgroundColor="#045FB4"
-    x:DataType="local:MainViewModel"
+	x:DataType="local:MainViewModel"
 	x:Class="VirtualListViewSample.MainPage">
 	<ContentPage.Resources>
 		<ResourceDictionary>
@@ -14,50 +14,50 @@
 		</ResourceDictionary>
 	</ContentPage.Resources>
 	<Grid>
-        <vlv:VirtualListView
+		<vlv:VirtualListView
 			HorizontalOptions="FillAndExpand"
 			VerticalOptions="FillAndExpand"
 			Adapter="{Binding Adapter}"
 			SelectionMode="Multiple"
 			BackgroundColor="#045FB4"
 			SelectedItemsChanged="VirtualListView_SelectedItemsChanged"
-            ItemTemplate="{StaticResource itemTemplateSelector}">
+			ItemTemplateSelector="{StaticResource itemTemplateSelector}">
 
-            <vlv:VirtualListView.SectionHeaderTemplate>
-                <vlv:VirtualViewCell x:DataType="local:AlbumInfo">
-                    <Grid ColumnDefinitions="Auto,*" BackgroundColor="#0B2161" Padding="10" ColumnSpacing="10">
-                        <Image
+			<vlv:VirtualListView.SectionHeaderTemplate>
+				<DataTemplate x:DataType="local:AlbumInfo">
+					<Grid ColumnDefinitions="Auto,*" BackgroundColor="#0B2161" Padding="10" ColumnSpacing="10">
+						<!--<Image
 								Source="https://community.mp3tag.de/uploads/default/original/2X/a/acf3edeb055e7b77114f9e393d1edeeda37e50c9.png"
 								WidthRequest="40" HeightRequest="40"
 								Grid.Column="0"
-								VerticalOptions="Center"/>
-                        <StackLayout HorizontalOptions="FillAndExpand" Grid.Column="1" Spacing="0">
-                            <Label VerticalOptions="Center" Text="{Binding ArtistName}" FontSize="Subtitle" TextColor="White" />
-                            <Label VerticalOptions="Center" Text="{Binding AlbumTitle}" FontSize="Caption" TextColor="White" />
-                        </StackLayout>
-                    </Grid>
-                </vlv:VirtualViewCell>
-            </vlv:VirtualListView.SectionHeaderTemplate>
+								VerticalOptions="Center"/>-->
+						<StackLayout HorizontalOptions="FillAndExpand" Grid.Column="1" Spacing="0">
+							<Label VerticalOptions="Center" Text="{Binding ArtistName}" FontSize="Subtitle" TextColor="White" />
+							<Label VerticalOptions="Center" Text="{Binding AlbumTitle}" FontSize="Caption" TextColor="White" />
+						</StackLayout>
+					</Grid>
+				</DataTemplate>
+			</vlv:VirtualListView.SectionHeaderTemplate>
 
 			<vlv:VirtualListView.SectionFooterTemplate>
-                <vlv:VirtualViewCell x:DataType="local:AlbumInfo">
-                    <StackLayout Padding="0,6,0,10" BackgroundColor="White">
-                        <Label Text="{Binding TrackCount, StringFormat='{0} Tracks'}" TextColor="LightGray" HorizontalOptions="Center" />
-                    </StackLayout>
-                </vlv:VirtualViewCell>
-            </vlv:VirtualListView.SectionFooterTemplate>
+				<DataTemplate x:DataType="local:AlbumInfo">
+					<StackLayout Padding="0,6,0,10" BackgroundColor="White">
+						<Label Text="{Binding TrackCount, StringFormat='{0} Tracks'}" TextColor="LightGray" HorizontalOptions="Center" />
+					</StackLayout>
+				</DataTemplate>
+			</vlv:VirtualListView.SectionFooterTemplate>
 
-            <vlv:VirtualListView.HeaderTemplate>
-                <vlv:VirtualViewCell BackgroundColor="#045FB4">
-                    <Label Padding="20" Text="Music Library" TextColor="White" HorizontalOptions="Center" />
-                </vlv:VirtualViewCell>
-            </vlv:VirtualListView.HeaderTemplate>
+			<!--<vlv:VirtualListView.GlobalHeader>
+				<Grid BackgroundColor="#045FB4">
+					<Label Padding="20" Text="Music Library" TextColor="White" HorizontalOptions="Center" />
+				</Grid>
+			</vlv:VirtualListView.GlobalHeader>
 
-            <vlv:VirtualListView.FooterTemplate>
-                <vlv:VirtualViewCell BackgroundColor="Navy">
-                    <Label Padding="20" Text="That's all folks!" TextColor="White" HorizontalOptions="Center" />
-                </vlv:VirtualViewCell>
-            </vlv:VirtualListView.FooterTemplate>
+			<vlv:VirtualListView.GlobalFooter>
+				<Grid BackgroundColor="Navy">
+					<Label Padding="20" Text="That's all folks!" TextColor="White" HorizontalOptions="Center" />
+				</Grid>
+			</vlv:VirtualListView.GlobalFooter>-->
 		</vlv:VirtualListView>
 	</Grid>
 </ContentPage>

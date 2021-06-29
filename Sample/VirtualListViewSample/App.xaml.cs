@@ -11,7 +11,7 @@ namespace VirtualListViewSample
 	{
 		public App() : base()
 		{
-			//InitializeComponent();
+			InitializeComponent();
 		}
 
 		protected override Window CreateWindow(IActivationState activationState)

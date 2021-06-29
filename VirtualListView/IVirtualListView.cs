@@ -1,4 +1,6 @@
 
+using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Primitives;
 using System;
 using System.Collections.Generic;
 
@@ -8,17 +10,14 @@ namespace Microsoft.Maui
 	{
 		IVirtualListViewAdapter Adapter { get; }
 
-		IViewTemplate HeaderTemplate { get; }
+		IVirtualListViewSelector ViewSelector { get; }
 
-		IViewTemplate FooterTemplate { get; }
+		IView Header { get; }
 
-		IViewTemplate SectionHeaderTemplate { get; }
-
-		IViewTemplate SectionFooterTemplate { get; }
-
-		IViewTemplate ItemTemplate { get; }
+		IView Footer { get; }
 
 		event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
+		event EventHandler DataInvalidated;
 
 		IReadOnlyList<ItemPosition> SelectedItems { get; }
 
@@ -27,5 +26,7 @@ namespace Microsoft.Maui
 		void SetSelected(params ItemPosition[] paths);
 
 		void SetDeselected(params ItemPosition[] paths);
+
+		void InvalidateData();
 	}
 }

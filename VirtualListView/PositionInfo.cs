@@ -43,6 +43,8 @@ namespace Microsoft.Maui
 
 		internal int Position { get; set; } = -1;
 
+		internal int ReuseId { get; set; }
+
 		public PositionKind Kind { get; init; } = PositionKind.Item;
 
 		public int SectionIndex { get; internal set; } = -1;

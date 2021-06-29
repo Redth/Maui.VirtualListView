@@ -6,39 +6,15 @@ namespace Microsoft.Maui
 {
 	internal class RvItemHolder : RecyclerView.ViewHolder
 	{
-		public ViewGroup NativeView { get; }
-		public ReplaceableWrapperView WrapperView { get; private set; }
-		public IView View { get; private set; }
-		public IViewTemplate Template { get; }
+		public readonly ViewGroup NativeView;
+		public readonly ReplaceableWrapperView WrapperView;
 		public PositionInfo PositionInfo { get; set; }
 
-		public IMauiContext MauiContext { get; private set; }
-
-		public RvItemHolder(ViewGroup nativeView, ReplaceableWrapperView wrapperView, IViewTemplate template, IMauiContext mauiContext)
+		public RvItemHolder(ViewGroup nativeView, ReplaceableWrapperView wrapperView)
 			: base(nativeView)
 		{
-			MauiContext = mauiContext;
-			Template = template;
 			NativeView = nativeView;
 			WrapperView = wrapperView;
-		}
-
-		public void Update(PositionInfo positionInfo)
-		{
-			if (View == null)
-			{
-				View = Template.CreateView(positionInfo) as IView;
-				NativeView.AddView(View?.ToNative(MauiContext));
-			}
-			else
-			{
-				// Already created, let's recycle it
-				View = Template.CreateView(positionInfo);
-				WrapperView.ReplaceView(View);
-			}
-
-			if (WrapperView is IPositionInfo viewPositionInfo)
-				viewPositionInfo.SetPositionInfo(positionInfo);
 		}
 	}
 }

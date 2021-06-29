@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0-android</TargetFrameworks>
+    <TargetFramework>net6.0-android</TargetFramework>
     <OutputType>Exe</OutputType>
 		<UseMaui>True</UseMaui>
 		<SingleProject>True</SingleProject>
@@ -21,23 +21,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="albums.json" />
-    <None Remove="chinook.db" />
-    <None Remove="tracks.json" />
+		<PackageReference Include="LiteDb" Version="5.0.10" />
+    <None Remove="chinook.litedb" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="albums.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="chinook.db" />
-    <EmbeddedResource Include="tracks.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <EmbeddedResource Include="chinook.litedb" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Platforms\" />
   </ItemGroup>
 </Project>

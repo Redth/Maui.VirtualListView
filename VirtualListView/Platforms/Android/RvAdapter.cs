@@ -1,21 +1,19 @@
 ﻿using Android.Content;
 using Android.Views;
 using AndroidX.RecyclerView.Widget;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Microsoft.Maui
 {
-
 	internal partial class RvAdapter : RecyclerView.Adapter
 	{
 		readonly VirtualListViewHandler handler;
 
-		readonly List<IViewTemplate> templates;
-
 		readonly object lockObj = new object();
 
-		readonly IVirtualListViewAdapter adapter;
+		readonly PositionalViewSelector positionalViewSelector;
 
 		RvViewHolderClickListener clickListener;
 
@@ -23,26 +21,31 @@ namespace Microsoft.Maui
 
 		public object BindingContext { get; set; }
 
-		internal bool HasHeader => handler?.VirtualView?.HeaderTemplate != null;
-		internal bool HasFooter => handler?.VirtualView?.HeaderTemplate != null;
-		internal bool HasSectionHeader => handler?.VirtualView?.SectionHeaderTemplate != null;
-		internal bool HasSectionFooter => handler?.VirtualView?.SectionFooterTemplate != null;
-
 		public override int ItemCount
-			=> PositionTemplateSelector.GetTotalCount(adapter, HasHeader, HasFooter, HasSectionHeader, HasSectionFooter);
+			=> positionalViewSelector?.GetTotalCount() ?? 0;
 
-		internal RvAdapter(Context context, IVirtualListViewAdapter adapter, VirtualListViewHandler handler)
+		internal RvAdapter(Context context, VirtualListViewHandler handler, PositionalViewSelector positionalViewSelector)
 		{
 			Context = context;
-			this.adapter = adapter;
 			this.handler = handler;
+			this.positionalViewSelector = positionalViewSelector;
+		}
 
-			templates = new List<IViewTemplate>();
+		public override void OnDetachedFromRecyclerView(RecyclerView recyclerView)
+		{
+			base.OnDetachedFromRecyclerView(recyclerView);
+
+			
+		}
+
+		public override void OnViewDetachedFromWindow(Java.Lang.Object holder)
+		{
+			base.OnViewDetachedFromWindow(holder);
 		}
 
 		public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
 		{
-			var info = PositionTemplateSelector.GetInfo(adapter, position, HasHeader, HasFooter, HasSectionHeader, HasSectionFooter);
+			var info = positionalViewSelector.GetInfo(position);
 
 			if (info == null)
 				return;
@@ -52,35 +55,27 @@ namespace Microsoft.Maui
 			info.IsSelected = info.Kind == PositionKind.Item
 				&& (handler?.VirtualView?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false);
 
-			if (holder is RvItemHolder itemHolder && itemHolder.WrapperView != null)
-				itemHolder.Update(info);
+			if (holder is RvItemHolder itemHolder)
+			{
+				itemHolder.PositionInfo = info;
+
+				var newView = positionalViewSelector.ViewSelector.ViewFor(info.Kind, info.SectionIndex, info.ItemIndex);
+				itemHolder.WrapperView.ReplaceView(newView);
+
+				if (itemHolder.NativeView.ChildCount <= 0)
+					itemHolder.NativeView.AddView(itemHolder.WrapperView.ReplacedView.ToNative(handler.MauiContext));
+			}
 		}
 
 		public override int GetItemViewType(int position)
 		{
-			int viewType = base.GetItemViewType(position);
+			base.GetItemViewType(position);
 
-			var template = PositionTemplateSelector.GetTemplate(
-				adapter,
-				position,
-				handler?.VirtualView?.HeaderTemplate,
-				handler?.VirtualView?.FooterTemplate,
-				handler?.VirtualView?.SectionHeaderTemplate,
-				handler?.VirtualView?.SectionFooterTemplate,
-				handler?.VirtualView?.ItemTemplate);
-
-			lock (lockObj)
-			{
-				viewType = templates.IndexOf(template);
-
-				if (viewType < 0)
-				{
-					templates.Add(template);
-					viewType = templates.Count - 1;
-				}
-			}
-
-			return viewType;
+			var info = positionalViewSelector.GetInfo(position);
+			var reuseId = positionalViewSelector.GetReuseId(info.Kind, info.SectionIndex, info.ItemIndex);
+			
+			Console.WriteLine($"{position} => {info.SectionIndex}.{info.ItemIndex} ({reuseId})");
+			return reuseId;
 		}
 
 		public override long GetItemId(int position)
@@ -88,8 +83,6 @@ namespace Microsoft.Maui
 
 		public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)
 		{
-			var template = templates.ElementAtOrDefault(viewType);
-
 			var wrapper = new ReplaceableWrapperView(parent.Context)
 			{
 				//MatchWidth = true,
@@ -98,7 +91,7 @@ namespace Microsoft.Maui
 				ViewGroup.LayoutParams.WrapContent)
 			};
 
-			var viewHolder = new RvItemHolder(wrapper, wrapper, template, handler.MauiContext);
+			var viewHolder = new RvItemHolder(wrapper, wrapper);
 
 			clickListener = new RvViewHolderClickListener(viewHolder, rvh =>
 			{
@@ -108,7 +101,6 @@ namespace Microsoft.Maui
 				var p = new ItemPosition(rvh.PositionInfo.SectionIndex, rvh.PositionInfo.ItemIndex);
 
 				rvh.PositionInfo.IsSelected = !rvh.PositionInfo.IsSelected;
-				rvh.Update(rvh.PositionInfo);
 
 				if (rvh.PositionInfo.IsSelected)
 					handler.VirtualView?.SetSelected(p);

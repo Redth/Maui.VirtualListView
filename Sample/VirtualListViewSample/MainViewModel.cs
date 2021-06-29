@@ -6,10 +6,10 @@ namespace VirtualListViewSample
 	{
 		public MainViewModel()
 		{
-			Adapter = new JsonGroupedAdapter();
+			Adapter = new MusicDataAdapter();
 		}
 
-		public JsonGroupedAdapter Adapter { get; set; }
+		public MusicDataAdapter Adapter { get; set; }
 
 		public void NotifyPropertyChanged(string propertyName)
 			=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

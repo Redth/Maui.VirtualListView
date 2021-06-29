@@ -3,10 +3,9 @@ using System;
 
 namespace Microsoft.Maui
 {
-
-    internal partial class RvAdapter
-    {
-        class RvViewHolderClickListener : Java.Lang.Object, View.IOnClickListener
+	internal partial class RvAdapter
+	{
+		class RvViewHolderClickListener : Java.Lang.Object, View.IOnClickListener
 		{
 			public RvViewHolderClickListener(RvItemHolder viewHolder, Action<RvItemHolder> clickHandler)
 			{
