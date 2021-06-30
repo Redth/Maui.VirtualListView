@@ -14,6 +14,12 @@ namespace Microsoft.Maui.Controls
 
 		}
 
+		public static readonly BindableProperty PositionInfoProperty = BindableProperty.CreateAttached(
+			"PositionInfo",
+			typeof(PositionInfo),
+			typeof(View),
+			default);
+
 		public IVirtualListViewAdapter Adapter
 		{
 			get => (IVirtualListViewAdapter)GetValue(AdapterProperty);
@@ -205,19 +211,43 @@ namespace Microsoft.Maui.Controls
 		}
 
 		public IView ViewForItem(int sectionIndex, int itemIndex)
-			=> ItemTemplateSelector?.SelectTemplate(Adapter, sectionIndex, itemIndex).CreateContent() as IView
-				?? ItemTemplate.CreateContent() as IView;
+		{
+			var item = Adapter.Item(sectionIndex, itemIndex);
+
+			var view = ItemTemplateSelector?.SelectTemplate(item, sectionIndex, itemIndex).CreateContent() as View
+				?? ItemTemplate.CreateContent() as View;
+
+			view.BindingContext = item;
+
+			return view;
+		}
 
 		public IView ViewForSectionHeader(int sectionIndex)
-		=> SectionHeaderTemplateSelector?.SelectTemplate(Adapter, sectionIndex)?.CreateContent() as IView
-				?? SectionHeaderTemplate?.CreateContent() as IView;
+		{
+			var section = Adapter.Section(sectionIndex);
+			
+			var view = SectionHeaderTemplateSelector?.SelectTemplate(section, sectionIndex)?.CreateContent() as View
+				?? SectionHeaderTemplate?.CreateContent() as View;
+
+			view.BindingContext = section;
+			
+			return view;
+		}
 
 		public bool SectionHasHeader(int sectionIndex)
 			=> SectionHeaderTemplateSelector != null || SectionHeaderTemplate != null;
 
 		public IView ViewForSectionFooter(int sectionIndex)
-			=> SectionFooterTemplateSelector?.SelectTemplate(Adapter, sectionIndex)?.CreateContent() as IView
-				?? SectionFooterTemplate?.CreateContent() as IView;
+		{
+			var section = Adapter.Section(sectionIndex);
+
+			var view = SectionFooterTemplateSelector?.SelectTemplate(section, sectionIndex)?.CreateContent() as View
+				?? SectionFooterTemplate?.CreateContent() as View;
+
+			view.BindingContext = section;
+
+			return view;
+		}
 
 		public bool SectionHasFooter(int sectionIndex)
 			=> SectionFooterTemplateSelector != null || SectionFooterTemplate != null;
@@ -241,12 +271,21 @@ namespace Microsoft.Maui.Controls
 		}
 
 		public string ReuseIdIdForItem(int sectionIndex, int itemIndex)
-			=> CacheTemplate("INDEX_", ItemTemplateSelector?.SelectTemplate(Adapter, sectionIndex, itemIndex) ?? ItemTemplate);
+			=> CacheTemplate(
+				"INDEX_",
+				ItemTemplateSelector?.SelectTemplate(Adapter.Item(sectionIndex, itemIndex), sectionIndex, itemIndex)
+					?? ItemTemplate);
 
 		public string ReuseIdIdForSectionHeader(int sectionIndex)
-			=> CacheTemplate("SECTIONHEADER_", SectionHeaderTemplateSelector?.SelectTemplate(Adapter, sectionIndex) ?? SectionHeaderTemplate);
+			=> CacheTemplate(
+				"SECTIONHEADER_",
+				SectionHeaderTemplateSelector?.SelectTemplate(Adapter.Section(sectionIndex), sectionIndex)
+					?? SectionHeaderTemplate);
 
 		public string ReuseIdIdForSectionFooter(int sectionIndex)
-			=> CacheTemplate("SECTIONFOOTER_", SectionHeaderTemplateSelector?.SelectTemplate(Adapter, sectionIndex) ?? SectionHeaderTemplate);
+			=> CacheTemplate(
+				"SECTIONFOOTER_",
+				SectionHeaderTemplateSelector?.SelectTemplate(Adapter.Section(sectionIndex), sectionIndex)
+					?? SectionHeaderTemplate);
 	}
 }

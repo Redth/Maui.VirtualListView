@@ -14,6 +14,9 @@ namespace VirtualListViewSample
         public string ArtistName { get; set; }
 
         public int TrackCount { get; set; }
+
+        public override string ToString()
+            => $"{AlbumTitle} - {ArtistName}";
     }
 
 }

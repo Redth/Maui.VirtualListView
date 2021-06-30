@@ -4,7 +4,6 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
 	xmlns:local="clr-namespace:VirtualListViewSample"
 	xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
-	BackgroundColor="#045FB4"
 	x:DataType="local:MainViewModel"
 	x:Class="VirtualListViewSample.MainPage">
 	<ContentPage.Resources>
@@ -19,13 +18,17 @@
 			VerticalOptions="FillAndExpand"
 			Adapter="{Binding Adapter}"
 			SelectionMode="Multiple"
-			BackgroundColor="#045FB4"
-			SelectedItemsChanged="VirtualListView_SelectedItemsChanged"
-			ItemTemplateSelector="{StaticResource itemTemplateSelector}">
+			SelectedItemsChanged="VirtualListView_SelectedItemsChanged">
+			<!--ItemTemplateSelector="{StaticResource itemTemplateSelector}"-->
 
+			<vlv:VirtualListView.ItemTemplate>
+				<DataTemplate x:DataType="local:TrackInfo">
+					<Label Text="{Binding TrackName}" FontSize="Subtitle" />
+				</DataTemplate>
+			</vlv:VirtualListView.ItemTemplate>
 			<vlv:VirtualListView.SectionHeaderTemplate>
 				<DataTemplate x:DataType="local:AlbumInfo">
-					<Grid ColumnDefinitions="Auto,*" BackgroundColor="#0B2161" Padding="10" ColumnSpacing="10">
+					<Grid ColumnDefinitions="Auto,*" BackgroundColor="#0B2161" Padding="10" ColumnSpacing="10" HorizontalOptions="FillAndExpand">
 						<!--<Image
 								Source="https://community.mp3tag.de/uploads/default/original/2X/a/acf3edeb055e7b77114f9e393d1edeeda37e50c9.png"
 								WidthRequest="40" HeightRequest="40"
@@ -41,9 +44,12 @@
 
 			<vlv:VirtualListView.SectionFooterTemplate>
 				<DataTemplate x:DataType="local:AlbumInfo">
-					<StackLayout Padding="0,6,0,10" BackgroundColor="White">
-						<Label Text="{Binding TrackCount, StringFormat='{0} Tracks'}" TextColor="LightGray" HorizontalOptions="Center" />
-					</StackLayout>
+
+					<Grid BackgroundColor="LightGray" HorizontalOptions="FillAndExpand">
+						<Label Margin="10,6,10,6" Text="{Binding TrackCount, StringFormat='{0} Tracks'}" TextColor="Black" HorizontalOptions="Center" />
+					</Grid>
+					
+					
 				</DataTemplate>
 			</vlv:VirtualListView.SectionFooterTemplate>
 

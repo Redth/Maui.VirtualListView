@@ -22,6 +22,9 @@ namespace VirtualListViewSample
         public string GenreName { get; set; }
 
         public int TrackLength { get; set; }
-    }
+
+        public override string ToString()
+            => $"{TrackName} - {ArtistName} - {AlbumTitle}";
+	}
 
 }

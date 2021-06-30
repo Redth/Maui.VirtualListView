@@ -30,7 +30,7 @@ namespace VirtualListViewSample
 
             database = new LiteDatabase(dbPath);
 
-            albums = database.GetCollection<AlbumInfo>("albums").FindAll().ToList();
+            albums = database.GetCollection<AlbumInfo>("albums").FindAll().OrderBy(a => a.AlbumId).ToList();
             tracks = database.GetCollection<TrackInfo>("tracks");
         }
 
@@ -42,16 +42,24 @@ namespace VirtualListViewSample
             => albums.Count();
 
         public object Item(int sectionIndex, int itemIndex)
-            => tracks.FindOne(t => t.AlbumId == (Section(sectionIndex) as AlbumInfo).AlbumId);
+		{
+            var section = Section(sectionIndex) as AlbumInfo;
+
+            var t = tracks.Query().Where(t => t.AlbumId == section.AlbumId).OrderBy(t => t.TrackId).Skip(itemIndex).Limit(1).First();
+
+            return t;
+		}
 
         public int ItemsForSection(int sectionIndex)
-        {
-            var album = Section(sectionIndex) as AlbumInfo;
-
-            return tracks.Count(t => t.AlbumId == album.AlbumId);
-        }
+            => (Section(sectionIndex) as AlbumInfo).TrackCount;
 
         public object Section(int sectionIndex)
-            => albums[sectionIndex];
+        {
+            var section = albums[sectionIndex] as AlbumInfo;
+            if (section.TrackCount <= 0)
+                section.TrackCount = tracks.Count(t => t.AlbumId == section.AlbumId);
+
+            return section;
+        }
     }
 }

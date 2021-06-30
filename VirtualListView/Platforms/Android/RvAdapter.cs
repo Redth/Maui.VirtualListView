@@ -31,17 +31,8 @@ namespace Microsoft.Maui
 			this.positionalViewSelector = positionalViewSelector;
 		}
 
-		public override void OnDetachedFromRecyclerView(RecyclerView recyclerView)
-		{
-			base.OnDetachedFromRecyclerView(recyclerView);
-
-			
-		}
-
-		public override void OnViewDetachedFromWindow(Java.Lang.Object holder)
-		{
-			base.OnViewDetachedFromWindow(holder);
-		}
+		public float DisplayScale =>
+			handler?.Context?.Resources.DisplayMetrics.Density ?? 1;
 
 		public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
 		{
@@ -57,13 +48,9 @@ namespace Microsoft.Maui
 
 			if (holder is RvItemHolder itemHolder)
 			{
-				itemHolder.PositionInfo = info;
-
 				var newView = positionalViewSelector.ViewSelector.ViewFor(info.Kind, info.SectionIndex, info.ItemIndex);
-				itemHolder.WrapperView.ReplaceView(newView);
 
-				if (itemHolder.NativeView.ChildCount <= 0)
-					itemHolder.NativeView.AddView(itemHolder.WrapperView.ReplacedView.ToNative(handler.MauiContext));
+				itemHolder.Update(info, newView);
 			}
 		}
 
@@ -73,8 +60,7 @@ namespace Microsoft.Maui
 
 			var info = positionalViewSelector.GetInfo(position);
 			var reuseId = positionalViewSelector.GetReuseId(info.Kind, info.SectionIndex, info.ItemIndex);
-			
-			Console.WriteLine($"{position} => {info.SectionIndex}.{info.ItemIndex} ({reuseId})");
+
 			return reuseId;
 		}
 
@@ -83,15 +69,7 @@ namespace Microsoft.Maui
 
 		public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)
 		{
-			var wrapper = new ReplaceableWrapperView(parent.Context)
-			{
-				//MatchWidth = true,
-				LayoutParameters = new ViewGroup.LayoutParams(
-				ViewGroup.LayoutParams.MatchParent,
-				ViewGroup.LayoutParams.WrapContent)
-			};
-
-			var viewHolder = new RvItemHolder(wrapper, wrapper);
+			var viewHolder = new RvItemHolder(handler.MauiContext);
 
 			clickListener = new RvViewHolderClickListener(viewHolder, rvh =>
 			{

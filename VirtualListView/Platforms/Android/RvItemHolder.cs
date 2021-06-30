@@ -1,20 +1,28 @@
 ﻿using Android.Views;
 using AndroidX.RecyclerView.Widget;
 using Microsoft.Maui.HotReload;
-
+using AFrameLayout = Android.Widget.FrameLayout;
 namespace Microsoft.Maui
 {
 	internal class RvItemHolder : RecyclerView.ViewHolder
 	{
-		public readonly ViewGroup NativeView;
-		public readonly ReplaceableWrapperView WrapperView;
-		public PositionInfo PositionInfo { get; set; }
+		public RvViewContainer ViewContainer { get; private set; }
+		public PositionInfo PositionInfo { get; private set; }
 
-		public RvItemHolder(ViewGroup nativeView, ReplaceableWrapperView wrapperView)
-			: base(nativeView)
+		public RvItemHolder(IMauiContext mauiContext)
+			: base(new RvViewContainer(mauiContext)
+			{
+				//LayoutParameters = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent)
+			})
 		{
-			NativeView = nativeView;
-			WrapperView = wrapperView;
+			ViewContainer = ItemView as RvViewContainer;
+		}
+
+		public void Update(PositionInfo positionInfo, IView newView)
+		{
+			PositionInfo = positionInfo;
+
+			ViewContainer.SwapView(newView);
 		}
 	}
 }

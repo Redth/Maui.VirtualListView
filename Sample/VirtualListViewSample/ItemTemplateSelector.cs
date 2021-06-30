@@ -17,10 +17,8 @@ namespace VirtualListViewSample
         readonly DataTemplate FilmTemplate;
         readonly DataTemplate GenericTemplate;
 
-        public override DataTemplate SelectTemplate(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex)
+        public override DataTemplate SelectTemplate(object item, int sectionIndex, int itemIndex)
 		{
-            var item = adapter.Item(sectionIndex, itemIndex);
-
             if (item is TrackInfo trackInfo)
             {
                 var genreId = trackInfo.GenreId;

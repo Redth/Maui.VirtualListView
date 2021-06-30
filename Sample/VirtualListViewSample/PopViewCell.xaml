@@ -7,6 +7,12 @@
 	x:Name="self"
 	x:DataType="local:TrackInfo"
 	x:Class="VirtualListViewSample.PopViewCell">
+	<vlv:VirtualViewCell.Resources>
+		<ResourceDictionary>
+			<local:SelectedColorConverter x:Key="selectedColorConverter" />
+			<local:ItemTemplateSelector x:Key="itemTemplateSelector" />
+		</ResourceDictionary>
+	</vlv:VirtualViewCell.Resources>
 	<vlv:VirtualViewCell.Content>
 		<StackLayout
 			Spacing="0"
