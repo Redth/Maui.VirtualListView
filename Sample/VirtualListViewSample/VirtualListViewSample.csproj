@@ -12,7 +12,7 @@
     <RuntimeIdentifier Condition="'$(TargetFramework)' == 'net6.0-ios'">iossimulator-x64</RuntimeIdentifier>
     <RuntimeIdentifier Condition="'$(TargetFramework)' == 'net6.0-maccatalyst'">maccatalyst-x64</RuntimeIdentifier>
     <InvariantGlobalization Condition="'$(TargetFramework)' == 'net6.0-maccatalyst'">true</InvariantGlobalization>
-  </PropertyGroup>
+	</PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <DebugType>portable</DebugType>
@@ -22,7 +22,6 @@
 
   <ItemGroup>
 		<PackageReference Include="LiteDb" Version="5.0.10" />
-    <None Remove="chinook.litedb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="chinook.litedb" />
@@ -30,4 +29,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Platforms\Windows\" />
+  </ItemGroup>
+
+	<Target Name="ValidateWinUIPlatform" />
+	<Target Name="BinPlaceBootstrapDll" />
+
 </Project>

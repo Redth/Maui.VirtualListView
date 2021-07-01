@@ -22,7 +22,7 @@ namespace Microsoft.Maui
 		public object BindingContext { get; set; }
 
 		public override int ItemCount
-			=> positionalViewSelector?.GetTotalCount() ?? 0;
+			=> positionalViewSelector?.TotalCount ?? 0;
 
 		internal RvAdapter(Context context, VirtualListViewHandler handler, PositionalViewSelector positionalViewSelector)
 		{

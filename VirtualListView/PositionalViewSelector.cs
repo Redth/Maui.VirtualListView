@@ -182,7 +182,23 @@ namespace Microsoft.Maui
 			return PositionInfo.ForItem(-1, realSectionIndex, realItemIndex, CachedItemsForSection(realSectionIndex), realNumberOfSections);
 		}
 
-		public int GetTotalCount()
+		int? cachedTotalCount;
+		public int TotalCount
+		{
+			get
+			{
+				if (!cachedTotalCount.HasValue)
+				{
+					var tc = GetTotalCount();
+					if (tc > 0)
+						cachedTotalCount = tc;
+				}
+
+				return cachedTotalCount ?? 0;
+			}
+		}
+
+		int GetTotalCount()
 		{
 			if (Adapter == null)
 				return 0;

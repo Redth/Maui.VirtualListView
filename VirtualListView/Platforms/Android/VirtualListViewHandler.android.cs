@@ -57,19 +57,21 @@ namespace Microsoft.Maui
 		}
 
 		public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
-			=> handler.NativeView?.SwapAdapter(handler.adapter, true);
+			=> handler.InvalidateData();
 
 		public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
-			=> handler.adapter?.NotifyDataSetChanged();
+			=> handler.InvalidateData();
 
 		public static void MapFooter(VirtualListViewHandler handler, IVirtualListView virtualListView)
-			=> handler.adapter?.NotifyDataSetChanged();
+			=> handler.InvalidateData();
 
 		public static void MapViewSelector(VirtualListViewHandler handler, IVirtualListView virtualListView)
-			=> handler.adapter?.NotifyDataSetChanged();
+			=> handler.InvalidateData();
 
 		public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{ }
+		public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView)
+			=> handler.InvalidateData();
 
 		class RvScrollListener : RecyclerView.OnScrollListener
 		{

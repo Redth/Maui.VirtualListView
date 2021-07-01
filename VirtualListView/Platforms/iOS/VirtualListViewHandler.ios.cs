@@ -77,16 +77,16 @@ namespace Microsoft.Maui
 			=> dataSource?.GetCell(collectionView, indexPath) as CvCell;
 
 		public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
-			=> Reset(handler);
+			=> handler?.InvalidateData();
 
 		public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
-			=> Reset(handler);
+			=> handler?.InvalidateData();
 
 		public static void MapFooter(VirtualListViewHandler handler, IVirtualListView virtualListView)
-			=> Reset(handler);
+			=> handler?.InvalidateData();
 
 		public static void MapViewSelector(VirtualListViewHandler handler, IVirtualListView virtualListView)
-			=> Reset(handler);
+			=> handler?.InvalidateData();
 
 		public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{
@@ -97,12 +97,15 @@ namespace Microsoft.Maui
 			}
 		}
 
-		static void Reset(VirtualListViewHandler handler)
+		public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView)
+			=> handler?.InvalidateData();
+
+		public void InvalidateData()
 		{
-			handler?.PositionalViewSelector?.Reset();
-			(handler?.NativeView?.DataSource as CvDataSource)?.Reset(handler?.NativeView);
-			handler?.NativeView?.ReloadData();
-			handler?.NativeView?.CollectionViewLayout?.InvalidateLayout();
+			PositionalViewSelector?.Reset();
+			(NativeView?.DataSource as CvDataSource)?.Reset(NativeView);
+			NativeView?.ReloadData();
+			NativeView?.CollectionViewLayout?.InvalidateLayout();
 		}
 	}
 }

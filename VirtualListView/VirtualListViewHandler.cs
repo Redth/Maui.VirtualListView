@@ -11,6 +11,7 @@ namespace Microsoft.Maui
 			[nameof(IVirtualListView.Footer)] = MapFooter,
 			[nameof(IVirtualListView.ViewSelector)] = MapViewSelector,
 			[nameof(IVirtualListView.SelectionMode)] = MapSelectionMode,
+			[nameof(IVirtualListView.InvalidateData)] = MapInvalidateData,
 		};
 
 		public VirtualListViewHandler() : base(VirtualListViewMapper)

@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net6.0-windows10.0.19041.0</TargetFrameworks>
+    <OutputType>WinExe</OutputType>
+		<UseMaui>True</UseMaui>
+		<SingleProject>True</SingleProject>
+    <ApplicationId>com.microsoft.virtuallistviewsample</ApplicationId>
+    <ApplicationTitle>MAUI</ApplicationTitle>
+    <ApplicationVersion>1.0</ApplicationVersion>
+    <AndroidVersionCode>1</AndroidVersionCode>
+    <Platforms>x86;x64;arm64</Platforms>
+		<RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
+		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+		<EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
+		<WindowsPackageType>MSIX</WindowsPackageType>
+	</PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj" />
+		<PackageReference Include="LiteDb" Version="5.0.10" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<Compile
+			Include="..\VirtualListViewSample\**\*.cs"
+			Exclude="..\VirtualListViewSample\bin\**;..\VirtualListViewSample\obj\**;..\VirtualListViewSample\Platforms\**"
+			Link="%(RecursiveDir)%(Filename)%(Extension)"/>
+		<MauiXaml
+			Include="..\VirtualListViewSample\**\*.xaml"
+			Exclude="..\VirtualListViewSample\bin\**;..\VirtualListViewSample\obj\**"
+			Link="%(RecursiveDir)%(FileName)%(Extension)" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.ProjectReunion" Version="0.8.0-preview" />
+		<PackageReference Include="Microsoft.ProjectReunion.Foundation" Version="0.8.0-preview" />
+		<PackageReference Include="Microsoft.ProjectReunion.WinUI" Version="0.8.0-preview" />
+	</ItemGroup>
+
+	<Target Name="ValidateWinUIPlatform" />
+	<Target Name="BinPlaceBootstrapDll" />
+
+</Project>

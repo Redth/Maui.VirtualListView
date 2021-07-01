@@ -1,0 +1,7 @@
+{
+	"profiles": {
+	  "VirtualListViewSample.WinUI": {
+		"commandName": "AppContainer"
+	  }
+	}
+  }
