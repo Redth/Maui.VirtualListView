@@ -11,31 +11,31 @@ namespace Microsoft.Maui
 		{
 			UniquePrefix = uniquePrefix;
 			SupplementaryKind = supplementaryKind;
-			templates = new List<DataTemplate>();
+			managedIds = new List<string>();
 			lockObj = new object();
 		}
 
 		public string UniquePrefix { get; }
 		public NSString SupplementaryKind { get; }
 
-		readonly List<DataTemplate> templates;
+		readonly List<string> managedIds;
 		readonly object lockObj;
 
 		NSString GetReuseId(int i, string idModifier = null)
-			=> new NSString($"_{UniquePrefix}_{nameof(VirtualListView)}_{i}");
+			=> new NSString($"_{UniquePrefix}_VirtualListView_{i}");
 
-		public NSString GetReuseId(UICollectionView collectionView, DataTemplate template)
+		public NSString GetReuseId(UICollectionView collectionView, string managedId)
 		{
 			var viewType = 0;
 
 			lock (lockObj)
 			{
-				viewType = templates.IndexOf(template);
+				viewType = managedIds.IndexOf(managedId);
 
 				if (viewType < 0)
 				{
-					templates.Add(template);
-					viewType = templates.Count - 1;
+					managedIds.Add(managedId);
+					viewType = managedIds.Count - 1;
 
 					collectionView.RegisterClassForCell(
 						typeof(CvCell),
@@ -50,10 +50,10 @@ namespace Microsoft.Maui
 		{
 			lock (lockObj)
 			{
-				for (int i = 0; i < templates.Count; i++)
+				for (int i = 0; i < managedIds.Count; i++)
 					collectionView.RegisterClassForCell(null, GetReuseId(i));
 
-				templates.Clear();
+				managedIds.Clear();
 			}
 		}
 	}

@@ -1,0 +1,44 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using UIKit;
+
+namespace Microsoft.Maui
+{
+	sealed class CvViewContainer : UIView
+	{
+		public CvViewContainer(IMauiContext context)
+			: base()
+		{
+			MauiContext = context;
+		}
+
+		public readonly IMauiContext MauiContext;
+
+		public IView VirtualView { get; private set; }
+
+		public UIView NativeView { get; private set; }
+
+		public void SwapView(IView newView)
+		{
+			if (VirtualView == null || VirtualView.Handler == null || NativeView == null)
+			{
+				NativeView = newView.ToNative(MauiContext);
+				VirtualView = newView;
+				AddSubview(NativeView);
+			}
+			else
+			{
+				var handler = VirtualView.Handler;
+				newView.Handler = handler;
+				handler.SetVirtualView(newView);
+				VirtualView = newView;
+			}
+
+			VirtualView.InvalidateMeasure();
+			VirtualView.InvalidateArrange();
+		}
+	}
+}

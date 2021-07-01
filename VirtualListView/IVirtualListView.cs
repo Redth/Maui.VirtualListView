@@ -19,6 +19,8 @@ namespace Microsoft.Maui
 		event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
 		event EventHandler DataInvalidated;
 
+		SelectionMode SelectionMode { get; }
+
 		IReadOnlyList<ItemPosition> SelectedItems { get; }
 
 		bool IsItemSelected(int sectionIndex, int itemIndex);

@@ -6,13 +6,13 @@ namespace Microsoft.Maui
 {
 	internal class CvDataSource : UICollectionViewDataSource
 	{
-		public CvDataSource(VirtualListViewRenderer renderer)
+		public CvDataSource(VirtualListViewHandler handler)
 			: base()
 		{
-			Renderer = renderer;
+			Handler = handler;
 		}
 
-		VirtualListViewRenderer Renderer { get; }
+		VirtualListViewHandler Handler { get; }
 
  		public Func<int, int, bool> IsSelectedHandler { get; set; }
 
@@ -21,7 +21,6 @@ namespace Microsoft.Maui
 		readonly ReusableIdManager sectionHeaderIdManager = new ReusableIdManager("SectionHeader", new NSString("SectionHeader"));
 		readonly ReusableIdManager sectionFooterIdManager = new ReusableIdManager("SectionFooter", new NSString("SectionFooter"));
 
-
 		int? cachedNumberOfSections;
 		internal int CachedNumberOfSections
 		{
@@ -29,14 +28,12 @@ namespace Microsoft.Maui
 			{
 				if (!cachedNumberOfSections.HasValue)
 				{
-					cachedNumberOfSections = Renderer?.Adapter?.Sections ?? 0;
-					if (Renderer?.TemplateSelector?.HasGlobalHeader ?? false)
-						cachedNumberOfSections++;
-					if (Renderer?.TemplateSelector?.HasGlobalFooter ?? false)
-						cachedNumberOfSections++;
+					var n = Handler?.PositionalViewSelector?.Adapter?.Sections ?? -1;
+					if (n >= 0)
+						cachedNumberOfSections = n;
 				}
 
-				return cachedNumberOfSections.Value;
+				return cachedNumberOfSections ?? 0;
 			}
 		}
 
@@ -48,29 +45,35 @@ namespace Microsoft.Maui
 			var section = indexPath.Section;
 			var itemIndex = (int)indexPath.Item;
 
-			var (template, info) = Renderer.TemplateSelector.GetTemplateAndInfo(Renderer.Adapter, section, itemIndex);
+			//var (template, info) = Renderer.TemplateSelector.GetTemplateAndInfo(Renderer.Adapter, section, itemIndex);
 
-			var reuseId = info.Kind switch
+			var info = Handler?.PositionalViewSelector?.GetInfo((int)indexPath.Section, (int)indexPath.Item);
+
+			var reuseId = Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info.Kind, info.SectionIndex, info.ItemIndex);
+
+			var nativeReuseId = info.Kind switch
 			{
-				PositionKind.Item => itemIdManager.GetReuseId(collectionView, template),
-				PositionKind.SectionHeader => sectionHeaderIdManager.GetReuseId(collectionView, template),
-				PositionKind.SectionFooter => sectionFooterIdManager.GetReuseId(collectionView, template),
-				PositionKind.Header => globalIdManager.GetReuseId(collectionView, template),
-				PositionKind.Footer => globalIdManager.GetReuseId(collectionView, template),
-				_ => itemIdManager.GetReuseId(collectionView, template)
+				PositionKind.Item => itemIdManager.GetReuseId(collectionView, reuseId),
+				PositionKind.SectionHeader => sectionHeaderIdManager.GetReuseId(collectionView, reuseId),
+				PositionKind.SectionFooter => sectionFooterIdManager.GetReuseId(collectionView, reuseId),
+				PositionKind.Header => globalIdManager.GetReuseId(collectionView, reuseId),
+				PositionKind.Footer => globalIdManager.GetReuseId(collectionView, reuseId),
+				_ => "UNKNOWN",
 			};
+
+			var view = Handler?.PositionalViewSelector?.ViewSelector?.ViewFor(info.Kind, info.SectionIndex, info.ItemIndex);
 
 			if (info.SectionIndex < 0 || info.ItemIndex < 0)
 				info.IsSelected = false;
 			else
 				info.IsSelected = IsSelectedHandler?.Invoke(info.SectionIndex, info.ItemIndex) ?? false;
 
+			if (view is IPositionInfo positionInfoView)
+				positionInfoView.SetPositionInfo(info);
 
-			var cell = collectionView.DequeueReusableCell(reuseId, indexPath)
-				as CvCell;
-
+			var cell = collectionView.DequeueReusableCell(nativeReuseId, indexPath) as CvCell;
 			cell.IndexPath = indexPath;
-			cell.EnsureFormsTemplate(template, info);
+			cell.Update(Handler.MauiContext, view, info);
 
 			return cell;
 		}
@@ -79,7 +82,7 @@ namespace Microsoft.Maui
 		{
 			var realSection = section;
 
-			if (Renderer.TemplateSelector.HasGlobalHeader)
+			if (Handler?.PositionalViewSelector?.HasGlobalHeader ?? false)
 			{
 				if (section == 0)
 					return 1;
@@ -87,24 +90,24 @@ namespace Microsoft.Maui
 				realSection--;
 			}
 
-			if (Renderer.TemplateSelector.HasGlobalFooter)
+			if (Handler?.PositionalViewSelector?.HasGlobalFooter ?? false)
 			{
 				if (section >= CachedNumberOfSections - 1)
 					return 1;
 			}
 
-			var itemsCount = Renderer.Adapter.ItemsForSection((int)realSection);
+			var itemsCount = Handler?.PositionalViewSelector?.Adapter?.ItemsForSection((int)realSection) ?? 0;
 
-			if (Renderer.TemplateSelector.HasSectionHeader)
+			if (Handler?.PositionalViewSelector?.ViewSelector?.SectionHasHeader((int)realSection) ?? false)
 				itemsCount++;
 
-			if (Renderer.TemplateSelector.HasSectionFooter)
+			if (Handler?.PositionalViewSelector?.ViewSelector?.SectionHasFooter((int)realSection) ?? false)
 				itemsCount++;
 
 			return (nint)itemsCount;
 		}
 
-		public void ResetTemplates(UICollectionView collectionView)
+		public void Reset(UICollectionView collectionView)
 		{
 			itemIdManager.ResetTemplates(collectionView);
 			sectionHeaderIdManager.ResetTemplates(collectionView);

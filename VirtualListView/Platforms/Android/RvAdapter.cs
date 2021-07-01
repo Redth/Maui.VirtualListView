@@ -50,18 +50,35 @@ namespace Microsoft.Maui
 			{
 				var newView = positionalViewSelector.ViewSelector.ViewFor(info.Kind, info.SectionIndex, info.ItemIndex);
 
+				if (newView is IPositionInfo newViewWithPositionInfo)
+					newViewWithPositionInfo.SetPositionInfo(info);
+
 				itemHolder.Update(info, newView);
 			}
 		}
+
+		List<string> cachedReuseIds = new List<string>();
 
 		public override int GetItemViewType(int position)
 		{
 			base.GetItemViewType(position);
 
 			var info = positionalViewSelector.GetInfo(position);
-			var reuseId = positionalViewSelector.GetReuseId(info.Kind, info.SectionIndex, info.ItemIndex);
+			var reuseId = positionalViewSelector.ViewSelector.GetReuseId(info.Kind, info.SectionIndex, info.ItemIndex);
 
-			return reuseId;
+			int vt = -1;
+
+			lock (lockObj)
+			{
+				vt = cachedReuseIds.IndexOf(reuseId) + 1;
+				if (vt <= 0)
+				{
+					cachedReuseIds.Add(reuseId);
+					vt = cachedReuseIds.Count;
+				}
+			}
+
+			return vt;
 		}
 
 		public override long GetItemId(int position)
@@ -89,6 +106,12 @@ namespace Microsoft.Maui
 			viewHolder.ItemView.SetOnClickListener(clickListener);
 
 			return viewHolder;
+		}
+
+		public void Reset()
+		{
+			lock (lockObj)
+				cachedReuseIds.Clear();
 		}
 	}
 }

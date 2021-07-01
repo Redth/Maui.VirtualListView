@@ -109,14 +109,14 @@ namespace Microsoft.Maui.Controls
 			BindableProperty.Create(nameof(SectionFooterTemplateSelector), typeof(VirtualListViewSectionTemplateSelector), typeof(VirtualListView), default);
 
 
-		public SelectionMode SelectionMode
+		public Maui.SelectionMode SelectionMode
 		{
-			get => (SelectionMode)GetValue(SelectionModeProperty);
+			get => (Maui.SelectionMode)GetValue(SelectionModeProperty);
 			set => SetValue(SelectionModeProperty, value);
 		}
 
 		public static readonly BindableProperty SelectionModeProperty =
-			BindableProperty.Create(nameof(SelectionMode), typeof(SelectionMode), typeof(VirtualListView), SelectionMode.None);
+			BindableProperty.Create(nameof(SelectionMode), typeof(Maui.SelectionMode), typeof(VirtualListView), Maui.SelectionMode.None);
 
 		public event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
 
@@ -127,7 +127,7 @@ namespace Microsoft.Maui.Controls
 		{
 			get
 			{
-				if (SelectionMode == SelectionMode.None)
+				if (SelectionMode == Maui.SelectionMode.None)
 					return new List<ItemPosition>();
 
 				lock (selectedItemsLocker)
@@ -142,7 +142,7 @@ namespace Microsoft.Maui.Controls
 
 		public bool IsItemSelected(int sectionIndex, int itemIndex)
 		{
-			if (SelectionMode == SelectionMode.None)
+			if (SelectionMode == Maui.SelectionMode.None)
 				return false;
 
 			lock (selectedItemsLocker)
@@ -153,7 +153,7 @@ namespace Microsoft.Maui.Controls
 
 		public void SetSelected(params ItemPosition[] paths)
 		{
-			if (SelectionMode == SelectionMode.None)
+			if (SelectionMode == Maui.SelectionMode.None)
 				return;
 
 			var prev = new List<ItemPosition>(SelectedItems);
@@ -177,7 +177,7 @@ namespace Microsoft.Maui.Controls
 
 		public void SetDeselected(params ItemPosition[] paths)
 		{
-			if (SelectionMode == SelectionMode.None)
+			if (SelectionMode == Maui.SelectionMode.None)
 				return;
 
 			var prev = new List<ItemPosition>(SelectedItems);
@@ -252,40 +252,28 @@ namespace Microsoft.Maui.Controls
 		public bool SectionHasFooter(int sectionIndex)
 			=> SectionFooterTemplateSelector != null || SectionFooterTemplate != null;
 
-
-		readonly List<DataTemplate> cachedTemplates = new List<DataTemplate>();
-
-		string CacheTemplate(string prefix, DataTemplate template)
+		public string GetReuseId(PositionKind kind, int sectionIndex, int itemIndex = -1)
 		{
-			if (template == null)
-				throw new ArgumentNullException(nameof(template));
+			var r = kind switch
+			{
+				PositionKind.Item =>
+					"ITEM_" + (ItemTemplateSelector?.SelectTemplate(Adapter.Item(sectionIndex, itemIndex), sectionIndex, itemIndex)
+						?? ItemTemplate).GetHashCode().ToString(),
+				PositionKind.SectionHeader =>
+					"SECTION_HEADER_" + (SectionHeaderTemplateSelector?.SelectTemplate(Adapter.Section(sectionIndex), sectionIndex)
+						?? SectionHeaderTemplate).GetHashCode().ToString(),
+				PositionKind.SectionFooter =>
+					"SECTION_FOOTER_" + (SectionFooterTemplateSelector?.SelectTemplate(Adapter.Section(sectionIndex), sectionIndex)
+						?? SectionFooterTemplate).GetHashCode().ToString(),
+				PositionKind.Header =>
+					"GLOBLA_HEADER_" + (Header?.GetContentTypeHashCode().ToString() ?? "NIL"),
+				PositionKind.Footer =>
+					"GLOBAL_FOOTER_" + (Footer?.GetContentTypeHashCode().ToString() ?? "NIL"),
+				_ => "UNKNOWN"
+			};
 
-			var index = cachedTemplates.IndexOf(template);
-
-			if (index >= 0)
-				return prefix + index.ToString();
-
-			cachedTemplates.Add(template);
-			index = cachedTemplates.IndexOf(template);
-			return prefix + index.ToString();
+			Console.WriteLine($"ReuseId: {r}");
+			return r;
 		}
-
-		public string ReuseIdIdForItem(int sectionIndex, int itemIndex)
-			=> CacheTemplate(
-				"INDEX_",
-				ItemTemplateSelector?.SelectTemplate(Adapter.Item(sectionIndex, itemIndex), sectionIndex, itemIndex)
-					?? ItemTemplate);
-
-		public string ReuseIdIdForSectionHeader(int sectionIndex)
-			=> CacheTemplate(
-				"SECTIONHEADER_",
-				SectionHeaderTemplateSelector?.SelectTemplate(Adapter.Section(sectionIndex), sectionIndex)
-					?? SectionHeaderTemplate);
-
-		public string ReuseIdIdForSectionFooter(int sectionIndex)
-			=> CacheTemplate(
-				"SECTIONFOOTER_",
-				SectionHeaderTemplateSelector?.SelectTemplate(Adapter.Section(sectionIndex), sectionIndex)
-					?? SectionHeaderTemplate);
 	}
 }

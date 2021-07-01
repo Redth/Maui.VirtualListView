@@ -3,6 +3,7 @@
 	xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
 	xmlns:local="clr-namespace:VirtualListViewSample"
+	xmlns:layouts2="clr-namespace:Microsoft.Maui.Controls.Layout2;assembly=Microsoft.Maui.Controls"
 	xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
 	x:DataType="local:MainViewModel"
 	x:Class="VirtualListViewSample.MainPage">
@@ -23,7 +24,7 @@
 
 			<vlv:VirtualListView.ItemTemplate>
 				<DataTemplate x:DataType="local:TrackInfo">
-					<Label Text="{Binding TrackName}" FontSize="Subtitle" />
+					<Label Text="{Binding TrackName}" FontSize="Subtitle" TextColor="Black" Margin="12" />
 				</DataTemplate>
 			</vlv:VirtualListView.ItemTemplate>
 			<vlv:VirtualListView.SectionHeaderTemplate>

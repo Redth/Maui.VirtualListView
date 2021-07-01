@@ -7,11 +7,13 @@ namespace Microsoft.Maui
 {
 	internal class CvCell : UICollectionViewCell
 	{
-		public VirtualViewCell ViewCell { get; private set; }
+		public CvViewContainer Container { get; private set; }
 
 		public NSIndexPath IndexPath { get; set; }
 
-		UIContainerView containerView = null;
+		public PositionInfo PositionInfo { get; private set; }
+
+		public IMauiContext Context { get; set; }
 
 		[Export("initWithFrame:")]
 		public CvCell(CGRect frame) : base(frame)
@@ -22,46 +24,33 @@ namespace Microsoft.Maui
 		{
 			var attr = base.PreferredLayoutAttributesFittingAttributes(layoutAttributes);
 
-			if (ViewCell?.View == null)
+			if (Container == null)
 				return attr;
 
-			ViewCell.View.InvalidateMeasureNonVirtual(Xamarin.Forms.Internals.InvalidationTrigger.MeasureChanged);
+			Container.VirtualView.InvalidateMeasure();
 
-			var formsSize = ViewCell.View.Measure(attr.Frame.Width, double.MaxValue - 100, MeasureFlags.IncludeMargins);
+			var virtSize = Container.VirtualView.Measure(attr.Frame.Width, double.MaxValue - 100);
 
-			var h = formsSize.Request.Height;
-
-			attr.Frame = new CGRect(0, attr.Frame.Y, attr.Frame.Width, h);
+			attr.Frame = new CGRect(0, attr.Frame.Y, attr.Frame.Width, virtSize.Height);
 
 			return attr;
 		}
 
-		public void EnsureFormsTemplate(DataTemplate template, PositionInfo positionInfo)
+		public void Update(IMauiContext context, IView view, PositionInfo positionInfo)
 		{
-			if (ViewCell?.View == null)
+			PositionInfo = positionInfo;
+
+			if (Container == null)
 			{
-				var templateContent = template.CreateContent();
-
-				if (templateContent is VirtualViewCell vc)
-					ViewCell = vc;
-				else
-					VirtualViewCell.ThrowInvalidDataTemplateException();
-			}
-
-			ViewCell.Update(positionInfo);
-
-			ViewCell.BindingContext = positionInfo.BindingContext;
-
-			if (containerView == null)
-			{
-				containerView = new UIContainerView(ViewCell.View)
+				Container = new CvViewContainer(context)
 				{
 					Frame = ContentView.Frame,
 					AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth
 				};
-
-				ContentView.AddSubview(containerView);
+				ContentView.AddSubview(Container);
 			}
+
+			Container.SwapView(view);
 		}
 	}
 }

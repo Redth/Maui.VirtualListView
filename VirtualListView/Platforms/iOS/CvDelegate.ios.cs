@@ -7,13 +7,13 @@ namespace Microsoft.Maui
 	internal class CvDelegate : UICollectionViewDelegateFlowLayout
 	{
 
-		public CvDelegate(VirtualListViewRenderer renderer)
+		public CvDelegate(VirtualListViewHandler handler)
 			: base()
 		{
-			Renderer = renderer;
+			Handler = handler;
 		}
 
-		internal VirtualListViewRenderer Renderer { get; }
+		internal readonly VirtualListViewHandler Handler;
 
 		public Action<nfloat, nfloat> ScrollHandler { get; set; }
 
@@ -25,22 +25,26 @@ namespace Microsoft.Maui
 
 		void HandleSelection(UICollectionView collectionView, NSIndexPath indexPath, bool selected)
 		{
-			var real = Renderer?.TemplateSelector?.GetRealIndexPath(Renderer?.Adapter, indexPath.Section, (int)indexPath.Item);
+			var real = Handler?.PositionalViewSelector?.GetRealIndexPath(indexPath.Section, (int)indexPath.Item);
 
-			var realSectionIndex = real?.realSectionIndex ?? -1;
-			var realItemIndex = real?.realItemIndex ?? -1;
+			if (real != default)
+			{
+				var realSectionIndex = real?.realSectionIndex ?? -1;
+				var realItemIndex = real?.realItemIndex ?? -1;
 
-			if (realItemIndex < 0 || realSectionIndex < 0)
-				return;
+				if (realItemIndex < 0 || realSectionIndex < 0)
+					return;
 
-			if (selected)
-				Renderer.Element.SetSelected(new ItemPosition(realSectionIndex, realItemIndex));
-			else
-				Renderer.Element.SetDeselected(new ItemPosition(realSectionIndex, realItemIndex));
+				if (selected)
+					Handler?.VirtualView?.SetSelected(new ItemPosition(realSectionIndex, realItemIndex));
+				else
+					Handler?.VirtualView?.SetDeselected(new ItemPosition(realSectionIndex, realItemIndex));
 
-			if (Renderer.DataSource.GetCell(collectionView, indexPath) is CvCell cell
-				&& cell?.ViewCell != null)
-				cell.ViewCell.IsSelected = selected;
+				var cell = Handler?.GetCell(indexPath);
+
+				if (cell?.PositionInfo != null)
+					cell.PositionInfo.IsSelected = selected;
+			}
 		}
 
 		public override void Scrolled(UIScrollView scrollView)
@@ -54,10 +58,13 @@ namespace Microsoft.Maui
 
 		bool IsRealItem(NSIndexPath indexPath)
 		{
-			var real = Renderer?.TemplateSelector?.GetRealIndexPath(Renderer?.Adapter, indexPath.Section, (int)indexPath.Item);
+			var real = Handler?.PositionalViewSelector?.GetRealIndexPath(indexPath.Section, (int)indexPath.Item);
 
-			if ((real?.realItemIndex ?? -1) < 0 || (real?.realSectionIndex ?? -1) < 0)
-				return false;
+			if (real != default)
+			{
+				if ((real?.realItemIndex ?? -1) < 0 || (real?.realSectionIndex ?? -1) < 0)
+					return false;
+			}
 
 			return true;
 		}

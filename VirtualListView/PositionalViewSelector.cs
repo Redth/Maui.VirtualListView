@@ -6,23 +6,19 @@ namespace Microsoft.Maui
 {
 	internal class PositionalViewSelector
 	{
-		public readonly IVirtualListViewAdapter Adapter;
-		public readonly IVirtualListViewSelector ViewSelector;
-		public readonly Func<bool> HasGlobalHeader;
-		public readonly Func<bool> HasGlobalFooter;
+		public readonly IVirtualListView VirtualListView;
+		public IVirtualListViewAdapter Adapter => VirtualListView?.Adapter;
+		public IVirtualListViewSelector ViewSelector => VirtualListView?.ViewSelector;
+		public bool HasGlobalHeader => VirtualListView?.Header != null;
+		public bool HasGlobalFooter => VirtualListView?.Footer != null;
 
-		public PositionalViewSelector(IVirtualListViewAdapter adapter, IVirtualListViewSelector viewSelector, Func<bool> hasGlobalHeader, Func<bool> hasGlobalFooter)
+		public PositionalViewSelector(IVirtualListView virtualListView)
 		{
-			Adapter = adapter;
-			ViewSelector = viewSelector;
-			HasGlobalFooter = hasGlobalFooter;
-			HasGlobalHeader = hasGlobalHeader;
+			VirtualListView = virtualListView;
 		}
 
 		const string GlobalHeaderReuseId = "GLOBAL_HEADER";
 		const string GlobalFooterReuseId = "GLOBAL_FOOTER";
-
-		readonly List<string> ReuseIdentifiers = new () { GlobalHeaderReuseId, GlobalFooterReuseId };
 
 		readonly Dictionary<int, int> CachedItemsInSection = new ();
 
@@ -36,33 +32,8 @@ namespace Microsoft.Maui
 			return n;
 		}
 
-		public int GetReuseId(PositionKind kind, int sectionIndex, int itemIndex)
-		{
-			var reuseIdStr = kind switch
-			{
-				PositionKind.Item => ViewSelector.ReuseIdIdForItem(sectionIndex, itemIndex),
-				PositionKind.SectionHeader => ViewSelector.ReuseIdIdForSectionHeader(sectionIndex),
-				PositionKind.SectionFooter => ViewSelector.ReuseIdIdForSectionFooter(sectionIndex),
-				PositionKind.Header => GlobalHeaderReuseId,
-				PositionKind.Footer => GlobalFooterReuseId,
-				_ => default
-			};
-
-			var id = ReuseIdentifiers.IndexOf(reuseIdStr);
-
-			if (id < 0)
-			{
-				ReuseIdentifiers.Add(reuseIdStr);
-				id = ReuseIdentifiers.IndexOf(reuseIdStr);
-			}
-
-			return id;
-		}
-
 		public void Reset()
 		{
-			ReuseIdentifiers.Clear();
-			ReuseIdentifiers.AddRange(new[] { GlobalHeaderReuseId, GlobalFooterReuseId });
 			CachedItemsInSection.Clear();
 		}
 
@@ -75,7 +46,7 @@ namespace Microsoft.Maui
 
 			var numberSections = Adapter.Sections;
 
-			if (HasGlobalHeader())
+			if (HasGlobalHeader)
 			{
 				if (position == 0)
 					return PositionInfo.ForHeader(position);
@@ -125,7 +96,7 @@ namespace Microsoft.Maui
 		{
 			var realSectionIndex = sectionIndex;
 
-			if (HasGlobalHeader())
+			if (HasGlobalHeader)
 			{
 				if (sectionIndex == 0)
 					return (-1, -1);
@@ -136,7 +107,7 @@ namespace Microsoft.Maui
 
 			var realNumberOfSections = Adapter.Sections;
 
-			if (HasGlobalFooter())
+			if (HasGlobalFooter)
 			{
 				if (realSectionIndex >= realNumberOfSections)
 					return (-1, -1);
@@ -163,6 +134,54 @@ namespace Microsoft.Maui
 			return (realSectionIndex, realItemIndex);
 		}
 
+		public PositionInfo GetInfo(int sectionIndex, int itemIndex)
+		{
+			var realSectionIndex = sectionIndex;
+
+			if (HasGlobalHeader)
+			{
+				if (sectionIndex == 0)
+					return PositionInfo.ForHeader(0);
+
+				// Global header takes up a section, real adapter is 1 less
+				realSectionIndex--;
+			}
+
+			var realNumberOfSections = Adapter?.Sections ?? 0;
+
+			if (HasGlobalFooter)
+			{
+				if (realSectionIndex >= realNumberOfSections)
+					return PositionInfo.ForFooter(-1);
+			}
+
+
+			var realItemsInSection = Adapter?.ItemsForSection(realSectionIndex) ?? 0;
+
+			var realItemIndex = itemIndex;
+
+			var itemsAdded = 0;
+
+			if (ViewSelector?.SectionHasHeader(realSectionIndex) ?? false)
+			{
+				itemsAdded++;
+				realItemIndex--;
+
+				if (itemIndex == 0)
+					return PositionInfo.ForSectionHeader(-1, realSectionIndex, realItemsInSection);
+			}
+
+			if (ViewSelector.SectionHasFooter(realSectionIndex))
+			{
+				itemsAdded++;
+
+				if (itemIndex >= realItemsInSection + itemsAdded - 1)
+					return PositionInfo.ForSectionFooter(-1, realSectionIndex, realItemsInSection);
+			}
+
+			return PositionInfo.ForItem(-1, realSectionIndex, realItemIndex, CachedItemsForSection(realSectionIndex), realNumberOfSections);
+		}
+
 		public int GetTotalCount()
 		{
 			if (Adapter == null)
@@ -170,7 +189,7 @@ namespace Microsoft.Maui
 
 			var sum = 0;
 
-			if (HasGlobalHeader())
+			if (HasGlobalHeader)
 				sum += 1;
 
 			if (Adapter != null)
@@ -187,7 +206,7 @@ namespace Microsoft.Maui
 				}
 			}
 
-			if (HasGlobalFooter())
+			if (HasGlobalFooter)
 				sum += 1;
 
 			return sum;

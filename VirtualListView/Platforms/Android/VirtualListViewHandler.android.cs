@@ -20,10 +20,7 @@ namespace Microsoft.Maui
 			layoutManager = new LinearLayoutManager(Context);
 			//layoutManager.Orientation = LinearLayoutManager.Horizontal;
 
-			positionalViewSelector = new PositionalViewSelector(VirtualView.Adapter,
-				VirtualView.ViewSelector,
-				() => VirtualView?.Header != null,
-				() => VirtualView?.Footer != null);
+			positionalViewSelector = new PositionalViewSelector(VirtualView);
 
 			adapter = new RvAdapter(Context, this, positionalViewSelector);
 			
@@ -55,6 +52,7 @@ namespace Microsoft.Maui
 		public void InvalidateData()
 		{
 			positionalViewSelector.Reset();
+			adapter?.Reset();
 			adapter?.NotifyDataSetChanged();
 		}
 
@@ -69,6 +67,9 @@ namespace Microsoft.Maui
 
 		public static void MapViewSelector(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler.adapter?.NotifyDataSetChanged();
+
+		public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		{ }
 
 		class RvScrollListener : RecyclerView.OnScrollListener
 		{
