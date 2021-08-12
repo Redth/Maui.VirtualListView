@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0-android;net6.0-ios</TargetFrameworks>
+    <TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>
     <OutputType>Exe</OutputType>
 		<UseMaui>True</UseMaui>
 		<SingleProject>True</SingleProject>
@@ -28,9 +28,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Platforms\Windows\" />
   </ItemGroup>
 
 	<Target Name="ValidateWinUIPlatform" />

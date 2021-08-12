@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6.0-android;net6.0-ios</TargetFrameworks>
+    <TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>
     <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net6.0-windows10.0.19041.0;</TargetFrameworks>
     <AssemblyName>VirtualListView</AssemblyName>
     <RootNamespace>Microsoft.Maui.Controls.VirtualListViewControl</RootNamespace>
@@ -34,6 +34,11 @@
   <ItemGroup Condition=" !$(TargetFramework.StartsWith('netstandard')) ">
     <Compile Remove="**\*.netstandard.cs" />
     <Compile Remove="**\*.netstandard.*.cs" />
+  </ItemGroup>
+
+
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net6.0-ios' And '$(TargetFramework)' != 'net6.0-maccatalyst' ">
+    <Compile Remove="Apple\**\*.cs" />
   </ItemGroup>
   
 	<Target Name="ValidateWinUIPlatform" />

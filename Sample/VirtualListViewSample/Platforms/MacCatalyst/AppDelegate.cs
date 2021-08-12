@@ -1,7 +1,7 @@
 ﻿using Foundation;
 using Microsoft.Maui;
 
-namespace HelloMaui
+namespace VirtualListViewSample
 {
 	[Register("AppDelegate")]
 	public class AppDelegate : MauiUIApplicationDelegate<Startup>
