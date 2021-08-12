@@ -7,7 +7,7 @@ using System.Text;
 namespace Microsoft.Maui.Controls
 {
 	[ContentProperty(nameof(Content))]
-	public class VirtualViewCell : Layout2.Layout, IPositionInfo, ILayoutManager
+	public class VirtualViewCell : Layout, IPositionInfo, ILayoutManager
 	{
 		public void SetPositionInfo(PositionInfo info)
 		{
@@ -177,8 +177,8 @@ namespace Microsoft.Maui.Controls
 		protected override ILayoutManager CreateLayoutManager()
 			=> this;
 
-		public void ArrangeChildren(Rectangle childBounds)
-			=> Content?.Arrange(childBounds);
+		public Size ArrangeChildren(Rectangle childBounds)
+			=> Content?.Arrange(childBounds) ?? Size.Zero;
 
 		public Size Measure(double widthConstraint, double heightConstraint)
 			=> new Size(widthConstraint, heightConstraint);

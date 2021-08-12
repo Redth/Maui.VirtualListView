@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0-android</TargetFramework>
+    <TargetFrameworks>net6.0-android;net6.0-ios</TargetFrameworks>
     <OutputType>Exe</OutputType>
 		<UseMaui>True</UseMaui>
 		<SingleProject>True</SingleProject>

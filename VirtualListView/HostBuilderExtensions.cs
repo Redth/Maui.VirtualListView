@@ -23,7 +23,7 @@ namespace Microsoft.Maui
 
             if (view is IContainer container)
             {
-                foreach (var c in container.Children)
+                foreach (var c in container)
                 {
                     hashCode = (hashCode, GetContentTypeHashCode(c)).GetHashCode();
                 }

@@ -10,7 +10,7 @@ namespace Microsoft.Maui
 {
 	internal record IrDataWrapper (PositionInfo position, object data);
 
-	class IrSource : IList<IrDataWrapper>, INotifyCollectionChanged
+	class IrSource : IReadOnlyList<IrDataWrapper>, INotifyCollectionChanged
 	{
 
 		public IrSource(PositionalViewSelector positionalViewSelector)
