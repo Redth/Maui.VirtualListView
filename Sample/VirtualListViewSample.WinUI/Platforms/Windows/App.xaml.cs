@@ -1,4 +1,5 @@
 ﻿using Microsoft.Maui;
+using Microsoft.UI.Xaml;
 using Windows.ApplicationModel;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -6,10 +7,7 @@ using Windows.ApplicationModel;
 
 namespace VirtualListViewSample.WinUI
 {
-    /// <summary>
-    /// Provides application-specific behavior to supplement the default Application class.
-    /// </summary>
-    public partial class App : MiddleApp
+    public partial class App : MauiWinUIApplication
     {
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -19,11 +17,15 @@ namespace VirtualListViewSample.WinUI
         {
             this.InitializeComponent();
         }
-    }
 
-    // TODO: this is not nice.
-    public class MiddleApp : MauiWinUIApplication<VirtualListViewSample.Startup>
-    {
+        protected override IStartup OnCreateStartup() => new Startup();
+
+        protected override void OnLaunched(LaunchActivatedEventArgs args)
+        {
+            base.OnLaunched(args);
+
+            Microsoft.Maui.Essentials.Platform.OnLaunched(args);
+        }
     }
 
 }

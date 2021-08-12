@@ -1,8 +1,9 @@
-﻿<local:MiddleApp
+﻿<maui:MauiWinUIApplication
     x:Class="VirtualListViewSample.WinUI.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:VirtualListViewSample.WinUI">
+    xmlns:local="using:VirtualListViewSample.WinUI"
+    xmlns:maui="using:Microsoft.Maui">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -12,4 +13,4 @@
             <!-- Other app resources here -->
         </ResourceDictionary>
     </Application.Resources>
-</local:MiddleApp>
+</maui:MauiWinUIApplication>

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Maui.Handlers;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections;
@@ -41,8 +42,13 @@ namespace Microsoft.Maui
 			itemsRepeater.ItemsSource = irSource;
 
 			dataTemplateSelector = new IrDataTemplateSelector(MauiContext, PositionalViewSelector);
+
+
 			itemsRepeater.ItemTemplate = dataTemplateSelector;
+			
 		}
+
+
 
 		protected override void DisconnectHandler(ItemsRepeaterScrollHost nativeView)
 		{
