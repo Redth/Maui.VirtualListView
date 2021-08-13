@@ -44,7 +44,6 @@ namespace Microsoft.Maui
 			//cvdelegate.ScrollHandler = (x, y) =>
 			//	VirtualView?.RaiseScrolled(new ScrolledEventArgs(x, y));
 
-			collectionView = new UICollectionView(nativeView.Frame, layout);
 			collectionView.AllowsSelection = VirtualView.SelectionMode != SelectionMode.None;
 			collectionView.AllowsMultipleSelection = VirtualView.SelectionMode == SelectionMode.Multiple;
 			collectionView.DataSource = dataSource;
