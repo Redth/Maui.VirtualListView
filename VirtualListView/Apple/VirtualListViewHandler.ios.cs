@@ -103,9 +103,9 @@ namespace Microsoft.Maui
 		public void InvalidateData()
 		{
 			PositionalViewSelector?.Reset();
-			(NativeView?.DataSource as CvDataSource)?.Reset(NativeView);
-			NativeView?.ReloadData();
-			NativeView?.CollectionViewLayout?.InvalidateLayout();
+			dataSource?.Reset(collectionView);
+			collectionView?.ReloadData();
+			layout?.InvalidateLayout();
 		}
 	}
 }
