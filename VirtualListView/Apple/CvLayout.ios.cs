@@ -9,7 +9,10 @@ namespace Microsoft.Maui
 	{
 		public CvLayout() : base()
 		{
+			isiOS11 = UIDevice.CurrentDevice.CheckSystemVersion(11, 0);
 		}
+
+		readonly bool isiOS11;
 
 		public override UICollectionViewLayoutAttributes LayoutAttributesForItem(NSIndexPath path)
 		{
@@ -19,7 +22,7 @@ namespace Microsoft.Maui
 
 			nfloat width;
 
-			if (UIDevice.CurrentDevice.CheckSystemVersion(11, 0))
+			if (isiOS11)
 				width = CollectionView.SafeAreaLayoutGuide.LayoutFrame.Width - SectionInset.Left - SectionInset.Right;
 			else
 				width = CollectionView.Bounds.Width - SectionInset.Left - SectionInset.Right;
