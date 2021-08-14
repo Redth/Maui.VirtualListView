@@ -37,6 +37,8 @@ namespace Microsoft.Maui
 				VirtualView = newView;
 			}
 
+			NativeView.SizeToFit();
+			
 			VirtualView.InvalidateMeasure();
 			VirtualView.InvalidateArrange();
 		}
