@@ -21,6 +21,12 @@ namespace Microsoft.Maui
 
 		public UIView NativeView { get; private set; }
 
+		public override void LayoutSubviews()
+		{
+			base.LayoutSubviews();
+			NativeView.Frame = Bounds;
+		}
+
 		public void SwapView(IView newView)
 		{
 			if (VirtualView == null || VirtualView.Handler == null || NativeView == null)
@@ -36,11 +42,11 @@ namespace Microsoft.Maui
 				handler.SetVirtualView(newView);
 				VirtualView = newView;
 			}
-
-			NativeView.SizeToFit();
 			
 			VirtualView.InvalidateMeasure();
 			VirtualView.InvalidateArrange();
+
+			SetNeedsLayout();
 		}
 	}
 }
