@@ -6,8 +6,7 @@ using System.Text;
 
 namespace Microsoft.Maui.Controls
 {
-	[ContentProperty(nameof(Content))]
-	public class VirtualViewCell : Layout, IPositionInfo, ILayoutManager
+	public class VirtualViewCell : Grid, IPositionInfo
 	{
 		public void SetPositionInfo(PositionInfo info)
 		{
@@ -165,29 +164,10 @@ namespace Microsoft.Maui.Controls
 			set => SetValue(IsSelectedProperty, value);
 		}
 
-		public static readonly BindableProperty ContentProperty =
-			BindableProperty.Create(nameof(Content), typeof(IView), typeof(VirtualViewCell), default);
-
-		public IView Content
-		{
-			get => (IView)GetValue(ContentProperty);
-			set => SetValue(ContentProperty, value);
-		}
-
-		protected override ILayoutManager CreateLayoutManager()
-			=> this;
-
-		public Size ArrangeChildren(Rectangle childBounds)
-			=> Content?.Arrange(childBounds) ?? Size.Zero;
-
-		public Size Measure(double widthConstraint, double heightConstraint)
-			=> new Size(widthConstraint, heightConstraint);
-
 		public IView CreateView(PositionInfo positionInfo)
 		{
 			SetPositionInfo(positionInfo);
 			return this;
 		}
 	}
-
 }

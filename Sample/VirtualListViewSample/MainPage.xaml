@@ -18,12 +18,14 @@
 			VerticalOptions="FillAndExpand"
 			Adapter="{Binding Adapter}"
 			SelectionMode="Multiple"
-			SelectedItemsChanged="VirtualListView_SelectedItemsChanged">
-			<!--ItemTemplateSelector="{StaticResource itemTemplateSelector}"-->
+			SelectedItemsChanged="VirtualListView_SelectedItemsChanged"
+			ItemTemplateSelector="{StaticResource itemTemplateSelector}">
 
 			<vlv:VirtualListView.ItemTemplate>
 				<DataTemplate x:DataType="local:TrackInfo">
-					<Label Text="{Binding TrackName}" FontSize="Subtitle" TextColor="Black" Margin="12" />
+					<GridLayout>
+						<Label Text="{Binding TrackName}" FontSize="Subtitle" TextColor="Black" Margin="12" />
+					</GridLayout>
 				</DataTemplate>
 			</vlv:VirtualListView.ItemTemplate>
 			<vlv:VirtualListView.SectionHeaderTemplate>
