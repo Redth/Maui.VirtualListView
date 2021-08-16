@@ -17,6 +17,7 @@ namespace Microsoft.Maui
 		ItemsRepeater itemsRepeater;
 		IrDataTemplateSelector dataTemplateSelector;
 		IrSource irSource;
+		VirtualListViewDataTemplateSelector templateSelector;
 
 		internal PositionalViewSelector PositionalViewSelector { get; private set; }
 
@@ -36,15 +37,17 @@ namespace Microsoft.Maui
 		{
 			base.ConnectHandler(nativeView);
 
+			templateSelector = new VirtualListViewDataTemplateSelector(VirtualView, NativeView.Resources["ContainerTemplate"] as VirtualListViewDataTemplate);
+
 			PositionalViewSelector = new PositionalViewSelector(VirtualView);
 			irSource = new IrSource(PositionalViewSelector);
 
 			itemsRepeater.ItemsSource = irSource;
 
 			dataTemplateSelector = new IrDataTemplateSelector(MauiContext, PositionalViewSelector);
+			itemsRepeater.ItemTemplate = templateSelector;
 
-
-			itemsRepeater.ItemTemplate = dataTemplateSelector;
+			//itemsRepeater.ItemTemplate = dataTemplateSelector;
 			
 		}
 

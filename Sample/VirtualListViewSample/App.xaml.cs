@@ -11,6 +11,10 @@ namespace VirtualListViewSample
 	{
 		public App() : base()
 		{
+#if WINDOWS
+			System.Diagnostics.Debugger.Launch();
+#endif
+
 			InitializeComponent();
 		}
 

@@ -44,5 +44,11 @@
 	<Target Name="ValidateWinUIPlatform" />
 	<Target Name="BinPlaceBootstrapDll" />
 
+	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0-windows10.0.19041.0'">
+	  <Page Update="Platforms\Windows\Styles\Resources.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
+	</ItemGroup>
+
 
 </Project>
