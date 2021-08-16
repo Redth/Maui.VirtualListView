@@ -207,6 +207,8 @@ namespace Microsoft.Maui.Controls
 
 		public void InvalidateData()
 		{
+			(Handler as VirtualListViewHandler)?.InvalidateData();
+
 			DataInvalidated?.Invoke(this, new EventArgs());
 		}
 
