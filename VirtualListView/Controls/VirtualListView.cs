@@ -255,8 +255,7 @@ namespace Microsoft.Maui.Controls
 			=> SectionFooterTemplateSelector != null || SectionFooterTemplate != null;
 
 		public string GetReuseId(PositionKind kind, int sectionIndex, int itemIndex = -1)
-		{
-			var r = kind switch
+			=> kind switch
 			{
 				PositionKind.Item =>
 					"ITEM_" + (ItemTemplateSelector?.SelectTemplate(Adapter.Item(sectionIndex, itemIndex), sectionIndex, itemIndex)
@@ -273,9 +272,5 @@ namespace Microsoft.Maui.Controls
 					"GLOBAL_FOOTER_" + (Footer?.GetContentTypeHashCode().ToString() ?? "NIL"),
 				_ => "UNKNOWN"
 			};
-
-			Console.WriteLine($"ReuseId: {r}");
-			return r;
-		}
 	}
 }
