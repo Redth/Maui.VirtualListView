@@ -99,6 +99,24 @@ namespace Microsoft.Maui
 		public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler?.InvalidateData();
 
+		public static void MapSetSelected(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+		{
+			if (parameter is ItemPosition[] items)
+			{
+				handler?.collectionView?.ReloadItems(
+					items.Select(i => NSIndexPath.FromItemSection(i.ItemIndex, i.SectionIndex)).ToArray());
+			}
+		}
+
+		public static void MapSetDeselected(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+		{
+			if (parameter is ItemPosition[] items)
+			{
+				handler?.collectionView?.ReloadItems(
+					items.Select(i => NSIndexPath.FromItemSection(i.ItemIndex, i.SectionIndex)).ToArray());
+			}
+		}
+
 		public void InvalidateData()
 		{
 			PositionalViewSelector?.Reset();

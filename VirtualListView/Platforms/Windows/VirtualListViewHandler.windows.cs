@@ -88,5 +88,20 @@ namespace Microsoft.Maui
 
 		public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler?.InvalidateData();
+
+		public static void MapSetSelected(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+		{
+			if (parameter is ItemPosition[] items)
+			{
+			}
+		}
+
+		public static void MapSetDeselected(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+		{
+			if (parameter is ItemPosition[] items)
+			{
+				//
+			}
+		}
 	}
 }

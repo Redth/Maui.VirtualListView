@@ -14,12 +14,18 @@ namespace Microsoft.Maui
 			[nameof(IVirtualListView.InvalidateData)] = MapInvalidateData,
 		};
 
-		public VirtualListViewHandler() : base(VirtualListViewMapper)
+		public static CommandMapper<IVirtualListView, VirtualListViewHandler> VirtualListViewCommandMapper = new(VirtualListViewHandler.ViewCommandMapper)
+		{
+			[nameof(IVirtualListView.SetSelected)] = MapSetSelected,
+			[nameof(IVirtualListView.SetDeselected)] = MapSetDeselected
+		};
+
+		public VirtualListViewHandler() : base(VirtualListViewMapper, VirtualListViewCommandMapper)
 		{
 
 		}
 
-		public VirtualListViewHandler(PropertyMapper mapper = null) : base(mapper ?? VirtualListViewMapper)
+		public VirtualListViewHandler(PropertyMapper mapper = null, CommandMapper commandMapper = null) : base(mapper ?? VirtualListViewMapper, commandMapper ?? VirtualListViewCommandMapper)
 		{
 
 		}

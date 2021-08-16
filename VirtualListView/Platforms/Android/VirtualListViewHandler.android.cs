@@ -73,6 +73,16 @@ namespace Microsoft.Maui
 		public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler.InvalidateData();
 
+		public static void MapSetSelected(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+		{
+			handler.adapter.NotifyDataSetChanged();
+		}
+
+		public static void MapSetDeselected(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+		{
+			handler.adapter.NotifyDataSetChanged();
+		}
+
 		class RvScrollListener : RecyclerView.OnScrollListener
 		{
 			public RvScrollListener(Action<RecyclerView, int, int> scrollHandler)

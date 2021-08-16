@@ -171,6 +171,8 @@ namespace Microsoft.Maui.Controls
 				current = SelectedItems ?? new List<ItemPosition>();
 			}
 
+			(Handler as VirtualListViewHandler)?.Invoke(nameof(SetSelected), paths);
+
 			// Raise event
 			SelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(prev, current));
 		}
@@ -194,6 +196,8 @@ namespace Microsoft.Maui.Controls
 
 				current = SelectedItems ?? new List<ItemPosition>();
 			}
+
+			(Handler as VirtualListViewHandler)?.Invoke(nameof(SetDeselected), paths);
 
 			// Raise event
 			SelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(prev, current));
