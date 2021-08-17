@@ -18,11 +18,19 @@ namespace Microsoft.Maui
 			ViewContainer = ItemView as RvViewContainer;
 		}
 
-		public void Update(PositionInfo positionInfo, IView newView)
+		public void Update(PositionInfo positionInfo)
 		{
 			PositionInfo = positionInfo;
-
-			ViewContainer.SwapView(newView);
+			if (ViewContainer.VirtualView is IPositionInfo positionInfoView)
+				positionInfoView.SetPositionInfo(positionInfo);
 		}
+
+		public void SwapView(IView view)
+		{
+			ViewContainer.SwapView(view);
+		}
+
+		public bool HasView
+			=> ViewContainer.VirtualView != null;
 	}
 }

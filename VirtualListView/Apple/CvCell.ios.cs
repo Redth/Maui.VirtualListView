@@ -20,6 +20,19 @@ namespace Microsoft.Maui
 		{
 		}
 
+		public void Init(IMauiContext context)
+		{
+			if (Container == null)
+			{
+				Container = new CvViewContainer(context)
+				{
+					Frame = ContentView.Frame,
+					AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth
+				};
+				ContentView.AddSubview(Container);
+			}
+		}
+
 		public override UICollectionViewLayoutAttributes PreferredLayoutAttributesFittingAttributes(UICollectionViewLayoutAttributes layoutAttributes)
 		{
 			var attr = base.PreferredLayoutAttributesFittingAttributes(layoutAttributes);
@@ -36,21 +49,21 @@ namespace Microsoft.Maui
 			return attr;
 		}
 
-		public void Update(IMauiContext context, IView view, PositionInfo positionInfo)
+		public void Update(PositionInfo info)
 		{
-			PositionInfo = positionInfo;
-
-			if (Container == null)
-			{
-				Container = new CvViewContainer(context)
-				{
-					Frame = ContentView.Frame,
-					AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth
-				};
-				ContentView.AddSubview(Container);
-			}
-
-			Container.SwapView(view);
+			PositionInfo = info;
+			if (Container.VirtualView is IPositionInfo positionInfoView)
+				positionInfoView.SetPositionInfo(info);
+			Container.SetContainerNeedsLayout();
 		}
+
+		public void SwapView(IView view)
+			=> Container.SwapView(view);
+
+		public bool NeedsView
+			=> Container?.NativeView == null;
+
+		public IView VirtualView
+			=> Container?.VirtualView;
 	}
 }

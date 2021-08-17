@@ -38,11 +38,15 @@ namespace Microsoft.Maui
 			else
 			{
 				var handler = VirtualView.Handler;
+				VirtualView.Handler = null;
 				newView.Handler = handler;
 				handler.SetVirtualView(newView);
 				VirtualView = newView;
 			}
-			
+		}
+
+		public void SetContainerNeedsLayout()
+		{
 			VirtualView.InvalidateMeasure();
 			VirtualView.InvalidateArrange();
 

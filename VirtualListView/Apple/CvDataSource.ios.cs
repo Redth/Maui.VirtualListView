@@ -45,11 +45,19 @@ namespace Microsoft.Maui
 			var section = indexPath.Section;
 			var itemIndex = (int)indexPath.Item;
 
-			//var (template, info) = Renderer.TemplateSelector.GetTemplateAndInfo(Renderer.Adapter, section, itemIndex);
-
 			var info = Handler?.PositionalViewSelector?.GetInfo((int)indexPath.Section, (int)indexPath.Item);
 
-			var reuseId = Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info.Kind, info.SectionIndex, info.ItemIndex);
+			var data = info.Kind switch {
+				PositionKind.Item =>
+					Handler?.PositionalViewSelector?.Adapter?.Item(info.SectionIndex, info.ItemIndex),
+				PositionKind.SectionHeader =>
+					Handler?.PositionalViewSelector?.Adapter?.Section(info.SectionIndex),
+				PositionKind.SectionFooter =>
+					Handler?.PositionalViewSelector?.Adapter?.Section(info.SectionIndex),
+				_ => null
+			};
+
+			var reuseId = Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info.Kind, data, info.SectionIndex, info.ItemIndex);
 
 			var nativeReuseId = info.Kind switch
 			{
@@ -61,19 +69,24 @@ namespace Microsoft.Maui
 				_ => "UNKNOWN",
 			};
 
-			var view = Handler?.PositionalViewSelector?.ViewSelector?.ViewFor(info.Kind, info.SectionIndex, info.ItemIndex);
+			var cell = collectionView.DequeueReusableCell(nativeReuseId, indexPath) as CvCell;
+			cell.IndexPath = indexPath;
+			cell.Init(Handler?.MauiContext);
 
 			if (info.SectionIndex < 0 || info.ItemIndex < 0)
 				info.IsSelected = false;
 			else
 				info.IsSelected = IsSelectedHandler?.Invoke(info.SectionIndex, info.ItemIndex) ?? false;
 
-			if (view is IPositionInfo positionInfoView)
-				positionInfoView.SetPositionInfo(info);
+			if (cell.NeedsView)
+			{
+				var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info.Kind, data, info.SectionIndex, info.ItemIndex);
+				cell.SwapView(view);
+			}
 
-			var cell = collectionView.DequeueReusableCell(nativeReuseId, indexPath) as CvCell;
-			cell.IndexPath = indexPath;
-			cell.Update(Handler.MauiContext, view, info);
+			cell.Update(info);
+
+			Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info.Kind, data, cell.Container.VirtualView, info.SectionIndex, info.ItemIndex);
 
 			return cell;
 		}

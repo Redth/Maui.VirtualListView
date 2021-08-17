@@ -216,59 +216,47 @@ namespace Microsoft.Maui.Controls
 			DataInvalidated?.Invoke(this, new EventArgs());
 		}
 
-		public IView ViewForItem(int sectionIndex, int itemIndex)
-		{
-			var item = Adapter.Item(sectionIndex, itemIndex);
-
-			var view = ItemTemplateSelector?.SelectTemplate(item, sectionIndex, itemIndex).CreateContent() as View
-				?? ItemTemplate.CreateContent() as View;
-
-			view.BindingContext = item;
-
-			return view;
-		}
-
-		public IView ViewForSectionHeader(int sectionIndex)
-		{
-			var section = Adapter.Section(sectionIndex);
-			
-			var view = SectionHeaderTemplateSelector?.SelectTemplate(section, sectionIndex)?.CreateContent() as View
-				?? SectionHeaderTemplate?.CreateContent() as View;
-
-			view.BindingContext = section;
-			
-			return view;
-		}
-
 		public bool SectionHasHeader(int sectionIndex)
 			=> SectionHeaderTemplateSelector != null || SectionHeaderTemplate != null;
-
-		public IView ViewForSectionFooter(int sectionIndex)
-		{
-			var section = Adapter.Section(sectionIndex);
-
-			var view = SectionFooterTemplateSelector?.SelectTemplate(section, sectionIndex)?.CreateContent() as View
-				?? SectionFooterTemplate?.CreateContent() as View;
-
-			view.BindingContext = section;
-
-			return view;
-		}
 
 		public bool SectionHasFooter(int sectionIndex)
 			=> SectionFooterTemplateSelector != null || SectionFooterTemplate != null;
 
-		public string GetReuseId(PositionKind kind, int sectionIndex, int itemIndex = -1)
+		public IView CreateView(PositionKind kind, object data, int sectionIndex, int itemIndex = -1)
+			=> kind switch {
+				PositionKind.Item => 
+					ItemTemplateSelector?.SelectTemplate(data, sectionIndex, itemIndex).CreateContent() as View
+						?? ItemTemplate.CreateContent() as View,
+				PositionKind.SectionHeader =>
+					SectionHeaderTemplateSelector?.SelectTemplate(data, sectionIndex)?.CreateContent() as View
+						?? SectionHeaderTemplate?.CreateContent() as View,
+				PositionKind.SectionFooter =>
+					SectionFooterTemplateSelector?.SelectTemplate(data, sectionIndex)?.CreateContent() as View
+						?? SectionFooterTemplate?.CreateContent() as View,
+				PositionKind.Header =>
+					GlobalHeader,
+				PositionKind.Footer =>
+					GlobalFooter,
+				_ => default	
+			};
+
+		public void RecycleView(PositionKind kind, object data, IView view, int sectionIndex, int itemIndex = -1)
+		{
+			if (view is View controlsView)
+				controlsView.BindingContext = data;
+		}
+
+		public string GetReuseId(PositionKind kind, object data, int sectionIndex, int itemIndex = -1)
 			=> kind switch
 			{
 				PositionKind.Item =>
-					"ITEM_" + (ItemTemplateSelector?.SelectTemplate(Adapter.Item(sectionIndex, itemIndex), sectionIndex, itemIndex)
+					"ITEM_" + (ItemTemplateSelector?.SelectTemplate(data, sectionIndex, itemIndex)
 						?? ItemTemplate).GetHashCode().ToString(),
 				PositionKind.SectionHeader =>
-					"SECTION_HEADER_" + (SectionHeaderTemplateSelector?.SelectTemplate(Adapter.Section(sectionIndex), sectionIndex)
+					"SECTION_HEADER_" + (SectionHeaderTemplateSelector?.SelectTemplate(data, sectionIndex)
 						?? SectionHeaderTemplate).GetHashCode().ToString(),
 				PositionKind.SectionFooter =>
-					"SECTION_FOOTER_" + (SectionFooterTemplateSelector?.SelectTemplate(Adapter.Section(sectionIndex), sectionIndex)
+					"SECTION_FOOTER_" + (SectionFooterTemplateSelector?.SelectTemplate(data, sectionIndex)
 						?? SectionFooterTemplate).GetHashCode().ToString(),
 				PositionKind.Header =>
 					"GLOBLA_HEADER_" + (Header?.GetContentTypeHashCode().ToString() ?? "NIL"),
