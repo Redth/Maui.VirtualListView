@@ -12,32 +12,30 @@
 			<local:SelectedColorConverter x:Key="selectedColorConverter" />
 		</ResourceDictionary>
 	</vlv:VirtualViewCell.Resources>
-	<vlv:VirtualViewCell>
-		<StackLayout
-			Spacing="0"
-			BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}">
+	<StackLayout
+		Spacing="0"
+		BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}">
 
-			<BoxView
-				HorizontalOptions="FillAndExpand"
-				HeightRequest="1"
-				BackgroundColor="#f8f8f8" 
-				IsVisible="{Binding Source={x:Reference self}, Path=IsNotFirstItemInSection}" />
+		<BoxView
+			HorizontalOptions="FillAndExpand"
+			HeightRequest="1"
+			BackgroundColor="#f8f8f8" 
+			IsVisible="{Binding Source={x:Reference self}, Path=IsNotFirstItemInSection}" />
 
 
-			<Grid ColumnDefinitions="40,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="0" ColumnSpacing="10" BackgroundColor="#f0f0f0" 
-				  Margin="10,5,10,5" Padding="10">
+		<Grid ColumnDefinitions="40,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="0" ColumnSpacing="10" BackgroundColor="#f0f0f0" 
+				Margin="10,5,10,5" Padding="10">
 
-				<Image Source="https://community.mp3tag.de/uploads/default/original/2X/a/acf3edeb055e7b77114f9e393d1edeeda37e50c9.png"
-								WidthRequest="40" HeightRequest="40"
-								Grid.Column="0" Grid.Row="0" Grid.RowSpan="3"
-								VerticalOptions="Center"/>
+			<Image Source="https://community.mp3tag.de/uploads/default/original/2X/a/acf3edeb055e7b77114f9e393d1edeeda37e50c9.png"
+							WidthRequest="40" HeightRequest="40"
+							Grid.Column="0" Grid.Row="0" Grid.RowSpan="3"
+							VerticalOptions="Center"/>
 
-				<Label Text="{Binding ArtistName}" FontSize="Subtitle" Grid.Column="1" Grid.Row="0" TextColor="DarkGray" />
-				<Label Text="{Binding TrackName}" FontSize="Title" Grid.Column="1" Grid.Row="1" TextColor="Black" />
-				<Label Text="{Binding AlbumTitle}" FontSize="Body" Grid.Column="1" Grid.Row="2" TextColor="DarkGray" />
+			<Label Text="{Binding ArtistName}" FontSize="Subtitle" Grid.Column="1" Grid.Row="0" TextColor="DarkGray" />
+			<Label Text="{Binding TrackName}" FontSize="Title" Grid.Column="1" Grid.Row="1" TextColor="Black" />
+			<Label Text="{Binding AlbumTitle}" FontSize="Body" Grid.Column="1" Grid.Row="2" TextColor="DarkGray" />
 
-			</Grid>
+		</Grid>
 
-		</StackLayout>
-	</vlv:VirtualViewCell>
+	</StackLayout>
 </vlv:VirtualViewCell>
