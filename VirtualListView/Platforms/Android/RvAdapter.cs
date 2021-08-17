@@ -50,23 +50,23 @@ namespace Microsoft.Maui
 			{
 				var data = info.Kind switch {
 					PositionKind.Item =>
-						Handler?.PositionalViewSelector?.Adapter?.Item(info.SectionIndex, info.ItemIndex),
+						positionalViewSelector?.Adapter?.Item(info.SectionIndex, info.ItemIndex),
 					PositionKind.SectionHeader =>
-						Handler?.PositionalViewSelector?.Adapter?.Section(info.SectionIndex),
+						positionalViewSelector?.Adapter?.Section(info.SectionIndex),
 					PositionKind.SectionFooter =>
-						Handler?.PositionalViewSelector?.Adapter?.Section(info.SectionIndex),
+						positionalViewSelector?.Adapter?.Section(info.SectionIndex),
 					_ => null
 				};
 
 				if (!itemHolder.HasView)
 				{
-					var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info.Kind, data, info.SectionIndex, info.ItemIndex);
+					var view = positionalViewSelector?.ViewSelector?.CreateView(info.Kind, data, info.SectionIndex, info.ItemIndex);
 					itemHolder.SwapView(view);
 				}
 
-				cell.Update(info);
+				itemHolder.Update(info);
 
-				Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info.Kind, data, cell.Container.VirtualView, info.SectionIndex, info.ItemIndex);
+				positionalViewSelector?.ViewSelector?.RecycleView(info.Kind, data, itemHolder.ViewContainer.VirtualView, info.SectionIndex, info.ItemIndex);
 			}
 		}
 
@@ -80,11 +80,11 @@ namespace Microsoft.Maui
 
 			var data = info.Kind switch {
 				PositionKind.Item =>
-					Handler?.PositionalViewSelector?.Adapter?.Item(info.SectionIndex, info.ItemIndex),
+					positionalViewSelector?.Adapter?.Item(info.SectionIndex, info.ItemIndex),
 				PositionKind.SectionHeader =>
-					Handler?.PositionalViewSelector?.Adapter?.Section(info.SectionIndex),
+					positionalViewSelector?.Adapter?.Section(info.SectionIndex),
 				PositionKind.SectionFooter =>
-					Handler?.PositionalViewSelector?.Adapter?.Section(info.SectionIndex),
+					positionalViewSelector?.Adapter?.Section(info.SectionIndex),
 				_ => null
 			};
 
