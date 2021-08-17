@@ -50,7 +50,9 @@ namespace Microsoft.Maui
 				if (info == null)
 					return null;
 
-				var reuseId = PositionalViewSelector?.ViewSelector?.GetReuseId(info.Kind, info.SectionIndex, info.ItemIndex);
+				var data = PositionalViewSelector.Adapter.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
+
+				var reuseId = PositionalViewSelector?.ViewSelector?.GetReuseId(info.Kind, data, info.SectionIndex, info.ItemIndex);
 
 				RecycledDataTemplate container;
 
@@ -65,7 +67,7 @@ namespace Microsoft.Maui
 					}
 				}
 
-				var view = PositionalViewSelector?.ViewSelector?.ViewFor(info.Kind, info.SectionIndex, info.ItemIndex);
+				var view = PositionalViewSelector?.ViewSelector?.CreateView(info.Kind, data, info.SectionIndex, info.ItemIndex);
 
 				if (view is IPositionInfo viewWithPositionInfo)
 					viewWithPositionInfo.SetPositionInfo(info);

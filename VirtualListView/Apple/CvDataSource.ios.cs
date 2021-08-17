@@ -47,15 +47,7 @@ namespace Microsoft.Maui
 
 			var info = Handler?.PositionalViewSelector?.GetInfo((int)indexPath.Section, (int)indexPath.Item);
 
-			var data = info.Kind switch {
-				PositionKind.Item =>
-					Handler?.PositionalViewSelector?.Adapter?.Item(info.SectionIndex, info.ItemIndex),
-				PositionKind.SectionHeader =>
-					Handler?.PositionalViewSelector?.Adapter?.Section(info.SectionIndex),
-				PositionKind.SectionFooter =>
-					Handler?.PositionalViewSelector?.Adapter?.Section(info.SectionIndex),
-				_ => null
-			};
+			var data = Handler?.PositionalViewSelector?.Adapter?.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
 
 			var reuseId = Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info.Kind, data, info.SectionIndex, info.ItemIndex);
 
