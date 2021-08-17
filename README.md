@@ -3,7 +3,7 @@ This is an experiment in creating a virtualized ListView control for .NET MAUI t
 
 ## Vroooom!
 
-![iOS](Screenshots/XF.VirtualListView.iOS.small.gif) ![Android](Screenshots/XF.VirtualListView.Android.small.gif)
+![VirtualListView-Maui-MacCatalyst](https://user-images.githubusercontent.com/271950/129656785-ad302f84-4439-4f96-9405-29e62ed84861.gif)
 
 In the sample, each item (and header/footer) is measured as it is recycled.  Performance is pretty great considering!  In the future there will be an option to tell the ListView if your template(s) are a consistent size so that the measure can be skipped for even better performance.
 
@@ -143,7 +143,7 @@ For section template selectors, subclass `AdapterSectionDataTemplateSelector`.
 
 All templates must contain a single `VirtualViewCell` child element.
 
-The `VirtualViewCell` is a subclass of `ViewCell` but adds some additional bindable properties that are useful for adapting your views for things like separators and selection state:
+The `VirtualViewCell` adds some additional bindable properties that are useful for adapting your views for things like separators and selection state:
 
   - int SectionIndex
   - int ItemIndex
@@ -168,7 +168,7 @@ You can access these properties from your templates.  Here's an example of displ
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
 	x:Class="VirtualListViewSample.GenericViewCell"
 	x:Name="self">
-  <xct:VirtualViewCell.View>
+  <xct:VirtualViewCell>
 		<StackLayout
 			Spacing="0"
 			BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}">
@@ -184,7 +184,7 @@ You can access these properties from your templates.  Here's an example of displ
 			</Frame>
 
 		</StackLayout>
-	</xct:VirtualViewCell.View>
+	</xct:VirtualViewCell>
 </xct:VirtualViewCell>
 ```
 
