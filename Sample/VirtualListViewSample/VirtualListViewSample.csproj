@@ -1,37 +1,59 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>
-    <OutputType>Exe</OutputType>
+	<PropertyGroup>
+		<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>
+		<TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net6.0-windows10.0.19041.0;</TargetFrameworks>
+		<OutputType>Exe</OutputType>
 		<UseMaui>True</UseMaui>
 		<SingleProject>True</SingleProject>
-    <ApplicationId>com.microsoft.virtuallistviewsample</ApplicationId>
-    <ApplicationTitle>MAUI</ApplicationTitle>
-    <ApplicationVersion>1.0</ApplicationVersion>
-    <AndroidVersionCode>1</AndroidVersionCode>
-    <UseSystemResourceKeys>false</UseSystemResourceKeys>
-    <RuntimeIdentifier Condition="'$(TargetFramework)' == 'net6.0-ios'">iossimulator-x64</RuntimeIdentifier>
-    <RuntimeIdentifier Condition="'$(TargetFramework)' == 'net6.0-maccatalyst'">maccatalyst-x64</RuntimeIdentifier>
-    <InvariantGlobalization Condition="'$(TargetFramework)' == 'net6.0-maccatalyst'">false</InvariantGlobalization>
+		<ApplicationId>com.microsoft.virtuallistviewsample</ApplicationId>
+		<ApplicationTitle>MAUI</ApplicationTitle>
+		<ApplicationVersion>1.0</ApplicationVersion>
+		<AndroidVersionCode>1</AndroidVersionCode>
+		<UseSystemResourceKeys>false</UseSystemResourceKeys>
+		<!--<RuntimeIdentifiers Condition="'$(TargetFramework)' == 'net6.0-android'">android-arm</RuntimeIdentifiers>-->
+		<InvariantGlobalization Condition="'$(TargetFramework)' == 'net6.0-maccatalyst'">false</InvariantGlobalization>
+		<UseInterpreter>True</UseInterpreter>
+		<AppxPackageRecipe>C:\code\XFSlimListView\Sample\VirtualListViewSample\bin\Debug\net6.0-windows10.0.19041.0\win-x64\VirtualListViewSample.build.appxrecipe</AppxPackageRecipe>
 	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <DebugType>portable</DebugType>
-    <DebugSymbols>true</DebugSymbols>
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
 
-  <ItemGroup>
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net6.0-windows10.0.19041.0'">
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+		<OutputType>WinExe</OutputType>
+		<EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
+		<WindowsPackageType>MSIX</WindowsPackageType>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
+		<DebugType>portable</DebugType>
+		<DebugSymbols>true</DebugSymbols>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup Condition="$(TargetFramework.Contains('-windows'))">
+		<PackageReference Include="Microsoft.ProjectReunion" Version="0.8.1" />
+		<PackageReference Include="Microsoft.ProjectReunion.Foundation" Version="0.8.1" />
+		<PackageReference Include="Microsoft.ProjectReunion.WinUI" Version="0.8.1" />
+		<PackageReference Include="Microsoft.ProjectReunion.InteractiveExperiences" Version="0.8.1" NoWarn="NU1701" />
+	</ItemGroup>
+	
+	<ItemGroup>
 		<PackageReference Include="LiteDb" Version="5.0.10" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="chinook.litedb" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj" />
-  </ItemGroup>
+	</ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="chinook.litedb" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectCapability Include="Msix" />
+	</ItemGroup>
 
-	<Target Name="ValidateWinUIPlatform" />
-	<Target Name="BinPlaceBootstrapDll" />
-
+	<Target Name="FixRecipeFilename" Condition="$(TargetFramework.Contains('-windows'))" BeforeTargets="_GenerateAppxPackageRecipeFile">
+		<PropertyGroup>
+			<AppxPackageRecipe>$(OutputPath)\$(ProjectName).build.appxrecipe</AppxPackageRecipe>
+		</PropertyGroup>
+	</Target>
 </Project>
