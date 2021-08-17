@@ -21,22 +21,9 @@ namespace VirtualListViewSample
 
                 var txt = string.Empty;
 
-#if !WINDOWS
                 using (var stream = typeof(App).Assembly.GetManifestResourceStream("VirtualListViewSample." + file))
                 using (var sw = File.Create(path))
                     stream.CopyTo(sw);
-#else
-                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-				{
-                    try
-                    {
-                        using (var stream = asm.GetManifestResourceStream("VirtualListViewSample.WinUI." + file))
-                            if (stream != null)
-                                using (var sw = File.Create(path))
-                                    stream.CopyTo(sw);
-                    } catch { }
-                }
-#endif
             }
 
             var dbPath = Path.Combine(Microsoft.Maui.Essentials.FileSystem.CacheDirectory, files.First());
