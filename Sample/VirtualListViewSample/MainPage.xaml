@@ -20,13 +20,6 @@
 			SelectedItemsChanged="VirtualListView_SelectedItemsChanged"
 			ItemTemplateSelector="{StaticResource itemTemplateSelector}">
 
-		<vlv:VirtualListView.ItemTemplate>
-			<DataTemplate x:DataType="local:TrackInfo">
-				<GridLayout>
-					<Label Text="{Binding TrackName}" FontSize="Subtitle" TextColor="Black" Margin="12" />
-				</GridLayout>
-			</DataTemplate>
-		</vlv:VirtualListView.ItemTemplate>
 		<vlv:VirtualListView.SectionHeaderTemplate>
 			<DataTemplate x:DataType="local:AlbumInfo">
 				<Grid ColumnDefinitions="Auto,*" BackgroundColor="#0B2161" Padding="10" ColumnSpacing="10" HorizontalOptions="FillAndExpand">
