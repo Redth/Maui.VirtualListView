@@ -23,6 +23,8 @@
 		<UseMaui>True</UseMaui>
     <SingleProject>True</SingleProject>
     <UseMaui>True</UseMaui>
+		<GenerateLibraryLayout>true</GenerateLibraryLayout>
+		<DisableEmbeddedXbf>false</DisableEmbeddedXbf>
  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)'=='Debug' ">
     <DebugSymbols>true</DebugSymbols>
