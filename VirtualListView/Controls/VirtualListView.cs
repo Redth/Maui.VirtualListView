@@ -1,13 +1,16 @@
-﻿using System;
+﻿using Microsoft.Maui.Controls.Xaml.Diagnostics;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Microsoft.Maui.Controls
 {
 
-	public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector
+	public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector, IVisualTreeElement
 	{
 		static VirtualListView()
 		{
@@ -222,41 +225,48 @@ namespace Microsoft.Maui.Controls
 		public bool SectionHasFooter(int sectionIndex)
 			=> SectionFooterTemplateSelector != null || SectionFooterTemplate != null;
 
-		public IView CreateView(PositionKind kind, object data, int sectionIndex, int itemIndex = -1)
-			=> kind switch {
+		public IView CreateView(PositionInfo position, object data)
+			=> position.Kind switch {
 				PositionKind.Item => 
-					ItemTemplateSelector?.SelectTemplate(data, sectionIndex, itemIndex).CreateContent() as View
-						?? ItemTemplate.CreateContent() as View,
+					ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)?.CreateContent() as View
+						?? ItemTemplate?.CreateContent() as View,
 				PositionKind.SectionHeader =>
-					SectionHeaderTemplateSelector?.SelectTemplate(data, sectionIndex)?.CreateContent() as View
+					SectionHeaderTemplateSelector?.SelectTemplate(data, position.SectionIndex)?.CreateContent() as View
 						?? SectionHeaderTemplate?.CreateContent() as View,
 				PositionKind.SectionFooter =>
-					SectionFooterTemplateSelector?.SelectTemplate(data, sectionIndex)?.CreateContent() as View
+					SectionFooterTemplateSelector?.SelectTemplate(data, position.SectionIndex)?.CreateContent() as View
 						?? SectionFooterTemplate?.CreateContent() as View,
 				PositionKind.Header =>
 					GlobalHeader,
 				PositionKind.Footer =>
 					GlobalFooter,
-				_ => default	
+				_ => default
 			};
 
-		public void RecycleView(PositionKind kind, object data, IView view, int sectionIndex, int itemIndex = -1)
+		public void RecycleView(PositionInfo position, object data, IView view)
 		{
 			if (view is View controlsView)
+			{
+				if (controlsView.Resources.TryGetValue("VirtualViewCellPositionInfo", out var v) && v is BindablePositionInfo bindablePositionInfo)
+					bindablePositionInfo.SetPositionInfo(position);
+				else
+					controlsView.Resources["VirtualViewCellPositionInfo"] = new BindablePositionInfo(position);
+
 				controlsView.BindingContext = data;
+			}
 		}
 
-		public string GetReuseId(PositionKind kind, object data, int sectionIndex, int itemIndex = -1)
-			=> kind switch
+		public string GetReuseId(PositionInfo position, object data)
+			=> position.Kind switch
 			{
 				PositionKind.Item =>
-					"ITEM_" + (ItemTemplateSelector?.SelectTemplate(data, sectionIndex, itemIndex)
+					"ITEM_" + (ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)
 						?? ItemTemplate).GetHashCode().ToString(),
 				PositionKind.SectionHeader =>
-					"SECTION_HEADER_" + (SectionHeaderTemplateSelector?.SelectTemplate(data, sectionIndex)
+					"SECTION_HEADER_" + (SectionHeaderTemplateSelector?.SelectTemplate(data, position.SectionIndex)
 						?? SectionHeaderTemplate).GetHashCode().ToString(),
 				PositionKind.SectionFooter =>
-					"SECTION_FOOTER_" + (SectionFooterTemplateSelector?.SelectTemplate(data, sectionIndex)
+					"SECTION_FOOTER_" + (SectionFooterTemplateSelector?.SelectTemplate(data, position.SectionIndex)
 						?? SectionFooterTemplate).GetHashCode().ToString(),
 				PositionKind.Header =>
 					"GLOBLA_HEADER_" + (Header?.GetContentTypeHashCode().ToString() ?? "NIL"),
@@ -264,5 +274,50 @@ namespace Microsoft.Maui.Controls
 					"GLOBAL_FOOTER_" + (Footer?.GetContentTypeHashCode().ToString() ?? "NIL"),
 				_ => "UNKNOWN"
 			};
+
+		public IReadOnlyList<IVisualTreeElement> GetVisualChildren()
+		{
+			var results = new List<IVisualTreeElement>();
+
+			foreach (var c in logicalChildren)
+			{
+				if (c is IVisualTreeElement vte)
+					results.Add(vte);
+			}
+
+			return results;
+		}
+
+		static MethodInfo onChildAddedMethod;
+		static MethodInfo onChildRemovedMethod;
+
+		readonly object lockLogicalChildren = new();
+		readonly List<IView> logicalChildren = new();
+
+		public void ViewDetached(PositionInfo position, IView view)
+		{
+			var oldLogicalIndex = -1;
+			lock (lockLogicalChildren)
+			{
+				oldLogicalIndex = logicalChildren.IndexOf(view);
+				logicalChildren.Remove(view);
+			}
+
+			if (onChildRemovedMethod == null)
+				onChildRemovedMethod = typeof(VisualDiagnostics).GetMethod("OnChildRemoved", BindingFlags.Static | BindingFlags.NonPublic);
+
+			onChildRemovedMethod.Invoke(null, new object[] { this, view as Element, oldLogicalIndex });
+		}
+
+		public void ViewAttached(PositionInfo position, IView view)
+		{
+			lock (lockLogicalChildren)
+				logicalChildren.Add(view);
+
+			if (onChildAddedMethod == null)
+				onChildAddedMethod = typeof(VisualDiagnostics).GetMethod("OnChildAdded", BindingFlags.Static | BindingFlags.NonPublic);
+
+			onChildAddedMethod.Invoke(null, new object[] { this, view as Element });
+		}
 	}
 }

@@ -15,6 +15,8 @@ namespace Microsoft.Maui
 
 		public IMauiContext Context { get; set; }
 
+		public Action<IView> ReuseCallback { get; set; }
+
 		[Export("initWithFrame:")]
 		public CvCell(CGRect frame) : base(frame)
 		{
@@ -65,5 +67,14 @@ namespace Microsoft.Maui
 
 		public IView VirtualView
 			=> Container?.VirtualView;
+
+		public override void PrepareForReuse()
+		{
+			base.PrepareForReuse();
+
+			// TODO: Recycle
+			if (VirtualView != null)
+				ReuseCallback?.Invoke(VirtualView);
+		}
 	}
 }

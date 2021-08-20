@@ -49,7 +49,7 @@ namespace Microsoft.Maui
 
 			var data = Handler?.PositionalViewSelector?.Adapter?.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
 
-			var reuseId = Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info.Kind, data, info.SectionIndex, info.ItemIndex);
+			var reuseId = Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info, data);
 
 			var nativeReuseId = info.Kind switch
 			{
@@ -65,6 +65,9 @@ namespace Microsoft.Maui
 			cell.IndexPath = indexPath;
 			cell.Init(Handler?.MauiContext);
 
+			cell.ReuseCallback = rv =>
+				Handler.VirtualView.ViewSelector.ViewDetached(info, cell.VirtualView);
+
 			if (info.SectionIndex < 0 || info.ItemIndex < 0)
 				info.IsSelected = false;
 			else
@@ -72,13 +75,15 @@ namespace Microsoft.Maui
 
 			if (cell.NeedsView)
 			{
-				var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info.Kind, data, info.SectionIndex, info.ItemIndex);
+				var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info, data);
 				cell.SwapView(view);
 			}
 
 			cell.Update(info);
 
-			Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info.Kind, data, cell.Container.VirtualView, info.SectionIndex, info.ItemIndex);
+			Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info, data, cell.Container.VirtualView);
+
+			Handler.VirtualView.ViewSelector.ViewAttached(info, cell.VirtualView);
 
 			return cell;
 		}
