@@ -1,12 +1,7 @@
-﻿using Microsoft.Maui.Handlers;
-using Microsoft.UI.Xaml;
+﻿using Microsoft.Maui.Controls;
+using Microsoft.Maui.Handlers;
 using Microsoft.UI.Xaml.Controls;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Linq;
 
 namespace Microsoft.Maui
 {
@@ -15,9 +10,9 @@ namespace Microsoft.Maui
 		ItemsRepeaterScrollHost itemsRepeaterScrollHost;
 		ScrollViewer scrollViewer;
 		ItemsRepeater itemsRepeater;
-		IrDataTemplateSelector dataTemplateSelector;
+		//IrDataTemplateSelector dataTemplateSelector;
 		IrSource irSource;
-		VirtualListViewDataTemplateSelector templateSelector;
+		IrDataTemplateSelector templateSelector;
 
 		internal PositionalViewSelector PositionalViewSelector { get; private set; }
 
@@ -37,27 +32,20 @@ namespace Microsoft.Maui
 		{
 			base.ConnectHandler(nativeView);
 
-			templateSelector = new VirtualListViewDataTemplateSelector(VirtualView, NativeView.Resources["ContainerTemplate"] as VirtualListViewDataTemplate);
-
-			PositionalViewSelector = new PositionalViewSelector(VirtualView);
-			irSource = new IrSource(PositionalViewSelector);
-
-			itemsRepeater.ItemsSource = irSource;
-
-			dataTemplateSelector = new IrDataTemplateSelector(MauiContext, PositionalViewSelector);
+			templateSelector = new IrDataTemplateSelector(VirtualView);
 			itemsRepeater.ItemTemplate = templateSelector;
 
-			//itemsRepeater.ItemTemplate = dataTemplateSelector;
-			
+			PositionalViewSelector = new PositionalViewSelector(VirtualView);
+			irSource = new IrSource(MauiContext, PositionalViewSelector, VirtualView);
+
+			itemsRepeater.ItemsSource = irSource;
 		}
-
-
 
 		protected override void DisconnectHandler(ItemsRepeaterScrollHost nativeView)
 		{
 			itemsRepeater.ItemTemplate = null;
-			dataTemplateSelector.Dispose();
-			dataTemplateSelector = null;
+			//dataTemplateSelector.Dispose();
+			//dataTemplateSelector = null;
 
 			itemsRepeater.ItemsSource = null;
 			irSource = null;
@@ -67,7 +55,7 @@ namespace Microsoft.Maui
 
 		public void InvalidateData()
 		{
-			dataTemplateSelector?.Reset();
+			//dataTemplateSelector?.Reset();
 			irSource?.Reset();
 		}
 
@@ -93,6 +81,7 @@ namespace Microsoft.Maui
 		{
 			if (parameter is ItemPosition[] items)
 			{
+				//
 			}
 		}
 
@@ -101,6 +90,25 @@ namespace Microsoft.Maui
 			if (parameter is ItemPosition[] items)
 			{
 				//
+			}
+		}
+
+		internal static void AddLibraryResources(string key, string uri)
+		{
+			var resources = UI.Xaml.Application.Current?.Resources;
+			if (resources == null)
+				return;
+
+			var dictionaries = resources.MergedDictionaries;
+			if (dictionaries == null)
+				return;
+
+			if (!resources.ContainsKey(key))
+			{
+				dictionaries.Add(new UI.Xaml.ResourceDictionary
+				{
+					Source = new Uri(uri)
+				});
 			}
 		}
 	}

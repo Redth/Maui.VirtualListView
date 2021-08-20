@@ -35,24 +35,13 @@
     <Compile Remove="**\*.netstandard.cs" />
     <Compile Remove="**\*.netstandard.*.cs" />
   </ItemGroup>
-
-
   <ItemGroup Condition=" '$(TargetFramework)' != 'net6.0-ios' And '$(TargetFramework)' != 'net6.0-maccatalyst' ">
     <Compile Remove="Apple\**\*.cs" />
   </ItemGroup>
-
 	<ItemGroup>
 		<None Include="Apple\**\*.cs" />
 	</ItemGroup>
-  
+ 
 	<Target Name="ValidateWinUIPlatform" />
 	<Target Name="BinPlaceBootstrapDll" />
-
-	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0-windows10.0.19041.0'">
-	  <Page Update="Platforms\Windows\Styles\Resources.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </Page>
-	</ItemGroup>
-
-
 </Project>
