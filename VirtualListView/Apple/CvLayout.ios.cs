@@ -7,10 +7,13 @@ namespace Microsoft.Maui
 {
 	internal class CvLayout : UICollectionViewFlowLayout
 	{
-		public CvLayout() : base()
+		public CvLayout(VirtualListViewHandler handler) : base()
 		{
+			Handler = handler;
 			isiOS11 = UIDevice.CurrentDevice.CheckSystemVersion(11, 0);
 		}
+
+		readonly VirtualListViewHandler Handler;
 
 		readonly bool isiOS11;
 
@@ -18,16 +21,33 @@ namespace Microsoft.Maui
 		{
 			var layoutAttributes = base.LayoutAttributesForItem(path);
 
-			var x = SectionInset.Left;
+			if (Handler.VirtualView.Orientation == ListOrientation.Vertical)
+			{
+				var x = SectionInset.Left;
 
-			nfloat width;
+				nfloat width;
 
-			if (isiOS11)
-				width = CollectionView.SafeAreaLayoutGuide.LayoutFrame.Width - SectionInset.Left - SectionInset.Right;
+				if (isiOS11)
+					width = CollectionView.SafeAreaLayoutGuide.LayoutFrame.Width - SectionInset.Left - SectionInset.Right;
+				else
+					width = CollectionView.Bounds.Width - SectionInset.Left - SectionInset.Right;
+
+				layoutAttributes.Frame = new CGRect(x, layoutAttributes.Frame.Y, width, layoutAttributes.Frame.Height);
+			}
 			else
-				width = CollectionView.Bounds.Width - SectionInset.Left - SectionInset.Right;
+			{
+				var y = SectionInset.Top;
 
-			layoutAttributes.Frame = new CGRect(x, layoutAttributes.Frame.Y, width, layoutAttributes.Frame.Height);
+				nfloat height;
+
+				if (isiOS11)
+					height = CollectionView.SafeAreaLayoutGuide.LayoutFrame.Height - SectionInset.Top - SectionInset.Bottom;
+				else
+					height = CollectionView.Bounds.Height - SectionInset.Top - SectionInset.Bottom;
+
+				layoutAttributes.Frame = new CGRect(layoutAttributes.Frame.X, y, layoutAttributes.Frame.Width, height);
+			}
+
 
 			return layoutAttributes;
 		}

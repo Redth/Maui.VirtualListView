@@ -20,7 +20,13 @@ namespace Microsoft.Maui
 
 		protected override UICollectionView CreateNativeView()
 		{
-			layout = new CvLayout();
+			layout = new CvLayout(this);
+			layout.ScrollDirection = VirtualView.Orientation switch
+			{
+				ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
+				ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
+				_ => UICollectionViewScrollDirection.Vertical
+			};
 			layout.EstimatedItemSize = UICollectionViewFlowLayout.AutomaticSize;
 			layout.SectionInset = new UIEdgeInsets(0, 0, 0, 0);
 			layout.MinimumInteritemSpacing = 0f;
@@ -115,6 +121,18 @@ namespace Microsoft.Maui
 				handler?.collectionView?.ReloadItems(
 					items.Select(i => NSIndexPath.FromItemSection(i.ItemIndex, i.SectionIndex)).ToArray());
 			}
+		}
+
+		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		{
+			handler.layout.ScrollDirection = virtualListView.Orientation switch
+			{
+				ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
+				ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
+				_ => UICollectionViewScrollDirection.Vertical
+			};
+
+			handler?.InvalidateData();
 		}
 
 		public void InvalidateData()

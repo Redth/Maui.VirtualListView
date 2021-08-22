@@ -51,9 +51,4 @@
 		<ProjectCapability Include="Msix" />
 	</ItemGroup>
 
-	<Target Name="FixRecipeFilename" Condition="$(TargetFramework.Contains('-windows'))" BeforeTargets="_GenerateAppxPackageRecipeFile">
-		<PropertyGroup>
-			<AppxPackageRecipe>$(OutputPath)\$(ProjectName).build.appxrecipe</AppxPackageRecipe>
-		</PropertyGroup>
-	</Target>
 </Project>

@@ -23,6 +23,8 @@ namespace Microsoft.Maui
 
 		IReadOnlyList<ItemPosition> SelectedItems { get; }
 
+		ListOrientation Orientation { get; }
+
 		bool IsItemSelected(int sectionIndex, int itemIndex);
 
 		void SetSelected(params ItemPosition[] paths);
@@ -30,5 +32,11 @@ namespace Microsoft.Maui
 		void SetDeselected(params ItemPosition[] paths);
 
 		void InvalidateData();
+	}
+
+	public enum ListOrientation
+	{
+		Vertical,
+		Horizontal
 	}
 }

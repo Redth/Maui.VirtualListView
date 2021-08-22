@@ -83,6 +83,17 @@ namespace Microsoft.Maui
 			handler.adapter.NotifyDataSetChanged();
 		}
 
+		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+		{
+			handler.layoutManager.Orientation = virtualListView.Orientation switch
+			{
+				ListOrientation.Vertical => LinearLayoutManager.Vertical,
+				ListOrientation.Horizontal => LinearLayoutManager.Horizontal,
+				_ => LinearLayoutManager.Vertical
+			};
+			handler.adapter.NotifyDataSetChanged();
+		}
+
 		class RvScrollListener : RecyclerView.OnScrollListener
 		{
 			public RvScrollListener(Action<RecyclerView, int, int> scrollHandler)

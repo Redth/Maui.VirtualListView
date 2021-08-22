@@ -93,6 +93,10 @@ namespace Microsoft.Maui
 			}
 		}
 
+		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+		{
+		}
+
 		internal static void AddLibraryResources(string key, string uri)
 		{
 			var resources = UI.Xaml.Application.Current?.Resources;

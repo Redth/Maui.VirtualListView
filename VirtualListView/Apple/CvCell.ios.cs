@@ -7,6 +7,8 @@ namespace Microsoft.Maui
 {
 	internal class CvCell : UICollectionViewCell
 	{
+		public VirtualListViewHandler Handler { get; set; }
+
 		public CvViewContainer Container { get; private set; }
 
 		public NSIndexPath IndexPath { get; set; }
@@ -44,9 +46,18 @@ namespace Microsoft.Maui
 
 			Container.VirtualView.InvalidateMeasure();
 
-			var virtSize = Container.VirtualView.Measure(attr.Frame.Width, double.MaxValue - 100);
+			if (Handler.VirtualView.Orientation == ListOrientation.Vertical)
+			{
+				var virtSize = Container.VirtualView.Measure(attr.Frame.Width, double.MaxValue - 100);
 
-			attr.Frame = new CGRect(0, attr.Frame.Y, attr.Frame.Width, virtSize.Height);
+				attr.Frame = new CGRect(0, attr.Frame.Y, attr.Frame.Width, virtSize.Height);
+			}
+			else
+			{
+				var virtSize = Container.VirtualView.Measure(double.MaxValue - 100, attr.Frame.Height);
+
+				attr.Frame = new CGRect(0, attr.Frame.Y, virtSize.Width, attr.Frame.Height);
+			}
 
 			return attr;
 		}
@@ -56,6 +67,7 @@ namespace Microsoft.Maui
 			PositionInfo = info;
 			if (Container.VirtualView is IPositionInfo positionInfoView)
 				positionInfoView.SetPositionInfo(info);
+
 			Container.SetContainerNeedsLayout();
 		}
 

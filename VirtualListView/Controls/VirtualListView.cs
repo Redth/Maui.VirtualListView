@@ -138,6 +138,17 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		public ListOrientation Orientation
+		{
+			get => (ListOrientation)GetValue(OrientationProperty);
+			set => SetValue(OrientationProperty, value);
+		}
+
+		public static readonly BindableProperty OrientationProperty =
+			BindableProperty.Create(nameof(Orientation), typeof(ListOrientation), typeof(VirtualListView), ListOrientation.Vertical);
+
+
+
 		public IVirtualListViewSelector ViewSelector => this;
 
 		public IView Header => GlobalHeader;
