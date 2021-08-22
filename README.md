@@ -1,14 +1,14 @@
-# VirtualListView for Xamarin.Forms
-This is an experiment in creating a virtualized ListView control for Xamarin Forms to support simple, fast, multi-templated, uneven item sized lists by not adding too many bells and whistles and using an adapter pattern data source.
+# VirtualListView for .NET MAUI
+This is an experiment in creating a virtualized ListView control for .NET MAUI to support simple, fast, multi-templated, uneven item sized lists by not adding too many bells and whistles and using an adapter pattern data source.
 
 ## Vroooom!
 
-![iOS](Screenshots/XF.VirtualListView.iOS.small.gif) ![Android](Screenshots/XF.VirtualListView.Android.small.gif)
+![VirtualListView-Maui-MacCatalyst](https://user-images.githubusercontent.com/271950/129656785-ad302f84-4439-4f96-9405-29e62ed84861.gif)
 
 In the sample, each item (and header/footer) is measured as it is recycled.  Performance is pretty great considering!  In the future there will be an option to tell the ListView if your template(s) are a consistent size so that the measure can be skipped for even better performance.
 
 ## Native controls
-The implementation uses fast native controls in its renderers and optimizes for the native platform's recycling strategies.  Items are cached through the platform's recycling mechanisms so that they can be reused efficiently.  This also means the Forms representation of items are cached as well.  Each type of template (Item, Section Header, Section Footer) is cached individually so that they are reused efficiently.
+The implementation uses fast native controls in its renderers and optimizes for the native platform's recycling strategies.  Items are cached through the platform's recycling mechanisms so that they can be reused efficiently.  This also means the MAUI representation of items are cached as well.  Each type of template (Item, Section Header, Section Footer) is cached individually so that they are reused efficiently.
 
 Controls used on each platform:
   - iOS: UICollectionView
@@ -143,7 +143,7 @@ For section template selectors, subclass `AdapterSectionDataTemplateSelector`.
 
 All templates must contain a single `VirtualViewCell` child element.
 
-The `VirtualViewCell` is a subclass of `ViewCell` but adds some additional bindable properties that are useful for adapting your views for things like separators and selection state:
+The `VirtualViewCell` adds some additional bindable properties that are useful for adapting your views for things like separators and selection state:
 
   - int SectionIndex
   - int ItemIndex
@@ -163,12 +163,12 @@ You can access these properties from your templates.  Here's an example of displ
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <xct:VirtualViewCell
-	xmlns:xct="clr-namespace:Xamarin.CommunityToolkit.UI.Views;assembly=VirtualListView"
+	xmlns:xct="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
 	xmlns="http://xamarin.com/schemas/2014/forms" 
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
 	x:Class="VirtualListViewSample.GenericViewCell"
 	x:Name="self">
-  <xct:VirtualViewCell.View>
+  <xct:VirtualViewCell>
 		<StackLayout
 			Spacing="0"
 			BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}">
@@ -184,7 +184,7 @@ You can access these properties from your templates.  Here's an example of displ
 			</Frame>
 
 		</StackLayout>
-	</xct:VirtualViewCell.View>
+	</xct:VirtualViewCell>
 </xct:VirtualViewCell>
 ```
 
@@ -203,7 +203,7 @@ In the future there will be bindable properties and maybe a way to cancel a sele
 
 Looking ahead, there are a few goals:
 
-1. UWP Support - this is currently a work in progress
+1. WinAppSdk Support - this is currently a work in progress
 2. Even Rows - by default every cell is assumed uneven and measured every time the context changes or the cell is recycled.  Adding an option to assume each template type is the same size will make performance even better, but will be an explicit opt-in
 3. Horizontal support - this should be relatively easy to implement
 4. Bindable properties for item selection

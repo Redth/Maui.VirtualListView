@@ -1,27 +1,24 @@
-﻿using Xamarin.CommunityToolkit.UI.Views;
-using Xamarin.Forms;
+﻿using Microsoft.Maui;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Xaml;
 
 namespace VirtualListViewSample
 {
-	public class ItemTemplateSelector : AdapterItemDataTemplateSelector
+	public class ItemTemplateSelector : VirtualListViewItemTemplateSelector
 	{
-		public DataTemplate PopTemplate { get; set; }
-		//public DataTemplate HeavyTemplate { get; set; }
-		public DataTemplate FilmTemplate { get; set; }
-
-		public DataTemplate GenericTemplate { get; set; }
-
-		public ItemTemplateSelector()
+		public ItemTemplateSelector() : base()
 		{
 			PopTemplate = new DataTemplate(typeof(PopViewCell));
-			GenericTemplate = new DataTemplate(typeof(GenericViewCell));
 			FilmTemplate = new DataTemplate(typeof(FilmViewCell));
+			GenericTemplate = new DataTemplate(typeof(GenericViewCell));
 		}
 
-		public override DataTemplate SelectItemTemplate(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex)
-		{
-			var item = adapter.Item(sectionIndex, itemIndex);
+		readonly DataTemplate PopTemplate;
+		readonly DataTemplate FilmTemplate;
+		readonly DataTemplate GenericTemplate;
 
+		public override DataTemplate SelectTemplate(object item, int sectionIndex, int itemIndex)
+		{
 			if (item is TrackInfo trackInfo)
 			{
 				var genreId = trackInfo.GenreId;

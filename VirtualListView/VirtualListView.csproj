@@ -1,60 +1,49 @@
-<Project Sdk="MSBuild.Sdk.Extras/3.0.23">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;Xamarin.iOS10;MonoAndroid10.0</TargetFrameworks>
-    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);uap10.0.16299;</TargetFrameworks>
+    <TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net6.0-windows10.0.19041.0;</TargetFrameworks>
     <AssemblyName>VirtualListView</AssemblyName>
-    <RootNamespace>Xamarin.CommunityToolkit.UI.Views</RootNamespace>
-    <PackageId>Xamarin.Forms.CommunityToolkit.VirtualListView</PackageId>
-    <Summary>A virtual ListView for Xamarin.Forms</Summary>
-    <Title>VirtualListView for Xamarin Forms</Title>
+    <RootNamespace>Microsoft.Maui.Controls.VirtualListViewControl</RootNamespace>
+    <PackageId>Microsoft.Maui.Controls.VirtualListView</PackageId>
+    <Summary>A virtual ListView for .NET MAUI</Summary>
+    <Title>VirtualListView for .NET MAUI</Title>
     <Product>$(AssemblyName) ($(TargetFramework))</Product>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <AssemblyFileVersion>1.0.0.0</AssemblyFileVersion>
     <Version>1.0.0</Version>
     <PackageVersion>1.0.0</PackageVersion>
-    <Authors>Redth</Authors>
+    <Authors>Microsoft, Redth</Authors>
     <NeutralLanguage>en</NeutralLanguage>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <RepositoryUrl>https://github.com/redth/Xamarin.Forms.VirtualListView</RepositoryUrl>
     <DefineConstants>$(DefineConstants);</DefineConstants>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <DebugType>portable</DebugType>
     <Configurations>Debug;Release</Configurations>
     <LangVersion>latest</LangVersion>
+		<UseMaui>True</UseMaui>
+    <SingleProject>True</SingleProject>
+    <UseMaui>True</UseMaui>
+		<GenerateLibraryLayout>true</GenerateLibraryLayout>
+		<DisableEmbeddedXbf>false</DisableEmbeddedXbf>
  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)'=='Debug' ">
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="**\*.shared.cs" />
-    <Compile Include="**\*.shared.*.cs" />
-  </ItemGroup>
   <ItemGroup Condition=" $(TargetFramework.StartsWith('netstandard')) ">
     <Compile Include="**\*.netstandard.cs" />
     <Compile Include="**\*.netstandard.*.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" $(TargetFramework.StartsWith('uap10.0')) ">
-    <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform" Version="6.2.9" PrivateAssets="all" />
-    <Compile Include="**\*.uwp.cs" />
-    <Compile Include="**\*.uwp.*.cs" />
-    <SDKReference Include="WindowsMobile, Version=10.0.16299.0">
-      <Name>Windows Mobile Extensions for the UWP</Name>
-    </SDKReference>
-    <Page Include="UWP\Res.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
+  <ItemGroup Condition=" !$(TargetFramework.StartsWith('netstandard')) ">
+    <Compile Remove="**\*.netstandard.cs" />
+    <Compile Remove="**\*.netstandard.*.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" $(TargetFramework.StartsWith('MonoAndroid')) ">
-    <Compile Include="**\*.android.cs" />
-    <Compile Include="**\*.android.*.cs" />
-    <AndroidResource Include="Resources\xml\*.xml" />
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net6.0-ios' And '$(TargetFramework)' != 'net6.0-maccatalyst' ">
+    <Compile Remove="Apple\**\*.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" $(TargetFramework.StartsWith('Xamarin.iOS')) ">
-    <Compile Include="**\*.ios.cs" />
-    <Compile Include="**\*.ios.*.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Xamarin.Forms" Version="5.0.0.1931" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="Apple\**\*.cs" />
+	</ItemGroup>
+ 
+	<Target Name="ValidateWinUIPlatform" />
+	<Target Name="BinPlaceBootstrapDll" />
 </Project>
