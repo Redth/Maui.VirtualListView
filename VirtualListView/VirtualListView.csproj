@@ -29,14 +29,6 @@
   <PropertyGroup Condition=" '$(Configuration)'=='Debug' ">
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
-  <ItemGroup Condition=" $(TargetFramework.StartsWith('netstandard')) ">
-    <Compile Include="**\*.netstandard.cs" />
-    <Compile Include="**\*.netstandard.*.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" !$(TargetFramework.StartsWith('netstandard')) ">
-    <Compile Remove="**\*.netstandard.cs" />
-    <Compile Remove="**\*.netstandard.*.cs" />
-  </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'net6.0-ios' And '$(TargetFramework)' != 'net6.0-maccatalyst' ">
     <Compile Remove="Apple\**\*.cs" />
   </ItemGroup>
