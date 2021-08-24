@@ -9,7 +9,7 @@ namespace Microsoft.Maui
 	{
 		RvAdapter adapter;
 		RecyclerView recyclerView;
-		LinearLayoutManager layoutManager;
+		RecyclerView.LayoutManager layoutManager;
 		PositionalViewSelector positionalViewSelector;
 
 		protected override RecyclerView CreateNativeView()
@@ -17,9 +17,6 @@ namespace Microsoft.Maui
 
 		protected override void ConnectHandler(RecyclerView nativeView)
 		{
-			layoutManager = new LinearLayoutManager(Context);
-			//layoutManager.Orientation = LinearLayoutManager.Horizontal;
-
 			positionalViewSelector = new PositionalViewSelector(VirtualView);
 
 			adapter = new RvAdapter(Context, this, positionalViewSelector);
@@ -33,7 +30,7 @@ namespace Microsoft.Maui
 				// VirtualView?.RaiseScrolled((x, y));
 			}));
 
-			recyclerView.SetLayoutManager(layoutManager);
+			UpdateLayoutManager();
 			recyclerView.SetAdapter(adapter);
 			recyclerView.LayoutParameters = new ViewGroup.LayoutParams(
 				ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
@@ -47,6 +44,12 @@ namespace Microsoft.Maui
 			adapter = null;
 			layoutManager.Dispose();
 			layoutManager = null;
+		}
+
+		void UpdateLayoutManager()
+		{
+			layoutManager = (VirtualView.Layout ?? new VirtualListViewStackLayout(ListOrientation.Vertical)).CreateNativeLayout();
+			recyclerView.SetLayoutManager(layoutManager);
 		}
 
 		public void InvalidateData()
@@ -83,15 +86,10 @@ namespace Microsoft.Maui
 			handler.adapter.NotifyDataSetChanged();
 		}
 
-		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+		public static void MapLayout(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{
-			handler.layoutManager.Orientation = virtualListView.Orientation switch
-			{
-				ListOrientation.Vertical => LinearLayoutManager.Vertical,
-				ListOrientation.Horizontal => LinearLayoutManager.Horizontal,
-				_ => LinearLayoutManager.Vertical
-			};
-			handler.adapter.NotifyDataSetChanged();
+			handler.UpdateLayoutManager();
+			handler.InvalidateData();
 		}
 
 		class RvScrollListener : RecyclerView.OnScrollListener

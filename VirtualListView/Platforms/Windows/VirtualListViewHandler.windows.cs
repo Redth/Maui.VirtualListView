@@ -10,7 +10,6 @@ namespace Microsoft.Maui
 		ItemsRepeaterScrollHost itemsRepeaterScrollHost;
 		ScrollViewer scrollViewer;
 		ItemsRepeater itemsRepeater;
-		//IrDataTemplateSelector dataTemplateSelector;
 		IrSource irSource;
 		IrDataTemplateSelector templateSelector;
 
@@ -44,10 +43,11 @@ namespace Microsoft.Maui
 		protected override void DisconnectHandler(ItemsRepeaterScrollHost nativeView)
 		{
 			itemsRepeater.ItemTemplate = null;
-			//dataTemplateSelector.Dispose();
-			//dataTemplateSelector = null;
-
 			itemsRepeater.ItemsSource = null;
+
+			PositionalViewSelector.Reset();
+			PositionalViewSelector = null;
+			templateSelector = null;
 			irSource = null;
 
 			base.DisconnectHandler(nativeView);
@@ -55,7 +55,7 @@ namespace Microsoft.Maui
 
 		public void InvalidateData()
 		{
-			//dataTemplateSelector?.Reset();
+			PositionalViewSelector.Reset();
 			irSource?.Reset();
 		}
 
@@ -93,8 +93,10 @@ namespace Microsoft.Maui
 			}
 		}
 
-		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+		public static void MapLayout(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{
+			handler.itemsRepeater.Layout = (virtualListView.Layout ?? new VirtualListViewStackLayout()).CreateNativeLayout();
+			handler.InvalidateData();
 		}
 
 		internal static void AddLibraryResources(string key, string uri)

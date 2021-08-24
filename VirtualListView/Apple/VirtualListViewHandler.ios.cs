@@ -12,7 +12,7 @@ namespace Microsoft.Maui
 	public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICollectionView>
 	{
 		CvDataSource dataSource;
-		CvLayout layout;
+		UICollectionViewLayout layout;
 		CvDelegate cvdelegate;
 		UICollectionView collectionView;
 
@@ -20,17 +20,7 @@ namespace Microsoft.Maui
 
 		protected override UICollectionView CreateNativeView()
 		{
-			layout = new CvLayout(this);
-			layout.ScrollDirection = VirtualView.Orientation switch
-			{
-				ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
-				ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
-				_ => UICollectionViewScrollDirection.Vertical
-			};
-			layout.EstimatedItemSize = UICollectionViewFlowLayout.AutomaticSize;
-			layout.SectionInset = new UIEdgeInsets(0, 0, 0, 0);
-			layout.MinimumInteritemSpacing = 0f;
-			layout.MinimumLineSpacing = 0f;
+			layout = (VirtualView.Layout ?? new VirtualListViewStackLayout(ListOrientation.Vertical)).CreateNativeLayout();
 
 			collectionView = new UICollectionView(CGRect.Empty, layout);
 
@@ -123,15 +113,10 @@ namespace Microsoft.Maui
 			}
 		}
 
-		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		public static void MapLayout(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{
-			handler.layout.ScrollDirection = virtualListView.Orientation switch
-			{
-				ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
-				ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
-				_ => UICollectionViewScrollDirection.Vertical
-			};
-
+			handler.layout = (handler.VirtualView.Layout ?? new VirtualListViewStackLayout(ListOrientation.Vertical)).CreateNativeLayout();
+			handler.collectionView.CollectionViewLayout = handler.layout;
 			handler?.InvalidateData();
 		}
 

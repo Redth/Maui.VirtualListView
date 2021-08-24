@@ -12,7 +12,7 @@ namespace Microsoft.Maui
 			[nameof(IVirtualListView.Footer)] = MapFooter,
 			[nameof(IVirtualListView.ViewSelector)] = MapViewSelector,
 			[nameof(IVirtualListView.SelectionMode)] = MapSelectionMode,
-			[nameof(IVirtualListView.Orientation)] = MapOrientation,
+			[nameof(IVirtualListView.Layout)] = MapLayout,
 			[nameof(IVirtualListView.InvalidateData)] = MapInvalidateData,
 		};
 

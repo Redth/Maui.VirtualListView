@@ -23,7 +23,7 @@ namespace Microsoft.Maui
 
 		IReadOnlyList<ItemPosition> SelectedItems { get; }
 
-		ListOrientation Orientation { get; }
+		VirtualListViewLayout Layout { get; }
 
 		bool IsItemSelected(int sectionIndex, int itemIndex);
 

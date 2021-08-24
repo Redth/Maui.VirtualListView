@@ -7,21 +7,20 @@ namespace Microsoft.Maui
 {
 	internal class CvLayout : UICollectionViewFlowLayout
 	{
-		public CvLayout(VirtualListViewHandler handler) : base()
+		public CvLayout(ListOrientation orientation) : base()
 		{
-			Handler = handler;
+			this.orientation = orientation;
 			isiOS11 = UIDevice.CurrentDevice.CheckSystemVersion(11, 0);
 		}
 
-		readonly VirtualListViewHandler Handler;
-
+		readonly ListOrientation orientation;
 		readonly bool isiOS11;
 
 		public override UICollectionViewLayoutAttributes LayoutAttributesForItem(NSIndexPath path)
 		{
 			var layoutAttributes = base.LayoutAttributesForItem(path);
 
-			if (Handler.VirtualView.Orientation == ListOrientation.Vertical)
+			if (orientation == ListOrientation.Vertical)
 			{
 				var x = SectionInset.Left;
 
