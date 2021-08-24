@@ -2,6 +2,7 @@
 using Microsoft.Maui.Handlers;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using WLayout = Microsoft.UI.Xaml.Controls.Layout;
 
 namespace Microsoft.Maui
 {
@@ -12,6 +13,7 @@ namespace Microsoft.Maui
 		ItemsRepeater itemsRepeater;
 		IrSource irSource;
 		IrDataTemplateSelector templateSelector;
+		WLayout layout;
 
 		internal PositionalViewSelector PositionalViewSelector { get; private set; }
 
@@ -55,7 +57,6 @@ namespace Microsoft.Maui
 
 		public void InvalidateData()
 		{
-			PositionalViewSelector.Reset();
 			irSource?.Reset();
 		}
 
@@ -95,7 +96,13 @@ namespace Microsoft.Maui
 
 		public static void MapLayout(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{
-			handler.itemsRepeater.Layout = (virtualListView.Layout ?? new VirtualListViewStackLayout()).CreateNativeLayout();
+			var il = virtualListView.Layout;
+
+			if (il is null)
+				il = new VirtualListViewStackLayout();
+
+			handler.layout = il.CreateNativeLayout();
+			handler.itemsRepeater.Layout = handler.layout;
 			handler.InvalidateData();
 		}
 

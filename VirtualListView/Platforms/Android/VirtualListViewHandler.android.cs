@@ -20,7 +20,7 @@ namespace Microsoft.Maui
 			positionalViewSelector = new PositionalViewSelector(VirtualView);
 
 			adapter = new RvAdapter(Context, this, positionalViewSelector);
-			
+
 			recyclerView.AddOnScrollListener(new RvScrollListener((rv, dx, dy) =>
 			{
 				var x = Context.FromPixels(dx);
@@ -31,9 +31,10 @@ namespace Microsoft.Maui
 			}));
 
 			UpdateLayoutManager();
+			adapter.HasStableIds = false;
 			recyclerView.SetAdapter(adapter);
-			recyclerView.LayoutParameters = new ViewGroup.LayoutParams(
-				ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
+			//recyclerView.LayoutParameters = new ViewGroup.LayoutParams(
+			//	ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
 		}
 
 		protected override void DisconnectHandler(RecyclerView nativeView)
@@ -54,9 +55,7 @@ namespace Microsoft.Maui
 
 		public void InvalidateData()
 		{
-			positionalViewSelector.Reset();
 			adapter?.Reset();
-			adapter?.NotifyDataSetChanged();
 		}
 
 		public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)

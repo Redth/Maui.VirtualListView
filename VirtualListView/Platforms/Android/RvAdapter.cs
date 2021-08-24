@@ -75,10 +75,10 @@ namespace Microsoft.Maui
 					_ => null
 				};
 
-				if (!itemHolder.HasView)
+				if (itemHolder.NeedsView)
 				{
 					var view = positionalViewSelector?.ViewSelector?.CreateView(info, data);
-					itemHolder.SwapView(view);
+					itemHolder.CreateView(view);
 				}
 
 				itemHolder.Update(info);
@@ -153,6 +153,12 @@ namespace Microsoft.Maui
 		{
 			lock (lockObj)
 				cachedReuseIds.Clear();
+			positionalViewSelector.Reset();
+
+			Essentials.MainThread.InvokeOnMainThreadAsync(() =>
+			{
+				NotifyDataSetChanged();
+			});
 		}
 	}
 }

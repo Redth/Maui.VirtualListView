@@ -10,13 +10,16 @@ namespace Microsoft.Maui
 		public PositionInfo PositionInfo { get; private set; }
 
 		public RvItemHolder(IMauiContext mauiContext)
-			: base(new RvViewContainer(mauiContext)
-			{
-				//LayoutParameters = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent)
-			})
+			: base(new RvViewContainer(mauiContext))
 		{
 			ViewContainer = ItemView as RvViewContainer;
 		}
+
+		public bool NeedsView
+			=> ViewContainer.VirtualView is null;
+
+		public void CreateView(IView view)
+			=> ViewContainer.CreateView(view);
 
 		public void Update(PositionInfo positionInfo)
 		{
@@ -24,13 +27,5 @@ namespace Microsoft.Maui
 			if (ViewContainer.VirtualView is IPositionInfo positionInfoView)
 				positionInfoView.SetPositionInfo(positionInfo);
 		}
-
-		public void SwapView(IView view)
-		{
-			ViewContainer.SwapView(view);
-		}
-
-		public bool HasView
-			=> ViewContainer.VirtualView != null;
 	}
 }

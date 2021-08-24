@@ -17,33 +17,21 @@ namespace Microsoft.Maui
 			Id = AView.GenerateViewId();
 		}
 
+		public void CreateView(IView view)
+		{
+			NativeView = view.ToNative(MauiContext);
+			VirtualView = view;
+			AddView(NativeView);
+		}
+
+		public bool NeedsView
+			=> VirtualView is null;
+
 		public readonly IMauiContext MauiContext;
 
 		public IView VirtualView { get; private set; }
 
 		public AView NativeView { get; private set; }
-
-		public void SwapView(IView newView)
-		{
-			if (VirtualView == null || VirtualView.Handler == null || NativeView == null)
-			{
-				NativeView = newView.ToNative(MauiContext);
-				VirtualView = newView;
-				AddView(NativeView);
-			}
-			else
-			{
-				var handler = VirtualView.Handler;
-				newView.Handler = handler;
-				handler.SetVirtualView(newView);
-				VirtualView = newView;
-			}
-
-			VirtualView.InvalidateMeasure();
-			VirtualView.InvalidateArrange();
-
-			//Invalidate();
-		}
 
 		float? displayScale;
 		float DisplayScale
