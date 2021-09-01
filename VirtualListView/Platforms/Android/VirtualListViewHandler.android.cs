@@ -83,7 +83,7 @@ namespace Microsoft.Maui
 			handler.adapter.NotifyDataSetChanged();
 		}
 
-		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{
 			handler.layoutManager.Orientation = virtualListView.Orientation switch
 			{
