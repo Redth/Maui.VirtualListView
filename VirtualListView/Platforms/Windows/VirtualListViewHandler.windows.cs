@@ -14,14 +14,26 @@ namespace Microsoft.Maui
 		//IrDataTemplateSelector dataTemplateSelector;
 		IrSource irSource;
 		IrDataTemplateSelector templateSelector;
+		WStackLayout layout;
 
 		internal PositionalViewSelector PositionalViewSelector { get; private set; }
+
+		Orientation NativeOrientation =>
+			VirtualView.Orientation switch
+			{
+				ListOrientation.Vertical => Orientation.Vertical,
+				ListOrientation.Horizontal => Orientation.Horizontal,
+				_ => Orientation.Vertical
+			};
 
 		protected override ItemsRepeaterScrollHost CreateNativeView()
 		{
 			itemsRepeaterScrollHost = new ItemsRepeaterScrollHost();
 			scrollViewer = new ScrollViewer();
 			itemsRepeater = new ItemsRepeater();
+
+			layout = new WStackLayout { Orientation = NativeOrientation };
+			itemsRepeater.Layout = layout;
 
 			scrollViewer.Content = itemsRepeater;
 			itemsRepeaterScrollHost.ScrollViewer = scrollViewer;
@@ -35,16 +47,6 @@ namespace Microsoft.Maui
 
 			templateSelector = new IrDataTemplateSelector(VirtualView);
 			itemsRepeater.ItemTemplate = templateSelector;
-			itemsRepeater.Layout = new WStackLayout
-			{
-				Orientation = VirtualView.Orientation switch
-				{
-					ListOrientation.Vertical => Orientation.Vertical,
-					ListOrientation.Horizontal => Orientation.Horizontal,
-					_ => Orientation.Vertical
-				}
-			};
-
 			PositionalViewSelector = new PositionalViewSelector(VirtualView);
 			irSource = new IrSource(MauiContext, PositionalViewSelector, VirtualView);
 
@@ -84,7 +86,7 @@ namespace Microsoft.Maui
 		public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{ }
 
-		public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
 			=> handler?.InvalidateData();
 
 		public static void MapSetSelected(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
@@ -105,15 +107,7 @@ namespace Microsoft.Maui
 
 		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{
-			handler.itemsRepeater.Layout = new WStackLayout
-			{
-				Orientation = virtualListView.Orientation switch
-				{
-					ListOrientation.Vertical => Orientation.Vertical,
-					ListOrientation.Horizontal => Orientation.Horizontal,
-					_ => Orientation.Vertical
-				}
-			};
+			handler.layout.Orientation = handler.NativeOrientation;
 			handler.InvalidateData();
 		}
 
