@@ -11,6 +11,7 @@ namespace Microsoft.Maui
 		RecyclerView recyclerView;
 		LinearLayoutManager layoutManager;
 		PositionalViewSelector positionalViewSelector;
+		RvItemSpacingDecorator itemSpacingDecorator;
 
 		protected override RecyclerView CreateNativeView()
 			=> recyclerView ??= new RecyclerView(Context);
@@ -21,9 +22,12 @@ namespace Microsoft.Maui
 			//layoutManager.Orientation = LinearLayoutManager.Horizontal;
 
 			positionalViewSelector = new PositionalViewSelector(VirtualView);
+			itemSpacingDecorator = new RvItemSpacingDecorator(VirtualView, positionalViewSelector);
 
 			adapter = new RvAdapter(Context, this, positionalViewSelector);
-			
+
+			recyclerView.AddItemDecoration(itemSpacingDecorator);
+
 			recyclerView.AddOnScrollListener(new RvScrollListener((rv, dx, dy) =>
 			{
 				var x = Context.FromPixels(dx);
@@ -41,6 +45,7 @@ namespace Microsoft.Maui
 
 		protected override void DisconnectHandler(RecyclerView nativeView)
 		{
+			recyclerView.RemoveItemDecoration(itemSpacingDecorator);
 			recyclerView.ClearOnScrollListeners();
 			recyclerView.SetAdapter(null);
 			adapter.Dispose();
@@ -58,6 +63,9 @@ namespace Microsoft.Maui
 
 		public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler.InvalidateData();
+
+		public static void MapItemSpacing(VirtualListViewHandler handler, IVirtualListView virtualListView)
+			=> handler.recyclerView.InvalidateItemDecorations();
 
 		public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler.InvalidateData();

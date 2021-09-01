@@ -32,6 +32,8 @@ namespace Microsoft.Maui
 		void SetDeselected(params ItemPosition[] paths);
 
 		void InvalidateData();
+
+		double ItemSpacing { get;}
 	}
 
 	public enum ListOrientation

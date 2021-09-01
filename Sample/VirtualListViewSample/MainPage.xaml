@@ -17,6 +17,7 @@
 		VerticalOptions="FillAndExpand"
 		Adapter="{Binding Adapter}"
 		SelectionMode="Multiple"
+		ItemSpacing="10"
 		SelectedItemsChanged="VirtualListView_SelectedItemsChanged"
 		ItemTemplateSelector="{StaticResource itemTemplateSelector}">
 

@@ -13,6 +13,7 @@ namespace Microsoft.Maui
 			[nameof(IVirtualListView.ViewSelector)] = MapViewSelector,
 			[nameof(IVirtualListView.SelectionMode)] = MapSelectionMode,
 			[nameof(IVirtualListView.Orientation)] = MapOrientation,
+			[nameof(IVirtualListView.ItemSpacing)] = MapItemSpacing,
 		};
 
 		public static CommandMapper<IVirtualListView, VirtualListViewHandler> VirtualListViewCommandMapper = new(VirtualListViewHandler.ViewCommandMapper)

@@ -148,6 +148,15 @@ namespace Microsoft.Maui.Controls
 			BindableProperty.Create(nameof(Orientation), typeof(ListOrientation), typeof(VirtualListView), ListOrientation.Vertical);
 
 
+		public double ItemSpacing
+		{
+			get => (double)GetValue(ItemSpacingProperty);
+			set => SetValue(ItemSpacingProperty, value);
+		}
+
+		public static readonly BindableProperty ItemSpacingProperty =
+			BindableProperty.Create(nameof(ItemsLayout), typeof(double), typeof(VirtualListView), 0d);
+
 
 		public IVirtualListViewSelector ViewSelector => this;
 

@@ -74,6 +74,10 @@ namespace Microsoft.Maui
 		public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler?.InvalidateData();
 
+		public static void MapItemSpacing(VirtualListViewHandler handler, IVirtualListView virtualListView)
+			=> handler.layout.Spacing = (float)virtualListView.ItemSpacing;
+
+
 		public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler?.InvalidateData();
 
