@@ -299,9 +299,6 @@ namespace Microsoft.Maui.Controls
 			return results;
 		}
 
-		static MethodInfo onChildAddedMethod;
-		static MethodInfo onChildRemovedMethod;
-
 		readonly object lockLogicalChildren = new();
 		readonly List<IView> logicalChildren = new();
 
@@ -314,10 +311,8 @@ namespace Microsoft.Maui.Controls
 				logicalChildren.Remove(view);
 			}
 
-			if (onChildRemovedMethod == null)
-				onChildRemovedMethod = typeof(VisualDiagnostics).GetMethod("OnChildRemoved", BindingFlags.Static | BindingFlags.NonPublic);
-
-			onChildRemovedMethod.Invoke(null, new object[] { this, view as Element, oldLogicalIndex });
+			if (view is Element elem)
+				VisualDiagnostics.OnChildRemoved(this, elem, oldLogicalIndex);
 		}
 
 		public void ViewAttached(PositionInfo position, IView view)
@@ -325,10 +320,8 @@ namespace Microsoft.Maui.Controls
 			lock (lockLogicalChildren)
 				logicalChildren.Add(view);
 
-			if (onChildAddedMethod == null)
-				onChildAddedMethod = typeof(VisualDiagnostics).GetMethod("OnChildAdded", BindingFlags.Static | BindingFlags.NonPublic);
-
-			onChildAddedMethod.Invoke(null, new object[] { this, view as Element });
+			if (view is Element elem)
+				VisualDiagnostics.OnChildAdded(this, elem);
 		}
 	}
 }
