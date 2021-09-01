@@ -18,7 +18,8 @@ namespace VirtualListViewSample
             this.InitializeComponent();
         }
 
-        protected override IStartup OnCreateStartup() => new Startup();
+        protected override MauiApp CreateMauiApp()
+            => MauiProgram.Create();
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {

@@ -5,13 +5,15 @@ using Microsoft.Maui.LifecycleEvents;
 
 namespace VirtualListViewSample
 {
-	public class Startup : IStartup
+	public class MauiProgram
 	{
-		public void Configure(IAppHostBuilder appBuilder)
+		public static MauiApp Create()
 		{
-			appBuilder
+			var builder = MauiApp.CreateBuilder();
+			builder
 				.UseMauiApp<App>()
 				.UseVirtualListView();
+			return builder.Build();
 		}
 	}
 }
