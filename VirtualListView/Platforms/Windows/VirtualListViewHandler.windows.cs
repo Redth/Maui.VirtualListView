@@ -2,6 +2,7 @@
 using Microsoft.Maui.Handlers;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using WStackLayout = Microsoft.UI.Xaml.Controls.StackLayout;
 
 namespace Microsoft.Maui
 {
@@ -34,6 +35,15 @@ namespace Microsoft.Maui
 
 			templateSelector = new IrDataTemplateSelector(VirtualView);
 			itemsRepeater.ItemTemplate = templateSelector;
+			itemsRepeater.Layout = new WStackLayout
+			{
+				Orientation = VirtualView.Orientation switch
+				{
+					ListOrientation.Vertical => Orientation.Vertical,
+					ListOrientation.Horizontal => Orientation.Horizontal,
+					_ => Orientation.Vertical
+				}
+			};
 
 			PositionalViewSelector = new PositionalViewSelector(VirtualView);
 			irSource = new IrSource(MauiContext, PositionalViewSelector, VirtualView);
@@ -93,8 +103,18 @@ namespace Microsoft.Maui
 			}
 		}
 
-		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{
+			handler.itemsRepeater.Layout = new WStackLayout
+			{
+				Orientation = virtualListView.Orientation switch
+				{
+					ListOrientation.Vertical => Orientation.Vertical,
+					ListOrientation.Horizontal => Orientation.Horizontal,
+					_ => Orientation.Vertical
+				}
+			};
+			handler.InvalidateData();
 		}
 
 		internal static void AddLibraryResources(string key, string uri)
