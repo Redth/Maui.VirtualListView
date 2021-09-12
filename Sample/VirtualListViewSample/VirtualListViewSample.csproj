@@ -11,31 +11,21 @@
 		<ApplicationVersion>1.0</ApplicationVersion>
 		<AndroidVersionCode>1</AndroidVersionCode>
 		<UseSystemResourceKeys>false</UseSystemResourceKeys>
-		<!--<RuntimeIdentifiers Condition="'$(TargetFramework)' == 'net6.0-android'">android-arm</RuntimeIdentifiers>-->
-		<InvariantGlobalization Condition="'$(TargetFramework)' == 'net6.0-maccatalyst'">false</InvariantGlobalization>
-		<UseInterpreter>True</UseInterpreter>
-		<AppxPackageRecipe>C:\code\XFSlimListView\Sample\VirtualListViewSample\bin\Debug\net6.0-windows10.0.19041.0\win-x64\VirtualListViewSample.build.appxrecipe</AppxPackageRecipe>
+		<UseInterpreter Condition="'$(Configuration)' == 'Debug'">True</UseInterpreter>
 	</PropertyGroup>
 
 
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net6.0-windows10.0.19041.0'">
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
-		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
 		<OutputType>WinExe</OutputType>
-		<EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
-		<WindowsPackageType>MSIX</WindowsPackageType>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
-		<DebugType>portable</DebugType>
-		<DebugSymbols>true</DebugSymbols>
-		<LangVersion>latest</LangVersion>
+		
 	</PropertyGroup>
 
 	<ItemGroup Condition="$(TargetFramework.Contains('-windows'))">
-		<PackageReference Include="Microsoft.ProjectReunion" Version="0.8.1" />
-		<PackageReference Include="Microsoft.ProjectReunion.Foundation" Version="0.8.1" />
-		<PackageReference Include="Microsoft.ProjectReunion.WinUI" Version="0.8.1" />
-		<PackageReference Include="Microsoft.ProjectReunion.InteractiveExperiences" Version="0.8.1" NoWarn="NU1701" />
+		<PackageReference Include="Microsoft.WindowsAppSdk" Version="1.0.0-experimental1" />
+		<PackageReference Include="Microsoft.WindowsAppSdk.Foundation" Version="1.0.0-experimental1" />
+		<PackageReference Include="Microsoft.WindowsAppSdk.WinUI" Version="1.0.0-experimental1" />
+		<PackageReference Include="Microsoft.WindowsAppSdk.InteractiveExperiences" Version="1.0.0-experimental1" NoWarn="NU1701" />
 	</ItemGroup>
 	
 	<ItemGroup>
@@ -47,8 +37,4 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj" />
 	</ItemGroup>
-	<ItemGroup>
-		<ProjectCapability Include="Msix" />
-	</ItemGroup>
-
 </Project>
