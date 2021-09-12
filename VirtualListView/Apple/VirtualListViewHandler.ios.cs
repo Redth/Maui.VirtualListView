@@ -102,7 +102,7 @@ namespace Microsoft.Maui
 			}
 		}
 
-		public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
 			=> handler?.InvalidateData();
 
 		public static void MapSetSelected(VirtualListViewHandler handler, IVirtualListView virtualListView, object parameter)

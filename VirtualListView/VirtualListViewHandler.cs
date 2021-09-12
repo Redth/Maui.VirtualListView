@@ -13,11 +13,11 @@ namespace Microsoft.Maui
 			[nameof(IVirtualListView.ViewSelector)] = MapViewSelector,
 			[nameof(IVirtualListView.SelectionMode)] = MapSelectionMode,
 			[nameof(IVirtualListView.Orientation)] = MapOrientation,
-			[nameof(IVirtualListView.InvalidateData)] = MapInvalidateData,
 		};
 
 		public static CommandMapper<IVirtualListView, VirtualListViewHandler> VirtualListViewCommandMapper = new(VirtualListViewHandler.ViewCommandMapper)
 		{
+			[nameof(IVirtualListView.InvalidateData)] = MapInvalidateData,
 			[nameof(IVirtualListView.SetSelected)] = MapSetSelected,
 			[nameof(IVirtualListView.SetDeselected)] = MapSetDeselected
 		};

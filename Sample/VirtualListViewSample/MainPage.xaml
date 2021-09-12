@@ -13,12 +13,12 @@
 		</ResourceDictionary>
 	</ContentPage.Resources>
 	<vlv:VirtualListView
-			HorizontalOptions="FillAndExpand"
-			VerticalOptions="FillAndExpand"
-			Adapter="{Binding Adapter}"
-			SelectionMode="Multiple"
-			SelectedItemsChanged="VirtualListView_SelectedItemsChanged"
-			ItemTemplateSelector="{StaticResource itemTemplateSelector}">
+		HorizontalOptions="FillAndExpand"
+		VerticalOptions="FillAndExpand"
+		Adapter="{Binding Adapter}"
+		SelectionMode="Multiple"
+		SelectedItemsChanged="VirtualListView_SelectedItemsChanged"
+		ItemTemplateSelector="{StaticResource itemTemplateSelector}">
 
 		<vlv:VirtualListView.SectionHeaderTemplate>
 			<DataTemplate x:DataType="local:AlbumInfo">
