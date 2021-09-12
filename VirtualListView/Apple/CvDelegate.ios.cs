@@ -25,20 +25,16 @@ namespace Microsoft.Maui
 
 		void HandleSelection(UICollectionView collectionView, NSIndexPath indexPath, bool selected)
 		{
-			var real = Handler?.PositionalViewSelector?.GetRealIndexPath(indexPath.Section, (int)indexPath.Item);
+			var info = Handler?.PositionalViewSelector?.GetInfo(indexPath.Section, (int)indexPath.Item);
 
-			if (real != default)
+			if ((info?.Kind ?? PositionKind.Header) == PositionKind.Item)
 			{
-				var realSectionIndex = real?.realSectionIndex ?? -1;
-				var realItemIndex = real?.realItemIndex ?? -1;
-
-				if (realItemIndex < 0 || realSectionIndex < 0)
-					return;
+				var itemPos = new ItemPosition(info.SectionIndex, info.ItemIndex);
 
 				if (selected)
-					Handler?.VirtualView?.SetSelected(new ItemPosition(realSectionIndex, realItemIndex));
+					Handler?.VirtualView?.SetSelected(itemPos);
 				else
-					Handler?.VirtualView?.SetDeselected(new ItemPosition(realSectionIndex, realItemIndex));
+					Handler?.VirtualView?.SetDeselected(itemPos);
 
 				var cell = Handler?.GetCell(indexPath);
 
@@ -58,15 +54,8 @@ namespace Microsoft.Maui
 
 		bool IsRealItem(NSIndexPath indexPath)
 		{
-			var real = Handler?.PositionalViewSelector?.GetRealIndexPath(indexPath.Section, (int)indexPath.Item);
-
-			if (real != default)
-			{
-				if ((real?.realItemIndex ?? -1) < 0 || (real?.realSectionIndex ?? -1) < 0)
-					return false;
-			}
-
-			return true;
+			var info = Handler?.PositionalViewSelector?.GetInfo(indexPath.Section, (int)indexPath.Item);
+			return (info?.Kind ?? PositionKind.Header) == PositionKind.Item;
 		}
 	}
 }
