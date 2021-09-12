@@ -6,6 +6,7 @@
 	xmlns:local="clr-namespace:VirtualListViewSample"
 	x:Class="VirtualListViewSample.GenericViewCell"
 	x:Name="self"
+	BackgroundColor="#ffffff"
 	x:DataType="local:TrackInfo">
 	<vlv:VirtualViewCell.Resources>
 		<ResourceDictionary>
