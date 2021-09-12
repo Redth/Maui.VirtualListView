@@ -16,34 +16,19 @@
     <NeutralLanguage>en</NeutralLanguage>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <RepositoryUrl>https://github.com/redth/Xamarin.Forms.VirtualListView</RepositoryUrl>
-    <DefineConstants>$(DefineConstants);</DefineConstants>
     <DebugType>portable</DebugType>
-    <Configurations>Debug;Release</Configurations>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>9.0</LangVersion>
 		<UseMaui>True</UseMaui>
     <SingleProject>True</SingleProject>
     <UseMaui>True</UseMaui>
-		<GenerateLibraryLayout>true</GenerateLibraryLayout>
-		<DisableEmbeddedXbf>false</DisableEmbeddedXbf>
  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)'=='Debug' ">
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
-  <ItemGroup Condition=" $(TargetFramework.StartsWith('netstandard')) ">
-    <Compile Include="**\*.netstandard.cs" />
-    <Compile Include="**\*.netstandard.*.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" !$(TargetFramework.StartsWith('netstandard')) ">
-    <Compile Remove="**\*.netstandard.cs" />
-    <Compile Remove="**\*.netstandard.*.cs" />
-  </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'net6.0-ios' And '$(TargetFramework)' != 'net6.0-maccatalyst' ">
     <Compile Remove="Apple\**\*.cs" />
   </ItemGroup>
 	<ItemGroup>
 		<None Include="Apple\**\*.cs" />
 	</ItemGroup>
- 
-	<Target Name="ValidateWinUIPlatform" />
-	<Target Name="BinPlaceBootstrapDll" />
 </Project>
