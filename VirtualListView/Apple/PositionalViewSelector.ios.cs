@@ -6,7 +6,7 @@ namespace Microsoft.Maui
 {
 	internal partial class PositionalViewSelector
 	{
-		readonly LRUCache<(int sectionIndex, int itemIndex), PositionInfo> infoCache = new(250, 50);
+		readonly LRUCache<(int sectionIndex, int itemIndex), PositionInfo> infoCache = new();
 
 		public PositionInfo GetInfo(int sectionIndex, int itemIndex)
 		{

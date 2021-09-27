@@ -109,8 +109,11 @@ namespace Microsoft.Maui
 		{
 			if (parameter is ItemPosition[] items)
 			{
-				handler?.collectionView?.ReloadItems(
-					items.Select(i => NSIndexPath.FromItemSection(i.ItemIndex, i.SectionIndex)).ToArray());
+				handler?.collectionView?.InvokeOnMainThread(() =>
+				{
+					handler?.collectionView?.ReloadItems(
+						items.Select(i => NSIndexPath.FromRowSection(i.ItemIndex, i.SectionIndex)).ToArray());
+				});
 			}
 		}
 
