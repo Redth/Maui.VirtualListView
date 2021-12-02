@@ -86,7 +86,7 @@ namespace Microsoft.Maui
 		}
 
 #if !IOS && !MACCATALYST
-		readonly LRUCache<int, PositionInfo> infoCache = new(250, 50);
+		readonly LRUCache<int, PositionInfo> infoCache = new();// new(250, 50);
 
 		public PositionInfo GetInfo(int position)
 		{

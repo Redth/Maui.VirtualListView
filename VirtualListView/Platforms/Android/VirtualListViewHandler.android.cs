@@ -26,8 +26,8 @@ namespace Microsoft.Maui
 			
 			recyclerView.AddOnScrollListener(new RvScrollListener((rv, dx, dy) =>
 			{
-				var x = Context.FromPixels(dx);
-				var y = Context.FromPixels(dy);
+				//var x = Context.FromPixels(dx);
+				//var y = Context.FromPixels(dy);
 				// TODO: Proxy up to event
 
 				// VirtualView?.RaiseScrolled((x, y));

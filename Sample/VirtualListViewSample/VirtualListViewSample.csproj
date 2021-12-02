@@ -4,14 +4,20 @@
 		<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>
 		<TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net6.0-windows10.0.19041.0;</TargetFrameworks>
 		<OutputType>Exe</OutputType>
+		<ImplicitUsings>enable</ImplicitUsings>
+
 		<UseMaui>True</UseMaui>
 		<SingleProject>True</SingleProject>
 		<ApplicationId>com.microsoft.virtuallistviewsample</ApplicationId>
 		<ApplicationTitle>MAUI</ApplicationTitle>
-		<ApplicationVersion>1.0</ApplicationVersion>
-		<AndroidVersionCode>1</AndroidVersionCode>
-		<UseSystemResourceKeys>false</UseSystemResourceKeys>
-		<UseInterpreter Condition="'$(Configuration)' == 'Debug'">True</UseInterpreter>
+		<ApplicationVersion>1</ApplicationVersion>
+
+		<!--<RuntimeIdentifiers Condition="'$(TargetFramework)' == 'net6.0-android'">android-arm64</RuntimeIdentifiers>-->
+		<SupportedOSPlatformVersion Condition="'$(TargetFramework)' == 'net6.0-ios'">14.2</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="'$(TargetFramework)' == 'net6.0-maccatalyst'">14.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="'$(TargetFramework)' == 'net6.0-android'">21.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$(TargetFramework.Contains('-windows'))">10.0.17763.0</SupportedOSPlatformVersion>
+		<TargetPlatformMinVersion Condition="$(TargetFramework.Contains('-windows'))">10.0.17763.0</TargetPlatformMinVersion>
 	</PropertyGroup>
 
 
@@ -22,10 +28,7 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="$(TargetFramework.Contains('-windows'))">
-		<PackageReference Include="Microsoft.WindowsAppSdk" Version="1.0.0-experimental1" />
-		<PackageReference Include="Microsoft.WindowsAppSdk.Foundation" Version="1.0.0-experimental1" />
-		<PackageReference Include="Microsoft.WindowsAppSdk.WinUI" Version="1.0.0-experimental1" />
-		<PackageReference Include="Microsoft.WindowsAppSdk.InteractiveExperiences" Version="1.0.0-experimental1" NoWarn="NU1701" />
+		<PackageReference Include="Microsoft.WindowsAppSdk" Version="1.0.0" />
 	</ItemGroup>
 	
 	<ItemGroup>

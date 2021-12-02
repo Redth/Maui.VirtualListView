@@ -18,7 +18,6 @@
     <RepositoryUrl>https://github.com/redth/Xamarin.Forms.VirtualListView</RepositoryUrl>
     <DebugType>portable</DebugType>
     <LangVersion>9.0</LangVersion>
-		<UseMaui>True</UseMaui>
     <SingleProject>True</SingleProject>
     <UseMaui>True</UseMaui>
  </PropertyGroup>
