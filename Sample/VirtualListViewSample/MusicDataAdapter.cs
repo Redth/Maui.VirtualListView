@@ -8,32 +8,35 @@ using System.Reflection;
 
 namespace VirtualListViewSample
 {
-    public class MusicDataAdapter : IVirtualListViewAdapter
+    public class MusicDataAdapter : IVirtualListViewAdapter, IDisposable
     {
         public MusicDataAdapter()
         {
-            var files = new[] { "chinook.litedb" };
-
-            foreach (var file in files)
+            if (database == null)
             {
-                var path = Path.Combine(Microsoft.Maui.Essentials.FileSystem.CacheDirectory, file);
+                var files = new[] { "chinook.litedb" };
 
-                var txt = string.Empty;
+                foreach (var file in files)
+                {
+                    var path = Path.Combine(Microsoft.Maui.Essentials.FileSystem.CacheDirectory, file);
 
-                using (var stream = typeof(App).Assembly.GetManifestResourceStream("VirtualListViewSample." + file))
-                using (var sw = File.Create(path))
-                    stream.CopyTo(sw);
+                    var txt = string.Empty;
+
+                    using (var stream = typeof(App).Assembly.GetManifestResourceStream("VirtualListViewSample." + file))
+                    using (var sw = File.Create(path))
+                        stream.CopyTo(sw);
+                }
+
+                var dbPath = Path.Combine(Microsoft.Maui.Essentials.FileSystem.CacheDirectory, files.First());
+
+                database = new LiteDatabase(dbPath);
             }
-
-            var dbPath = Path.Combine(Microsoft.Maui.Essentials.FileSystem.CacheDirectory, files.First());
-
-            database = new LiteDatabase(dbPath);
 
             albums = database.GetCollection<AlbumInfo>("albums").FindAll().OrderBy(a => a.AlbumId).ToList();
             tracks = database.GetCollection<TrackInfo>("tracks");
         }
 
-        readonly LiteDatabase database;
+        static LiteDatabase database;
         readonly List<AlbumInfo> albums;
         readonly ILiteCollection<TrackInfo> tracks;
         
