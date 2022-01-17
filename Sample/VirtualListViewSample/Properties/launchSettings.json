@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "VirtualListViewSample": {
+    "Windows": {
       "commandName": "MsixPackage",
       "nativeDebugging": false
     }
