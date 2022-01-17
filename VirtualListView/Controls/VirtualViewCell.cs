@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Microsoft.Maui.Controls
 {
-	public class VirtualViewCell : Grid, IPositionInfo
+	public class VirtualViewCell : ContentView, IPositionInfo
 	{
 		public void SetPositionInfo(PositionInfo info)
 		{

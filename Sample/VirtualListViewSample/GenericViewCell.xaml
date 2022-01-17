@@ -13,14 +13,18 @@
 			<local:SelectedColorConverter x:Key="selectedColorConverter" />
 		</ResourceDictionary>
 	</vlv:VirtualViewCell.Resources>
+    <vlv:VirtualViewCell.Content>
+        <GridLayout 
+            RowDefinitions="Auto, Auto" 
+			BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}">
+            <BoxView
+                GridLayout.Row="0"
+				HorizontalOptions="FillAndExpand"
+				HeightRequest="1.4"
+				BackgroundColor="#f8f8f8"
+				IsVisible="{Binding Source={x:Reference self}, Path=IsNotFirstItemInSection}" />
 
-	<BoxView
-			HorizontalOptions="FillAndExpand"
-			HeightRequest="1"
-			BackgroundColor="#f8f8f8"
-			IsVisible="{Binding Source={x:Reference self}, Path=IsNotFirstItemInSection}" />
-
-	<Label Text="{Binding TrackName}" FontSize="Subtitle" Margin="10,5,10,5" Padding="10" TextColor="Black"
-		BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}" />
-
+            <Label GridLayout.Row="1" Text="{Binding TrackName}" FontSize="Subtitle" Margin="10,5,10,5" Padding="10" TextColor="Black" />
+        </GridLayout>
+    </vlv:VirtualViewCell.Content>
 </vlv:VirtualViewCell>
