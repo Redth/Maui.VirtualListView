@@ -258,12 +258,12 @@ namespace Microsoft.Maui.Controls
 		{
 			if (view is View controlsView)
 			{
+				controlsView.BindingContext = data;
+
 				if (controlsView.Resources.TryGetValue("VirtualViewCellPositionInfo", out var v) && v is BindablePositionInfo bindablePositionInfo)
 					bindablePositionInfo.SetPositionInfo(position);
 				else
 					controlsView.Resources["VirtualViewCellPositionInfo"] = new BindablePositionInfo(position);
-
-				controlsView.BindingContext = data;
 			}
 		}
 
@@ -280,7 +280,7 @@ namespace Microsoft.Maui.Controls
 					"SECTION_FOOTER_" + (SectionFooterTemplateSelector?.SelectTemplate(data, position.SectionIndex)
 						?? SectionFooterTemplate).GetHashCode().ToString(),
 				PositionKind.Header =>
-					"GLOBLA_HEADER_" + (Header?.GetContentTypeHashCode().ToString() ?? "NIL"),
+					"GLOBAL_HEADER_" + (Header?.GetContentTypeHashCode().ToString() ?? "NIL"),
 				PositionKind.Footer =>
 					"GLOBAL_FOOTER_" + (Footer?.GetContentTypeHashCode().ToString() ?? "NIL"),
 				_ => "UNKNOWN"

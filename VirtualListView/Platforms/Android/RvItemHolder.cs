@@ -10,10 +10,7 @@ namespace Microsoft.Maui
 		public PositionInfo PositionInfo { get; private set; }
 
 		public RvItemHolder(IMauiContext mauiContext)
-			: base(new RvViewContainer(mauiContext)
-			{
-				//LayoutParameters = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent)
-			})
+			: base(new RvViewContainer(mauiContext))
 		{
 			ViewContainer = ItemView as RvViewContainer;
 		}

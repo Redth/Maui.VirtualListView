@@ -91,7 +91,7 @@ namespace Microsoft.Maui
 
 		public static void MapSetSelected(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
 		{
-			if (parameter is ItemPosition[] items)
+			if (parameter is ItemPosition[] items && items != null && items.Length > 0)
 			{
 				//
 			}
@@ -99,7 +99,7 @@ namespace Microsoft.Maui
 
 		public static void MapSetDeselected(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
 		{
-			if (parameter is ItemPosition[] items)
+			if (parameter is ItemPosition[] items && items != null && items.Length > 0)
 			{
 				//
 			}
@@ -111,23 +111,23 @@ namespace Microsoft.Maui
 			handler.InvalidateData();
 		}
 
-		internal static void AddLibraryResources(string key, string uri)
-		{
-			var resources = UI.Xaml.Application.Current?.Resources;
-			if (resources == null)
-				return;
+		//internal static void AddLibraryResources(string key, string uri)
+		//{
+		//	var resources = UI.Xaml.Application.Current?.Resources;
+		//	if (resources == null)
+		//		return;
 
-			var dictionaries = resources.MergedDictionaries;
-			if (dictionaries == null)
-				return;
+		//	var dictionaries = resources.MergedDictionaries;
+		//	if (dictionaries == null)
+		//		return;
 
-			if (!resources.ContainsKey(key))
-			{
-				dictionaries.Add(new UI.Xaml.ResourceDictionary
-				{
-					Source = new Uri(uri)
-				});
-			}
-		}
+		//	if (!resources.ContainsKey(key))
+		//	{
+		//		dictionaries.Add(new UI.Xaml.ResourceDictionary
+		//		{
+		//			Source = new Uri(uri)
+		//		});
+		//	}
+		//}
 	}
 }

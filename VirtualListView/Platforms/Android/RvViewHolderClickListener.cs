@@ -1,11 +1,11 @@
 ﻿using Android.Views;
 using System;
-
+using AView = Android.Views.View;
 namespace Microsoft.Maui
 {
 	internal partial class RvAdapter
 	{
-		class RvViewHolderClickListener : Java.Lang.Object, View.IOnClickListener
+		class RvViewHolderClickListener : Java.Lang.Object, AView.IOnClickListener
 		{
 			public RvViewHolderClickListener(RvItemHolder viewHolder, Action<RvItemHolder> clickHandler)
 			{
@@ -17,7 +17,7 @@ namespace Microsoft.Maui
 
 			public Action<RvItemHolder> ClickHandler { get; }
 
-			public void OnClick(View v)
+			public void OnClick(AView v)
 			{
 				if (ViewHolder?.PositionInfo != null && ViewHolder.PositionInfo.Kind == PositionKind.Item)
 					ClickHandler?.Invoke(ViewHolder);
