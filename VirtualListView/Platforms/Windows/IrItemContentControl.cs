@@ -1,10 +1,15 @@
-﻿using Microsoft.UI.Xaml.Controls;
+﻿using Microsoft.Maui.Platform;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 
 namespace Microsoft.Maui.Controls
 {
 	public partial class IrItemContentControl : ContentControl
 	{
+		public IrItemContentControl() : base()
+        {
+        }
+		
 		public IView View { get; private set; }
 
 		internal IrDataWrapper Data { get; private set; }
@@ -55,7 +60,9 @@ namespace Microsoft.Maui.Controls
 
 			if (Data?.data is IPositionInfo dataPositionInfo)
 				dataPositionInfo.SetPositionInfo(Data.position);
-		}
 
-	}
+			if (Data != null && Data.position != null)
+				Data?.positionalViewSelector?.ViewSelector?.RecycleView(Data.position, Data.data, View);
+		}
+    }
 }
