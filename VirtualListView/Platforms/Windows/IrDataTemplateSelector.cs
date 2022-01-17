@@ -7,6 +7,7 @@ using WDataTemplateSelector = Microsoft.UI.Xaml.Controls.DataTemplateSelector;
 
 namespace Microsoft.Maui.Controls
 {
+	[UI.Xaml.Data.Bindable]
 	public partial class IrDataTemplateSelector : WDataTemplateSelector
 	{
 		internal readonly PositionalViewSelector PositionalViewSelector;
@@ -24,9 +25,15 @@ namespace Microsoft.Maui.Controls
 
 		WDataTemplate CreateDataTemplateInstance()
 		{
+			// Assemblies needed for XamlReader must be loaded already
+			Assembly.Load("Microsoft.WinUI");
 			Assembly.Load("Microsoft.Maui.Controls");
 			Assembly.Load("VirtualListView");
 
+			//if (Microsoft.UI.Xaml.Application.Current.Resources.TryGetValue("ContainerDataTemplate", out var wdtp)
+			//	&& wdtp is WDataTemplate typedWdtp)
+			//	return typedWdtp;
+			
 			var dtstr =
 				@"<DataTemplate
 					xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""
