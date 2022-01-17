@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace VirtualListViewSample
 {
-    public class MusicDataAdapter : IVirtualListViewAdapter, IDisposable
+    public class MusicDataAdapter : IVirtualListViewAdapter
     {
         public MusicDataAdapter()
         {
