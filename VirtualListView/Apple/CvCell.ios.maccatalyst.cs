@@ -33,7 +33,7 @@ namespace Microsoft.Maui
 			return layoutAttributes;
 		}
 
-        public void Update(PositionInfo info)
+		public void Update(PositionInfo info)
 		{
 			PositionInfo = info;
 			if (VirtualView is IPositionInfo positionInfoView)
