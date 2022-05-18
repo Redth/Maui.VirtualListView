@@ -12,7 +12,7 @@ namespace Microsoft.Maui
 		LinearLayoutManager layoutManager;
 		PositionalViewSelector positionalViewSelector;
 
-		protected override RecyclerView CreateNativeView()
+		protected override RecyclerView CreatePlatformView()
 			=> recyclerView ??= new RecyclerView(Context);
 
 		protected override void ConnectHandler(RecyclerView nativeView)

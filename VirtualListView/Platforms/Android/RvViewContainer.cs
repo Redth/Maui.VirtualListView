@@ -28,7 +28,7 @@ namespace Microsoft.Maui
 		{
 			if (VirtualView == null || VirtualView.Handler == null || NativeView == null)
 			{
-				NativeView = newView.ToNative(MauiContext);
+				NativeView = newView.ToPlatform(MauiContext);
 				VirtualView = newView;
 				AddView(NativeView);
 			}

@@ -26,7 +26,7 @@ namespace Microsoft.Maui
 				_ => Orientation.Vertical
 			};
 
-		protected override ItemsRepeaterScrollHost CreateNativeView()
+		protected override ItemsRepeaterScrollHost CreatePlatformView()
 		{
 			itemsRepeaterScrollHost = new ItemsRepeaterScrollHost();
 			scrollViewer = new ScrollViewer();
