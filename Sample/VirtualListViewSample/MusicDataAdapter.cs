@@ -18,7 +18,7 @@ namespace VirtualListViewSample
 
                 foreach (var file in files)
                 {
-                    var path = Path.Combine(Microsoft.Maui.Essentials.FileSystem.CacheDirectory, file);
+                    var path = Path.Combine(FileSystem.CacheDirectory, file);
 
                     var txt = string.Empty;
 
@@ -27,7 +27,7 @@ namespace VirtualListViewSample
                         stream.CopyTo(sw);
                 }
 
-                var dbPath = Path.Combine(Microsoft.Maui.Essentials.FileSystem.CacheDirectory, files.First());
+                var dbPath = Path.Combine(FileSystem.CacheDirectory, files.First());
 
                 database = new LiteDatabase(dbPath);
             }
@@ -48,6 +48,9 @@ namespace VirtualListViewSample
             var section = Section(sectionIndex) as AlbumInfo;
 
             var t = tracks.Query().Where(t => t.AlbumId == section.AlbumId).OrderBy(t => t.TrackId).Skip(itemIndex).Limit(1).First();
+
+            t.SectionIndex = sectionIndex;
+            t.ItemIndex = itemIndex;
 
             return t;
 		}

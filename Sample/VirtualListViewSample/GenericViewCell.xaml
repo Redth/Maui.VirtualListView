@@ -14,17 +14,23 @@
 		</ResourceDictionary>
 	</vlv:VirtualViewCell.Resources>
     <vlv:VirtualViewCell.Content>
-        <GridLayout 
+        <Grid
             RowDefinitions="Auto, Auto" 
 			BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}">
             <BoxView
-                GridLayout.Row="0"
+                Grid.Row="0"
 				HorizontalOptions="FillAndExpand"
 				HeightRequest="1.4"
 				BackgroundColor="#f8f8f8"
 				IsVisible="{Binding Source={x:Reference self}, Path=IsNotFirstItemInSection}" />
 
-            <Label GridLayout.Row="1" Text="{Binding TrackName}" FontSize="Subtitle" Margin="10,5,10,5" Padding="10" TextColor="Black" />
-        </GridLayout>
+			<HorizontalStackLayout Grid.Row="1">
+				<Label Text="Section: " TextColor="Black" />
+	            <Label Text="{Binding SectionIndex}" FontSize="Subtitle" TextColor="Black" />
+
+				<Label Text="    Item: " TextColor="Black" />
+				<Label Text="{Binding ItemIndex}" FontSize="Subtitle" TextColor="Black" />
+			</HorizontalStackLayout>
+        </Grid>
     </vlv:VirtualViewCell.Content>
 </vlv:VirtualViewCell>

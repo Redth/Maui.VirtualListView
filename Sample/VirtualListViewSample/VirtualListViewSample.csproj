@@ -20,26 +20,12 @@
 		<SupportedOSPlatformVersion Condition="'$(TargetFramework)' == 'net6.0-android'">21.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$(TargetFramework.Contains('-windows'))">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$(TargetFramework.Contains('-windows'))">10.0.17763.0</TargetPlatformMinVersion>
+
 	</PropertyGroup>
 
-	<PropertyGroup>
-		<EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
-		<WindowsPackageType>MSIX</WindowsPackageType>
-		<_FastDeploymentDiagnosticLogging>True</_FastDeploymentDiagnosticLogging>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(TargetFramework)' == 'net6.0-windows10.0.19041'">
-		<RuntimeIdentifier>win10-x64</RuntimeIdentifier>
-		<OutputType>WinExe</OutputType>
-	</PropertyGroup>
-
-	<ItemGroup Condition="$(TargetFramework.Contains('-windows'))">
-		<PackageReference Include="Microsoft.WindowsAppSdk" Version="1.0.0" />
-		<PackageReference Include="Microsoft.Graphics.Win2D" Version="1.0.0.30" />
-	</ItemGroup>
 	
 	<ItemGroup>
-		<PackageReference Include="LiteDb" Version="5.0.10" />
+		<PackageReference Include="LiteDb" Version="5.0.11" />
 	</ItemGroup>
 	<ItemGroup>
 		<EmbeddedResource Include="chinook.litedb" />

@@ -4,6 +4,9 @@ namespace VirtualListViewSample
 {
     public class TrackInfo
     {
+        public int ItemIndex { get; set; }
+        public int SectionIndex { get; set; }
+
         [BsonId]
         public int TrackId { get; set; }
 

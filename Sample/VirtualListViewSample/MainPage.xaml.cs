@@ -20,11 +20,8 @@ namespace VirtualListViewSample
 
 		void VirtualListView_SelectedItemsChanged(System.Object sender, SelectedItemsChangedEventArgs e)
 		{
-			Console.WriteLine($"Selected Items:");
-			foreach (var s in e.NewSelection)
-			{
-				Console.WriteLine($"  -> {s.SectionIndex} ... {s.ItemIndex}");
-			}
+			Console.WriteLine($"Selected Items:"
+				+ string.Join(", ", e.NewSelection.Select(s => $"{s.SectionIndex}:{s.ItemIndex}")));
 		}
 	}
 }
