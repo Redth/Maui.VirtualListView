@@ -13,24 +13,24 @@
 			<local:SelectedColorConverter x:Key="selectedColorConverter" />
 		</ResourceDictionary>
 	</vlv:VirtualViewCell.Resources>
-    <vlv:VirtualViewCell.Content>
-        <Grid
-            RowDefinitions="Auto, Auto" 
+	<vlv:VirtualViewCell.Content>
+		<Grid
+			RowDefinitions="Auto, Auto"
+			ColumnDefinitions="30,*"
 			BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}">
-            <BoxView
-                Grid.Row="0"
+			<BoxView
+				Grid.Row="0"
+				Grid.Column="0"
+				Grid.ColumnSpan="2"
 				HorizontalOptions="FillAndExpand"
 				HeightRequest="1.4"
 				BackgroundColor="#f8f8f8"
 				IsVisible="{Binding Source={x:Reference self}, Path=IsNotFirstItemInSection}" />
 
-			<HorizontalStackLayout Grid.Row="1">
-				<Label Text="Section: " TextColor="Black" />
-	            <Label Text="{Binding SectionIndex}" FontSize="Subtitle" TextColor="Black" />
 
-				<Label Text="    Item: " TextColor="Black" />
-				<Label Text="{Binding ItemIndex}" FontSize="Subtitle" TextColor="Black" />
-			</HorizontalStackLayout>
-        </Grid>
-    </vlv:VirtualViewCell.Content>
+			<Label Text="{Binding TrackId}" Grid.Row="1" Grid.Column="0" FontSize="20" TextColor="#afafaf" VerticalOptions="Center" HorizontalOptions="End" />
+			<Label Text="{Binding TrackName}" TextColor="Black" Grid.Column="1" Grid.Row="1" FontSize="20" Margin="8,0,0,0" />
+			
+		</Grid>
+	</vlv:VirtualViewCell.Content>
 </vlv:VirtualViewCell>
