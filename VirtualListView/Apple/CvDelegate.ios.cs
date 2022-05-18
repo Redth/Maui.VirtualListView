@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Runtime.InteropServices;
+using CoreGraphics;
 using Foundation;
 using ObjCRuntime;
 using UIKit;
@@ -8,15 +10,18 @@ namespace Microsoft.Maui
 	internal class CvDelegate : UICollectionViewDelegateFlowLayout
 	{
 
-		public CvDelegate(VirtualListViewHandler handler)
+		public CvDelegate(VirtualListViewHandler handler, UICollectionView collectionView)
 			: base()
 		{
 			Handler = handler;
+			NativeCollectionView = collectionView;
 		}
 
+		internal readonly UICollectionView NativeCollectionView;
+		internal readonly CvDataSource DataSource;
 		internal readonly VirtualListViewHandler Handler;
 
-		public Action<nfloat, nfloat> ScrollHandler { get; set; }
+		public Action<NFloat, NFloat> ScrollHandler { get; set; }
 
 		public override void ItemSelected(UICollectionView collectionView, NSIndexPath indexPath)
 			=> HandleSelection(collectionView, indexPath, true);
@@ -26,22 +31,32 @@ namespace Microsoft.Maui
 
 		void HandleSelection(UICollectionView collectionView, NSIndexPath indexPath, bool selected)
 		{
-			var info = Handler?.PositionalViewSelector?.GetInfo(indexPath.Section, (int)indexPath.Item);
+			UIView.AnimationsEnabled = false;
+			var selectedCell = collectionView.CellForItem(indexPath) as CvCell;
+    		var visibleRect = collectionView.ConvertRectToView(collectionView.Bounds, selectedCell);
 
-			if ((info?.Kind ?? PositionKind.Header) == PositionKind.Item)
+			if ((selectedCell?.PositionInfo?.Kind ?? PositionKind.Header) == PositionKind.Item)
 			{
-				var itemPos = new ItemPosition(info.SectionIndex, info.ItemIndex);
+				selectedCell.PositionInfo.IsSelected = selected;
+				//selectedCell.SetNeedsLayout();
+
+				var itemPos = new ItemPosition(
+					selectedCell.PositionInfo.SectionIndex,
+					selectedCell.PositionInfo.ItemIndex);
 
 				if (selected)
 					Handler?.VirtualView?.SetSelected(itemPos);
 				else
 					Handler?.VirtualView?.SetDeselected(itemPos);
-
-				var cell = Handler?.GetCell(indexPath);
-
-				if (cell?.PositionInfo != null)
-					cell.PositionInfo.IsSelected = selected;
 			}
+
+			var updatedVisibleRect = collectionView.ConvertRectToView(collectionView.Bounds, selectedCell);
+
+			var contentOffset = collectionView.ContentOffset;
+			contentOffset.X = contentOffset.X + (visibleRect.X - updatedVisibleRect.X);
+			collectionView.ContentOffset = contentOffset;
+
+			UIView.AnimationsEnabled = true;
 		}
 
 		public override void Scrolled(UIScrollView scrollView)

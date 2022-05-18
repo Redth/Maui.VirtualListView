@@ -1,6 +1,7 @@
 ﻿using System;
 using CoreGraphics;
 using Foundation;
+using Microsoft.Maui.Platform;
 using UIKit;
 
 namespace Microsoft.Maui
@@ -9,13 +10,9 @@ namespace Microsoft.Maui
 	{
 		public VirtualListViewHandler Handler { get; set; }
 
-		public CvViewContainer Container { get; private set; }
-
 		public NSIndexPath IndexPath { get; set; }
 
 		public PositionInfo PositionInfo { get; private set; }
-
-		public IMauiContext Context { get; set; }
 
 		public Action<IView> ReuseCallback { get; set; }
 
@@ -24,61 +21,31 @@ namespace Microsoft.Maui
 		{
 		}
 
-		public void Init(IMauiContext context)
-		{
-			if (Container == null)
-			{
-				Container = new CvViewContainer(context)
-				{
-					Frame = ContentView.Frame,
-					AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth
-				};
-				ContentView.AddSubview(Container);
-			}
-		}
-
 		public override UICollectionViewLayoutAttributes PreferredLayoutAttributesFittingAttributes(UICollectionViewLayoutAttributes layoutAttributes)
 		{
-			var attr = base.PreferredLayoutAttributesFittingAttributes(layoutAttributes);
+			if (NativeView == null || VirtualView == null)
+				return layoutAttributes;
 
-			if (Container == null)
-				return attr;
+			var measure = VirtualView.Measure(layoutAttributes.Size.Width, double.PositiveInfinity);
 
-			Container.VirtualView.InvalidateMeasure();
+			layoutAttributes.Frame = new CGRect(0, layoutAttributes.Frame.Y, layoutAttributes.Frame.Width, measure.Height);
 
-			if (Handler.VirtualView.Orientation == ListOrientation.Vertical)
-			{
-				var virtSize = Container.VirtualView.Measure(attr.Frame.Width, double.MaxValue - 100);
-
-				attr.Frame = new CGRect(0, attr.Frame.Y, attr.Frame.Width, virtSize.Height);
-			}
-			else
-			{
-				var virtSize = Container.VirtualView.Measure(double.MaxValue - 100, attr.Frame.Height);
-
-				attr.Frame = new CGRect(0, attr.Frame.Y, virtSize.Width, attr.Frame.Height);
-			}
-
-			return attr;
+			return layoutAttributes;
 		}
 
-		public void Update(PositionInfo info)
+        public void Update(PositionInfo info)
 		{
 			PositionInfo = info;
-			if (Container.VirtualView is IPositionInfo positionInfoView)
+			if (VirtualView is IPositionInfo positionInfoView)
 				positionInfoView.SetPositionInfo(info);
-
-			Container.SetContainerNeedsLayout();
 		}
 
-		public void SwapView(IView view)
-			=> Container.SwapView(view);
-
 		public bool NeedsView
-			=> Container?.NativeView == null;
+			=> NativeView == null;
 
-		public IView VirtualView
-			=> Container?.VirtualView;
+		public IView VirtualView { get; private set; }
+
+		public UIView NativeView { get; private set; }
 
 		public override void PrepareForReuse()
 		{
@@ -87,6 +54,26 @@ namespace Microsoft.Maui
 			// TODO: Recycle
 			if (VirtualView != null)
 				ReuseCallback?.Invoke(VirtualView);
+		}
+
+		public void SwapView(IView newView)
+		{
+			if (VirtualView == null || VirtualView.Handler == null || NativeView == null)
+			{
+				NativeView = newView.ToPlatform(this.Handler.MauiContext);
+				VirtualView = newView;
+				NativeView.Frame = this.ContentView.Frame;
+				NativeView.AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth;
+				this.ContentView.AddSubview(NativeView);
+			}
+			else
+			{
+				var handler = VirtualView.Handler;
+				VirtualView.Handler = null;
+				newView.Handler = handler;
+				handler.SetVirtualView(newView);
+				VirtualView = newView;
+			}
 		}
 	}
 }

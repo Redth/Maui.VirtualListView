@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using CoreGraphics;
 using Foundation;
 using ObjCRuntime;
@@ -18,6 +19,7 @@ namespace Microsoft.Maui
 
 		readonly bool isiOS11;
 
+
 		public override UICollectionViewLayoutAttributes LayoutAttributesForItem(NSIndexPath path)
 		{
 			var layoutAttributes = base.LayoutAttributesForItem(path);
@@ -26,7 +28,7 @@ namespace Microsoft.Maui
 			{
 				var x = SectionInset.Left;
 
-				nfloat width;
+				NFloat width;
 
 				if (isiOS11)
 					width = CollectionView.SafeAreaLayoutGuide.LayoutFrame.Width - SectionInset.Left - SectionInset.Right;
@@ -39,7 +41,7 @@ namespace Microsoft.Maui
 			{
 				var y = SectionInset.Top;
 
-				nfloat height;
+				NFloat height;
 
 				if (isiOS11)
 					height = CollectionView.SafeAreaLayoutGuide.LayoutFrame.Height - SectionInset.Top - SectionInset.Bottom;
@@ -48,7 +50,6 @@ namespace Microsoft.Maui
 
 				layoutAttributes.Frame = new CGRect(layoutAttributes.Frame.X, y, layoutAttributes.Frame.Width, height);
 			}
-
 
 			return layoutAttributes;
 		}
@@ -59,12 +60,9 @@ namespace Microsoft.Maui
 
 			foreach (var layoutAttributes in layoutAttributesObjects)
 			{
-				var indexPath = layoutAttributes.IndexPath;
-
 				if (layoutAttributes.RepresentedElementCategory == UICollectionElementCategory.Cell)
 				{
-					var newFrame = LayoutAttributesForItem(indexPath).Frame;
-
+					var newFrame = LayoutAttributesForItem(layoutAttributes.IndexPath).Frame;
 					layoutAttributes.Frame = newFrame;
 				}
 			}

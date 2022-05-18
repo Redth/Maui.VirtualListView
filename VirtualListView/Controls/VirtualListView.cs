@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -18,7 +19,7 @@ namespace Microsoft.Maui.Controls
 		}
 
 		public static readonly BindableProperty PositionInfoProperty = BindableProperty.CreateAttached(
-			"PositionInfo",
+			nameof(PositionInfo),
 			typeof(PositionInfo),
 			typeof(View),
 			default);
@@ -170,7 +171,7 @@ namespace Microsoft.Maui.Controls
 			if (SelectionMode == Maui.SelectionMode.None)
 				return;
 
-			var prev = new List<ItemPosition>(SelectedItems);
+			var prev = selectedItems.ToArray();
 
 			IReadOnlyList<ItemPosition> current;
 
@@ -182,13 +183,15 @@ namespace Microsoft.Maui.Controls
 						selectedItems.Add(path);
 				}
 
-				current = SelectedItems ?? new List<ItemPosition>();
+				current = selectedItems;
 			}
 
-			(Handler as VirtualListViewHandler)?.Invoke(nameof(SetSelected), paths);
+			//(Handler as VirtualListViewHandler)?.Invoke(nameof(SetSelected), paths);
 
 			// Raise event
 			SelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(prev, current));
+
+			RefreshIfVisible(paths);
 		}
 
 		public void SetDeselected(params ItemPosition[] paths)
@@ -196,7 +199,7 @@ namespace Microsoft.Maui.Controls
 			if (SelectionMode == Maui.SelectionMode.None)
 				return;
 
-			var prev = new List<ItemPosition>(SelectedItems);
+			var prev = new List<ItemPosition>(selectedItems);
 
 			IReadOnlyList<ItemPosition> current;
 
@@ -208,7 +211,7 @@ namespace Microsoft.Maui.Controls
 						selectedItems.Remove(path);
 				}
 
-				current = SelectedItems ?? new List<ItemPosition>();
+				current = selectedItems ?? new List<ItemPosition>();
 			}
 
 			(Handler as VirtualListViewHandler)?.Invoke(nameof(SetDeselected), paths);
@@ -292,7 +295,7 @@ namespace Microsoft.Maui.Controls
 
 			foreach (var c in logicalChildren)
 			{
-				if (c is IVisualTreeElement vte)
+				if (c.view is IVisualTreeElement vte)
 					results.Add(vte);
 			}
 
@@ -300,28 +303,73 @@ namespace Microsoft.Maui.Controls
 		}
 
 		readonly object lockLogicalChildren = new();
-		readonly List<IView> logicalChildren = new();
+		readonly List<(int section, int item, Element view)> logicalChildren = new();
 
 		public void ViewDetached(PositionInfo position, IView view)
 		{
 			var oldLogicalIndex = -1;
 			lock (lockLogicalChildren)
 			{
-				oldLogicalIndex = logicalChildren.IndexOf(view);
-				logicalChildren.Remove(view);
-			}
+				Element elem= null;
 
-			if (view is Element elem)
-				VisualDiagnostics.OnChildRemoved(this, elem, oldLogicalIndex);
+				for (var i = 0; i < logicalChildren.Count; i++)
+                {
+					var child = logicalChildren[i];
+
+					if (child.section == position.SectionIndex
+						&& child.item == position.ItemIndex)
+                    {
+						elem = child.view;
+						oldLogicalIndex = i;
+						break;
+                    }
+                }
+
+				if (oldLogicalIndex >= 0)
+				{
+					logicalChildren.RemoveAt(oldLogicalIndex);
+					if (elem != null)
+						VisualDiagnostics.OnChildRemoved(this, elem, oldLogicalIndex);
+				}
+			}
 		}
 
 		public void ViewAttached(PositionInfo position, IView view)
 		{
-			lock (lockLogicalChildren)
-				logicalChildren.Add(view);
-
 			if (view is Element elem)
+			{
+				lock (lockLogicalChildren)
+					logicalChildren.Add((position.SectionIndex, position.ItemIndex, elem));
+
 				VisualDiagnostics.OnChildAdded(this, elem);
+			}
 		}
+
+		MethodInfo? onPropertyChangedMethod = null;
+
+		MethodInfo? OnPropertyChangedMethod
+			=> onPropertyChangedMethod ??= typeof(Element).GetMethod(nameof(OnPropertyChanged), BindingFlags.NonPublic | BindingFlags.Instance);
+
+		void RefreshIfVisible(ItemPosition[] paths)
+		{	
+			lock (lockLogicalChildren)
+			{
+				foreach (var path in paths)
+				{
+					for (var i = 0; i < logicalChildren.Count; i++)
+					{
+						var child = logicalChildren[i];
+
+						if (child.section == path.SectionIndex
+							&& child.item == path.ItemIndex)
+						{
+							
+							OnPropertyChangedMethod?.Invoke(child.view, new object[] { "BindingContext" });
+							break;
+						}
+					}
+				}
+			}
+        }
 	}
 }

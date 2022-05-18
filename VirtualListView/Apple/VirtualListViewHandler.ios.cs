@@ -17,10 +17,11 @@ namespace Microsoft.Maui
 		UICollectionView collectionView;
 
 		internal PositionalViewSelector PositionalViewSelector { get; private set; }
-
-		protected override UICollectionView CreateNativeView()
+		protected override UICollectionView CreatePlatformView()
 		{
-			layout = new CvLayout(this);
+			Console.WriteLine("CREATING VIRTUALLISTVIEW");
+
+			layout = new (this);
 			layout.ScrollDirection = VirtualView.Orientation switch
 			{
 				ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
@@ -28,14 +29,18 @@ namespace Microsoft.Maui
 				_ => UICollectionViewScrollDirection.Vertical
 			};
 			layout.EstimatedItemSize = UICollectionViewFlowLayout.AutomaticSize;
+			layout.ItemSize = UICollectionViewFlowLayout.AutomaticSize;
 			layout.SectionInset = new UIEdgeInsets(0, 0, 0, 0);
 			layout.MinimumInteritemSpacing = 0f;
 			layout.MinimumLineSpacing = 0f;
 
-			collectionView = new UICollectionView(CGRect.Empty, layout);
 
+			collectionView = new UICollectionView(CGRect.Empty, layout);
+			collectionView.ContentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentBehavior.Always;
+			collectionView.AllowsMultipleSelection = this.VirtualView.SelectionMode == SelectionMode.Multiple;
 			return collectionView;
 		}
+
 		protected override void ConnectHandler(UICollectionView nativeView)
 		{
 			base.ConnectHandler(nativeView);
@@ -46,12 +51,13 @@ namespace Microsoft.Maui
 			dataSource.IsSelectedHandler = (realSection, realIndex) =>
 				VirtualView?.IsItemSelected(realSection, realIndex) ?? false;
 
-			cvdelegate = new CvDelegate(this);
+			cvdelegate = new CvDelegate(this, collectionView);
 			//cvdelegate.ScrollHandler = (x, y) =>
 			//	VirtualView?.RaiseScrolled(new ScrolledEventArgs(x, y));
 
 			collectionView.AllowsSelection = VirtualView.SelectionMode != SelectionMode.None;
 			collectionView.AllowsMultipleSelection = VirtualView.SelectionMode == SelectionMode.Multiple;
+
 			collectionView.DataSource = dataSource;
 			collectionView.ContentInset = new UIEdgeInsets(0, 0, 0, 0);
 			collectionView.Delegate = cvdelegate;
@@ -95,10 +101,10 @@ namespace Microsoft.Maui
 
 		public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{
-			if (handler?.NativeView != null)
+			if (handler?.PlatformView != null)
 			{
-				handler.NativeView.AllowsSelection = virtualListView.SelectionMode != SelectionMode.None;
-				handler.NativeView.AllowsMultipleSelection = virtualListView.SelectionMode == SelectionMode.Multiple;
+				handler.PlatformView.AllowsSelection = virtualListView.SelectionMode != SelectionMode.None;
+				handler.PlatformView.AllowsMultipleSelection = virtualListView.SelectionMode == SelectionMode.Multiple;
 			}
 		}
 

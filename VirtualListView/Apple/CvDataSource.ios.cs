@@ -64,8 +64,7 @@ namespace Microsoft.Maui
 			var cell = collectionView.DequeueReusableCell(nativeReuseId, indexPath) as CvCell;
 			cell.Handler = Handler;
 			cell.IndexPath = indexPath;
-			cell.Init(Handler?.MauiContext);
-
+			
 			cell.ReuseCallback = rv =>
 				Handler.VirtualView.ViewSelector.ViewDetached(info, cell.VirtualView);
 
@@ -85,7 +84,7 @@ namespace Microsoft.Maui
 
 			cell.Update(info);
 
-			Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info, data, cell.Container.VirtualView);
+			Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info, data, cell.VirtualView);
 
 			Handler.VirtualView.ViewSelector.ViewAttached(info, cell.VirtualView);
 
