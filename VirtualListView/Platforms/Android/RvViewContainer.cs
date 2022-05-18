@@ -40,22 +40,11 @@ namespace Microsoft.Maui
 				VirtualView = newView;
 			}
 
-			VirtualView.InvalidateMeasure();
-			VirtualView.InvalidateArrange();
+			//VirtualView.InvalidateMeasure();
+			//VirtualView.InvalidateArrange();
 
 			//Invalidate();
 		}
 
-		float? displayScale;
-		float DisplayScale
-		{
-			get
-			{
-				if (!displayScale.HasValue)
-					displayScale = MauiContext?.Context?.Resources?.DisplayMetrics?.Density;
-
-				return displayScale ?? 1;
-			}
-		}
 	}
 }

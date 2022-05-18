@@ -16,7 +16,7 @@
 	<vlv:VirtualViewCell.Content>
 		<Grid
 			RowDefinitions="Auto, Auto"
-			ColumnDefinitions="30,*"
+			ColumnDefinitions="Auto,*"
 			BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}">
 			<BoxView
 				Grid.Row="0"
