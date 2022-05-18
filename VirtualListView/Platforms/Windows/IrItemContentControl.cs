@@ -20,20 +20,37 @@ namespace Microsoft.Maui.Controls
 
 			Data = DataContext as IrDataWrapper;
 
+			this.Loaded += IrItemContentControl_Loaded;
+			this.Unloaded += IrItemContentControl_Unloaded;
+			this.DataContextChanged += IrItemContentControl_DataContextChanged;
+
+			Update();
+
+			Data.positionalViewSelector?.ViewSelector?.RecycleView(Data.position, Data.data, View);
+		}
+
+		private void IrItemContentControl_DataContextChanged(UI.Xaml.FrameworkElement sender, UI.Xaml.DataContextChangedEventArgs args)
+		{
+			if (args.NewValue is IrDataWrapper wrapper)
+			{
+				Data = wrapper;
+				Update();
+			}
+		}
+
+		void Update()
+		{
 			if (View == null)
 			{
 				View = Data.positionalViewSelector.ViewSelector.CreateView(Data.position, Data.data);
 
-				var frameworkElement = View.ToNative(Data.context);
+				var frameworkElement = View.ToPlatform(Data.context);
 
 				Content = frameworkElement;
 			}
 
-			this.Loaded += IrItemContentControl_Loaded;
-			this.Unloaded += IrItemContentControl_Unloaded;	
 			Data.positionalViewSelector?.ViewSelector?.RecycleView(Data.position, Data.data, View);
 		}
-
 		private void IrItemContentControl_Unloaded(object sender, UI.Xaml.RoutedEventArgs e)
 		{
 			Data.virtualListView.ViewSelector.ViewDetached(Data.position, View);
