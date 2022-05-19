@@ -16,11 +16,27 @@ namespace VirtualListViewSample
 			InitializeComponent();
 			vm = new MainViewModel();
 			BindingContext = vm;
+
+			Task.Delay(2000).ContinueWith(t =>
+			{
+				Dispatcher.Dispatch(() =>
+				{
+					vlv.SetSelected(new ItemPosition(0, 2), new ItemPosition(0, 4));
+				});
+			});
+		}
+
+		protected override void OnNavigatedTo(NavigatedToEventArgs args)
+		{
+			base.OnNavigatedTo(args);
+
+			
+			
 		}
 
 		void VirtualListView_SelectedItemsChanged(System.Object sender, SelectedItemsChangedEventArgs e)
 		{
-			Console.WriteLine($"Selected Items:"
+			System.Diagnostics.Debug.WriteLine($"Selected Items:"
 				+ string.Join(", ", e.NewSelection.Select(s => $"{s.SectionIndex}:{s.ItemIndex}")));
 		}
 	}

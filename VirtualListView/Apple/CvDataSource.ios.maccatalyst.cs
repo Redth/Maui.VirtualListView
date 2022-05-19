@@ -62,6 +62,7 @@ namespace Microsoft.Maui
 			};
 
 			var cell = collectionView.DequeueReusableCell(nativeReuseId, indexPath) as CvCell;
+			cell.TapHandler = TapCellHandler;
 			cell.Handler = Handler;
 			cell.IndexPath = indexPath;
 			
@@ -79,16 +80,28 @@ namespace Microsoft.Maui
 				cell.SwapView(view);
 			}
 
-			if (data is IPositionInfo dataPositionInfo)
-				dataPositionInfo.SetPositionInfo(info);
+			cell.PositionInfo = info;
 
-			cell.Update(info);
+			if (cell.VirtualView is IPositionInfo viewPositionInfo)
+				viewPositionInfo.IsSelected = info.IsSelected;
 
 			Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info, data, cell.VirtualView);
 
 			Handler.VirtualView.ViewSelector.ViewAttached(info, cell.VirtualView);
 
 			return cell;
+		}
+
+		void TapCellHandler(CvCell cell)
+		{
+			var p = new ItemPosition(cell.PositionInfo.SectionIndex, cell.PositionInfo.ItemIndex);
+
+			cell.PositionInfo.IsSelected = !cell.PositionInfo.IsSelected;
+
+			if (cell.PositionInfo.IsSelected)
+				Handler.VirtualView?.SetSelected(p);
+			else
+				Handler.VirtualView?.SetDeselected(p);
 		}
 
 		public override nint GetItemsCount(UICollectionView collectionView, nint section)

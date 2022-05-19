@@ -33,12 +33,10 @@ namespace Microsoft.Maui
 		{
 			UIView.AnimationsEnabled = false;
 			var selectedCell = collectionView.CellForItem(indexPath) as CvCell;
-    		var visibleRect = collectionView.ConvertRectToView(collectionView.Bounds, selectedCell);
 
 			if ((selectedCell?.PositionInfo?.Kind ?? PositionKind.Header) == PositionKind.Item)
 			{
 				selectedCell.PositionInfo.IsSelected = selected;
-				//selectedCell.SetNeedsLayout();
 
 				var itemPos = new ItemPosition(
 					selectedCell.PositionInfo.SectionIndex,
@@ -50,13 +48,13 @@ namespace Microsoft.Maui
 					Handler?.VirtualView?.SetDeselected(itemPos);
 			}
 
-			var updatedVisibleRect = collectionView.ConvertRectToView(collectionView.Bounds, selectedCell);
+			//var updatedVisibleRect = collectionView.ConvertRectToView(collectionView.Bounds, selectedCell);
 
-			var contentOffset = collectionView.ContentOffset;
-			contentOffset.X = contentOffset.X + (visibleRect.X - updatedVisibleRect.X);
-			collectionView.ContentOffset = contentOffset;
+			//var contentOffset = collectionView.ContentOffset;
+			//contentOffset.X = contentOffset.X + (visibleRect.X - updatedVisibleRect.X);
+			//collectionView.ContentOffset = contentOffset;
 
-			UIView.AnimationsEnabled = true;
+			//UIView.AnimationsEnabled = true;
 		}
 
 		public override void Scrolled(UIScrollView scrollView)

@@ -93,7 +93,7 @@ namespace Microsoft.Maui
 		{
 			if (parameter is ItemPosition[] items && items != null && items.Length > 0)
 			{
-				//
+				UpdateSelection(handler, items, true);
 			}
 		}
 
@@ -101,7 +101,25 @@ namespace Microsoft.Maui
 		{
 			if (parameter is ItemPosition[] items && items != null && items.Length > 0)
 			{
-				//
+				UpdateSelection(handler, items, false);
+			}
+		}
+
+		static void UpdateSelection(VirtualListViewHandler handler, ItemPosition[] itemPositions, bool selected)
+		{
+			foreach (var itemPosition in itemPositions)
+			{
+				var position = handler.PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
+
+				var elem = handler.itemsRepeater.TryGetElement(position);
+				
+				if (elem is IrItemContentControl contentControl)
+				{
+					contentControl.Data.position.IsSelected = selected;
+
+					if (contentControl?.View is IPositionInfo viewPositionInfo)
+						viewPositionInfo.IsSelected = selected;
+				}
 			}
 		}
 

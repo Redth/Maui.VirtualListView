@@ -99,6 +99,43 @@ namespace Microsoft.Maui
 			return positionInfo;
 		}
 
+		public int GetPosition(int sectionIndex, int itemIndex)
+		{
+			// calculate position
+			if (Adapter == null)
+				return -1;
+
+			var position = 0;
+
+			if (HasGlobalHeader)
+			{
+				position++;
+			}
+
+			for (int s = 0; s <= sectionIndex; s++)
+			{
+				if (ViewSelector.SectionHasHeader(s))
+				{
+					position++;
+				}
+
+				if (s == sectionIndex)
+				{
+					position += itemIndex;
+					break;
+				}
+
+				var itemsInSection = CachedItemsForSection(s);
+
+				position += itemsInSection;
+
+				if (ViewSelector.SectionHasFooter(s))
+					position++;
+			}
+
+			return position;
+		}
+
 		PositionInfo GetUncachedInfo(int position)
 		{
 			if (Adapter == null)

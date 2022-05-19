@@ -7,20 +7,16 @@
 	x:Class="VirtualListViewSample.FilmViewCell"
 	x:DataType="local:TrackInfo"
 	x:Name="self">
-	<vlv:VirtualViewCell.Resources>
-		<ResourceDictionary>
-			<local:SelectedColorConverter x:Key="selectedColorConverter" />
-		</ResourceDictionary>
-	</vlv:VirtualViewCell.Resources>
-	<StackLayout
-		Spacing="0"
-		BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}">
+	<VerticalStackLayout
+		Spacing="0">
 
 		<BoxView
 			HorizontalOptions="FillAndExpand"
-			HeightRequest="1"
-			BackgroundColor="#f8f8f8" 
-			IsVisible="{Binding Source={x:Reference self}, Path=IsNotFirstItemInSection}" />
+			HeightRequest="1.4"
+			BackgroundColor="#f8f8f8"
+			x:DataType="vlv:VirtualViewCell"
+			BindingContext="{x:Reference self}"
+			IsVisible="{Binding IsNotFirstItemInSection}" />
 
 
 		<Grid ColumnDefinitions="20,*" Margin="10,5,10,5" Padding="10" BackgroundColor="#f0f0f0" ColumnSpacing="10">
@@ -30,5 +26,5 @@
 			<Label Grid.Column="1" Text="{Binding TrackName}" FontSize="Subtitle" TextColor="Black" />
 		</Grid>
 
-	</StackLayout>
+	</VerticalStackLayout>
 </vlv:VirtualViewCell>

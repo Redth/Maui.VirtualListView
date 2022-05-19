@@ -6,18 +6,11 @@
 	xmlns:local="clr-namespace:VirtualListViewSample"
 	x:Class="VirtualListViewSample.GenericViewCell"
 	x:Name="self"
-	BackgroundColor="#ffffff"
+	UnselectedBackgroundColor="#ffffff"
+	SelectedBackgroundColor="#efefef"
 	x:DataType="local:TrackInfo">
-	<vlv:VirtualViewCell.Resources>
-		<ResourceDictionary>
-			<local:SelectedColorConverter x:Key="selectedColorConverter" />
-		</ResourceDictionary>
-	</vlv:VirtualViewCell.Resources>
 	<vlv:VirtualViewCell.Content>
-		<Grid
-			RowDefinitions="Auto, Auto"
-			ColumnDefinitions="Auto,*"
-			BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}">
+		<Grid RowDefinitions="Auto, Auto" ColumnDefinitions="Auto,*">
 			<BoxView
 				Grid.Row="0"
 				Grid.Column="0"
@@ -25,8 +18,9 @@
 				HorizontalOptions="FillAndExpand"
 				HeightRequest="1.4"
 				BackgroundColor="#f8f8f8"
-				IsVisible="{Binding Source={x:Reference self}, Path=IsNotFirstItemInSection}" />
-
+				x:DataType="vlv:VirtualViewCell"
+				BindingContext="{x:Reference self}"
+				IsVisible="{Binding IsNotFirstItemInSection}" />
 
 			<Label Text="{Binding TrackId}" Grid.Row="1" Grid.Column="0" FontSize="20" TextColor="#afafaf" VerticalOptions="Center" HorizontalOptions="End" />
 			<Label Text="{Binding TrackName}" TextColor="Black" Grid.Column="1" Grid.Row="1" FontSize="20" Margin="8,0,0,0" />

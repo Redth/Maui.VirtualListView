@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Microsoft.Maui
 {
-	public partial record PositionInfo
+	public class PositionInfo : IPositionInfo
 	{
 		internal static PositionInfo ForHeader(int position)
 			=> new() { Position = position, Kind = PositionKind.Header };
@@ -45,9 +45,9 @@ namespace Microsoft.Maui
 
 		internal int ReuseId { get; set; }
 
-		public PositionKind Kind { get; init; } = PositionKind.Item;
+		public PositionKind Kind { get; set; } = PositionKind.Item;
 
-		public int SectionIndex { get; internal set; } = -1;
+		public int SectionIndex { get; set; } = -1;
 
 		public int NumberOfSections { get; set; } = 0;
 
@@ -55,6 +55,14 @@ namespace Microsoft.Maui
 
 		public int ItemsInSection { get; set; } = 0;
 
-		public bool IsSelected { get; internal set; } = false;
+		public bool IsSelected { get; set; } = false;
+
+		public bool IsLastItemInSection => ItemIndex >= ItemsInSection - 1;
+		public bool IsNotLastItemInSection => !IsLastItemInSection;
+		public bool IsFirstItemInSection => ItemIndex == 0;
+		public bool IsNotFirstItemInSection => !IsFirstItemInSection;
+
+		public override int GetHashCode()
+			=>	(ItemIndex, SectionIndex, NumberOfSections, IsSelected, ItemsInSection, Kind, ReuseId, Position).GetHashCode();
 	}
 }

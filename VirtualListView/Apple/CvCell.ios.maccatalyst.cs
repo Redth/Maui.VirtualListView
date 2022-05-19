@@ -12,14 +12,17 @@ namespace Microsoft.Maui
 
 		public NSIndexPath IndexPath { get; set; }
 
-		public PositionInfo PositionInfo { get; private set; }
+		public PositionInfo PositionInfo { get; set; }
 
 		public Action<IView> ReuseCallback { get; set; }
 
 		[Export("initWithFrame:")]
 		public CvCell(CGRect frame) : base(frame)
 		{
+			this.ContentView.AddGestureRecognizer(new UITapGestureRecognizer(() => this.TapHandler?.Invoke(this)));
 		}
+
+		public Action<CvCell> TapHandler { get; set; }
 
 		public override UICollectionViewLayoutAttributes PreferredLayoutAttributesFittingAttributes(UICollectionViewLayoutAttributes layoutAttributes)
 		{
@@ -31,13 +34,6 @@ namespace Microsoft.Maui
 			layoutAttributes.Frame = new CGRect(0, layoutAttributes.Frame.Y, layoutAttributes.Frame.Width, measure.Height);
 
 			return layoutAttributes;
-		}
-
-		public void Update(PositionInfo info)
-		{
-			PositionInfo = info;
-			if (VirtualView is IPositionInfo positionInfoView)
-				positionInfoView.SetPositionInfo(info);
 		}
 
 		public bool NeedsView

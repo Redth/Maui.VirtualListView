@@ -81,7 +81,7 @@ namespace Microsoft.Maui
 					itemHolder.SwapView(view);
 				}
 
-				itemHolder.Update(info);
+				itemHolder.PositionInfo = info;
 
 				positionalViewSelector?.ViewSelector?.RecycleView(info, data, itemHolder.ViewContainer.VirtualView);
 			}
@@ -142,6 +142,9 @@ namespace Microsoft.Maui
 					handler.VirtualView?.SetSelected(p);
 				else
 					handler.VirtualView?.SetDeselected(p);
+
+				//if (rvh.ViewContainer.VirtualView is IPositionInfo viewPositionInfo)
+				//	viewPositionInfo.IsSelected = rvh.PositionInfo.IsSelected;
 			});
 
 			viewHolder.ItemView.SetOnClickListener(clickListener);

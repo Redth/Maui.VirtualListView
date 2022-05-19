@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using CoreGraphics;
 using Foundation;
+using Microsoft.Maui.ApplicationModel.Communication;
 using Microsoft.Maui.Handlers;
 using UIKit;
 
@@ -19,8 +20,6 @@ namespace Microsoft.Maui
 		internal PositionalViewSelector PositionalViewSelector { get; private set; }
 		protected override UICollectionView CreatePlatformView()
 		{
-			Console.WriteLine("CREATING VIRTUALLISTVIEW");
-
 			layout = new (this);
 			layout.ScrollDirection = VirtualView.Orientation switch
 			{
@@ -37,7 +36,8 @@ namespace Microsoft.Maui
 
 			collectionView = new UICollectionView(CGRect.Empty, layout);
 			collectionView.ContentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentBehavior.Always;
-			collectionView.AllowsMultipleSelection = this.VirtualView.SelectionMode == SelectionMode.Multiple;
+			collectionView.AllowsMultipleSelection = false;// = this.VirtualView.SelectionMode == SelectionMode.Multiple;
+			collectionView.AllowsSelection = false;
 			return collectionView;
 		}
 
@@ -55,8 +55,8 @@ namespace Microsoft.Maui
 			//cvdelegate.ScrollHandler = (x, y) =>
 			//	VirtualView?.RaiseScrolled(new ScrolledEventArgs(x, y));
 
-			collectionView.AllowsSelection = VirtualView.SelectionMode != SelectionMode.None;
-			collectionView.AllowsMultipleSelection = VirtualView.SelectionMode == SelectionMode.Multiple;
+			//collectionView.AllowsSelection = VirtualView.SelectionMode != SelectionMode.None;
+			//collectionView.AllowsMultipleSelection = VirtualView.SelectionMode == SelectionMode.Multiple;
 
 			collectionView.DataSource = dataSource;
 			collectionView.ContentInset = new UIEdgeInsets(0, 0, 0, 0);
@@ -101,11 +101,11 @@ namespace Microsoft.Maui
 
 		public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{
-			if (handler?.PlatformView != null)
-			{
-				handler.PlatformView.AllowsSelection = virtualListView.SelectionMode != SelectionMode.None;
-				handler.PlatformView.AllowsMultipleSelection = virtualListView.SelectionMode == SelectionMode.Multiple;
-			}
+			//if (handler?.PlatformView != null)
+			//{
+			//	handler.PlatformView.AllowsSelection = virtualListView.SelectionMode != SelectionMode.None;
+			//	handler.PlatformView.AllowsMultipleSelection = virtualListView.SelectionMode == SelectionMode.Multiple;
+			//}
 		}
 
 		public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
@@ -115,11 +115,7 @@ namespace Microsoft.Maui
 		{
 			if (parameter is ItemPosition[] items)
 			{
-				handler?.collectionView?.InvokeOnMainThread(() =>
-				{
-					handler?.collectionView?.ReloadItems(
-						items.Select(i => NSIndexPath.FromRowSection(i.ItemIndex, i.SectionIndex)).ToArray());
-				});
+				UpdateSelected(handler, items, true);
 			}
 		}
 
@@ -127,9 +123,34 @@ namespace Microsoft.Maui
 		{
 			if (parameter is ItemPosition[] items)
 			{
-				handler?.collectionView?.ReloadItems(
-					items.Select(i => NSIndexPath.FromItemSection(i.ItemIndex, i.SectionIndex)).ToArray());
+				UpdateSelected(handler, items, false);
 			}
+		}
+
+		static void UpdateSelected(VirtualListViewHandler handler, ItemPosition[] itemPositions, bool selected)
+		{
+			handler.collectionView.InvokeOnMainThread(() =>
+			{
+				foreach (var itemPosition in itemPositions)
+				{
+					foreach (var cell in handler.collectionView.VisibleCells)
+					{
+						if (cell is not CvCell cvcell)
+							continue;
+
+						if (cvcell.IndexPath.Section == itemPosition.SectionIndex && cvcell.IndexPath.Item == itemPosition.ItemIndex)
+						{
+							if (cvcell.VirtualView is IPositionInfo positionInfo)
+							{
+								handler.collectionView.InvokeOnMainThread(() =>
+								{
+									positionInfo.IsSelected = selected;
+								});
+							}
+						}
+					}
+				}
+			});
 		}
 
 		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)

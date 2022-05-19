@@ -76,12 +76,32 @@ namespace Microsoft.Maui
 
 		public static void MapSetSelected(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
 		{
-			handler.adapter.NotifyDataSetChanged();
+			if (parameter is ItemPosition[] itemPositions)
+				UpdateSelection(handler, itemPositions, true);
 		}
 
 		public static void MapSetDeselected(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
 		{
-			handler.adapter.NotifyDataSetChanged();
+			if (parameter is ItemPosition[] itemPositions)
+				UpdateSelection(handler, itemPositions, false);
+		}
+
+		static void UpdateSelection(VirtualListViewHandler handler, ItemPosition[] itemPositions, bool selected)
+		{
+			foreach (var itemPosition in itemPositions)
+			{
+				var position = handler.positionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
+
+				var vh = handler.recyclerView.FindViewHolderForAdapterPosition(position);
+
+				if (vh is RvItemHolder rvh)
+				{
+					rvh.PositionInfo.IsSelected = selected;
+
+					if (rvh.ViewContainer?.VirtualView is IPositionInfo viewPositionInfo)
+						viewPositionInfo.IsSelected = selected;
+				}
+			}
 		}
 
 		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)

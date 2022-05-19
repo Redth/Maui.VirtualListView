@@ -7,19 +7,12 @@ namespace Microsoft.Maui
 	internal class RvItemHolder : RecyclerView.ViewHolder
 	{
 		public RvViewContainer ViewContainer { get; private set; }
-		public PositionInfo PositionInfo { get; private set; }
+		public PositionInfo PositionInfo { get; set; }
 
 		public RvItemHolder(IMauiContext mauiContext)
 			: base(new RvViewContainer(mauiContext))
 		{
 			ViewContainer = ItemView as RvViewContainer;
-		}
-
-		public void Update(PositionInfo positionInfo)
-		{
-			PositionInfo = positionInfo;
-			if (ViewContainer.VirtualView is IPositionInfo positionInfoView)
-				positionInfoView.SetPositionInfo(positionInfo);
 		}
 
 		public void SwapView(IView view)

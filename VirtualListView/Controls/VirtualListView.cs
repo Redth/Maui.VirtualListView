@@ -186,12 +186,13 @@ namespace Microsoft.Maui.Controls
 				current = selectedItems;
 			}
 
-			//(Handler as VirtualListViewHandler)?.Invoke(nameof(SetSelected), paths);
+
+			(Handler as VirtualListViewHandler)?.Invoke(nameof(SetSelected), paths);
 
 			// Raise event
 			SelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(prev, current));
 
-			RefreshIfVisible(paths);
+			//RefreshIfVisible(paths);
 		}
 
 		public void SetDeselected(params ItemPosition[] paths)
@@ -263,10 +264,8 @@ namespace Microsoft.Maui.Controls
 			{
 				controlsView.BindingContext = data;
 
-				if (controlsView.Resources.TryGetValue("VirtualViewCellPositionInfo", out var v) && v is BindablePositionInfo bindablePositionInfo)
-					bindablePositionInfo.SetPositionInfo(position);
-				else
-					controlsView.Resources["VirtualViewCellPositionInfo"] = new BindablePositionInfo(position);
+				//if (controlsView is IPositionInfo positionInfoView)
+				//	positionInfoView.PositionInfo = position;
 			}
 		}
 
@@ -350,26 +349,26 @@ namespace Microsoft.Maui.Controls
 		MethodInfo? OnPropertyChangedMethod
 			=> onPropertyChangedMethod ??= typeof(Element).GetMethod(nameof(OnPropertyChanged), BindingFlags.NonPublic | BindingFlags.Instance);
 
-		void RefreshIfVisible(ItemPosition[] paths)
-		{	
-			lock (lockLogicalChildren)
-			{
-				foreach (var path in paths)
-				{
-					for (var i = 0; i < logicalChildren.Count; i++)
-					{
-						var child = logicalChildren[i];
+		//void RefreshIfVisible(ItemPosition[] paths)
+		//{	
+		//	lock (lockLogicalChildren)
+		//	{
+		//		foreach (var path in paths)
+		//		{
+		//			for (var i = 0; i < logicalChildren.Count; i++)
+		//			{
+		//				var child = logicalChildren[i];
 
-						if (child.section == path.SectionIndex
-							&& child.item == path.ItemIndex)
-						{
+		//				if (child.section == path.SectionIndex
+		//					&& child.item == path.ItemIndex)
+		//				{
 							
-							OnPropertyChangedMethod?.Invoke(child.view, new object[] { "BindingContext" });
-							break;
-						}
-					}
-				}
-			}
-        }
+		//					OnPropertyChangedMethod?.Invoke(child.view, new object[] { "BindingContext" });
+		//					break;
+		//				}
+		//			}
+		//		}
+		//	}
+  //      }
 	}
 }

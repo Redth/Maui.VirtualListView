@@ -25,8 +25,6 @@ namespace Microsoft.Maui.Controls
 			this.DataContextChanged += IrItemContentControl_DataContextChanged;
 
 			Update();
-
-			Data.positionalViewSelector?.ViewSelector?.RecycleView(Data.position, Data.data, View);
 		}
 
 		private void IrItemContentControl_DataContextChanged(UI.Xaml.FrameworkElement sender, UI.Xaml.DataContextChangedEventArgs args)
@@ -75,11 +73,9 @@ namespace Microsoft.Maui.Controls
 			else
 				Data?.virtualListView?.SetDeselected(itemPos);
 
-			if (Data?.data is IPositionInfo dataPositionInfo)
-				dataPositionInfo.SetPositionInfo(Data.position);
-
-			if (Data != null && Data.position != null)
-				Data?.positionalViewSelector?.ViewSelector?.RecycleView(Data.position, Data.data, View);
+			// Update only IsSelected on the view
+			//if (View is IPositionInfo positionInfoView)
+			//	positionInfoView.IsSelected = Data.position.IsSelected;
 		}
-    }
+	}
 }
