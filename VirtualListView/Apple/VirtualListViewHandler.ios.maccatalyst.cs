@@ -129,28 +129,27 @@ namespace Microsoft.Maui
 
 		static void UpdateSelected(VirtualListViewHandler handler, ItemPosition[] itemPositions, bool selected)
 		{
-			handler.collectionView.InvokeOnMainThread(() =>
+			
+			foreach (var itemPosition in itemPositions)
 			{
-				foreach (var itemPosition in itemPositions)
-				{
-					foreach (var cell in handler.collectionView.VisibleCells)
-					{
-						if (cell is not CvCell cvcell)
-							continue;
+				var realIndex = handler.PositionalViewSelector.GetIndexPath(itemPosition.SectionIndex, itemPosition.ItemIndex);
 
-						if (cvcell.IndexPath.Section == itemPosition.SectionIndex && cvcell.IndexPath.Item == itemPosition.ItemIndex)
+				var cell = handler.collectionView.CellForItem(realIndex);
+
+				if (cell is CvCell cvcell)
+                {
+					cvcell.PositionInfo.IsSelected = selected;
+
+					if (cvcell.VirtualView is IPositionInfo positionInfo)
+					{	
+						handler.collectionView.InvokeOnMainThread(() =>
 						{
-							if (cvcell.VirtualView is IPositionInfo positionInfo)
-							{
-								handler.collectionView.InvokeOnMainThread(() =>
-								{
-									positionInfo.IsSelected = selected;
-								});
-							}
-						}
+							positionInfo.IsSelected = selected;
+						});
 					}
 				}
-			});
+			}
+			
 		}
 
 		public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)

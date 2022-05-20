@@ -22,8 +22,8 @@
 				BindingContext="{x:Reference self}"
 				IsVisible="{Binding IsNotFirstItemInSection}" />
 
-			<Label Text="{Binding TrackId}" Grid.Row="1" Grid.Column="0" FontSize="20" TextColor="#afafaf" VerticalOptions="Center" HorizontalOptions="End" />
-			<Label Text="{Binding TrackName}" TextColor="Black" Grid.Column="1" Grid.Row="1" FontSize="20" Margin="8,0,0,0" />
+			<Label Text="{Binding TrackId}" Grid.Row="1" Grid.Column="0" FontSize="20" TextColor="#afafaf" Margin="8,6,0,6" VerticalOptions="Center" HorizontalOptions="End" BackgroundColor="Transparent" />
+			<Label Text="{Binding TrackName}" TextColor="Black" Grid.Column="1" Grid.Row="1" FontSize="20" Margin="8,6,0,6" BackgroundColor="Transparent" />
 			
 		</Grid>
 	</vlv:VirtualViewCell.Content>

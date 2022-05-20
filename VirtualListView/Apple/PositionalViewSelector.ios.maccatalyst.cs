@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Foundation;
 
 namespace Microsoft.Maui
 {
@@ -65,6 +66,22 @@ namespace Microsoft.Maui
 			}
 
 			return PositionInfo.ForItem(-1, realSectionIndex, realItemIndex, CachedItemsForSection(realSectionIndex), realNumberOfSections);
+		}
+
+		public NSIndexPath GetIndexPath(int positionSectionIndex, int positionItemIndex)
+		{
+			var realSectionIndex = positionSectionIndex;
+			var realItemIndex = positionItemIndex;
+
+			// Global header takes up one section
+			if (HasGlobalHeader)
+				realSectionIndex++;
+
+			// If the section has a header, the real item index is +1
+			if (ViewSelector?.SectionHasHeader(positionSectionIndex) ?? false)
+				realItemIndex++;
+
+			return NSIndexPath.FromItemSection(realItemIndex, realSectionIndex);
 		}
 	}
 }
