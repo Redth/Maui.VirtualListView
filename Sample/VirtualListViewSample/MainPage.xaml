@@ -4,6 +4,8 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
 	xmlns:local="clr-namespace:VirtualListViewSample"
 	xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
+	xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
+	ios:Page.UseSafeArea="False"
 	x:DataType="local:MainViewModel"
 	x:Class="VirtualListViewSample.MainPage">
 	<ContentPage.Resources>
@@ -11,10 +13,12 @@
 			<local:ItemTemplateSelector x:Key="itemTemplateSelector" />
 		</ResourceDictionary>
 	</ContentPage.Resources>
+	
 	<vlv:VirtualListView
 		x:Name="vlv"
 		HorizontalOptions="FillAndExpand"
 		VerticalOptions="FillAndExpand"
+		BackgroundColor="#045FB4"
 		Adapter="{Binding Adapter}"
 		SelectionMode="Multiple"
 		SelectedItemsChanged="VirtualListView_SelectedItemsChanged"
@@ -49,7 +53,7 @@
 
 		<vlv:VirtualListView.GlobalHeader>
 			<Grid BackgroundColor="#045FB4">
-				<Label Padding="20" Text="Music Library" TextColor="White" HorizontalOptions="Center" />
+				<Label Padding="20" Text="Music Library" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
 			</Grid>
 		</vlv:VirtualListView.GlobalHeader>
 
@@ -59,4 +63,5 @@
 			</Grid>
 		</vlv:VirtualListView.GlobalFooter>
 	</vlv:VirtualListView>
+	
 </ContentPage>

@@ -191,8 +191,6 @@ namespace Microsoft.Maui.Controls
 
 			// Raise event
 			SelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(prev, current));
-
-			//RefreshIfVisible(paths);
 		}
 
 		public void SetDeselected(params ItemPosition[] paths)
@@ -263,9 +261,6 @@ namespace Microsoft.Maui.Controls
 			if (view is View controlsView)
 			{
 				controlsView.BindingContext = data;
-
-				//if (controlsView is IPositionInfo positionInfoView)
-				//	positionInfoView.PositionInfo = position;
 			}
 		}
 
@@ -343,32 +338,5 @@ namespace Microsoft.Maui.Controls
 				VisualDiagnostics.OnChildAdded(this, elem);
 			}
 		}
-
-		MethodInfo? onPropertyChangedMethod = null;
-
-		MethodInfo? OnPropertyChangedMethod
-			=> onPropertyChangedMethod ??= typeof(Element).GetMethod(nameof(OnPropertyChanged), BindingFlags.NonPublic | BindingFlags.Instance);
-
-		//void RefreshIfVisible(ItemPosition[] paths)
-		//{	
-		//	lock (lockLogicalChildren)
-		//	{
-		//		foreach (var path in paths)
-		//		{
-		//			for (var i = 0; i < logicalChildren.Count; i++)
-		//			{
-		//				var child = logicalChildren[i];
-
-		//				if (child.section == path.SectionIndex
-		//					&& child.item == path.ItemIndex)
-		//				{
-							
-		//					OnPropertyChangedMethod?.Invoke(child.view, new object[] { "BindingContext" });
-		//					break;
-		//				}
-		//			}
-		//		}
-		//	}
-  //      }
 	}
 }

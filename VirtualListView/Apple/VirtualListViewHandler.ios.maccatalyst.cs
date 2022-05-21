@@ -33,11 +33,15 @@ namespace Microsoft.Maui
 			layout.MinimumInteritemSpacing = 0f;
 			layout.MinimumLineSpacing = 0f;
 
-
 			collectionView = new UICollectionView(CGRect.Empty, layout);
-			collectionView.ContentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentBehavior.Always;
-			collectionView.AllowsMultipleSelection = false;// = this.VirtualView.SelectionMode == SelectionMode.Multiple;
+			//collectionView.ContentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentBehavior.Never;
+			collectionView.AllowsMultipleSelection = false;
 			collectionView.AllowsSelection = false;
+			
+			//collectionView.ContentInset = new UIEdgeInsets(0, 0, 0, 0);
+			//collectionView.ScrollIndicatorInsets = new UIEdgeInsets(0, 0, 0, 0);
+			//collectionView.AutomaticallyAdjustsScrollIndicatorInsets = false;
+
 			return collectionView;
 		}
 
@@ -52,16 +56,12 @@ namespace Microsoft.Maui
 				VirtualView?.IsItemSelected(realSection, realIndex) ?? false;
 
 			cvdelegate = new CvDelegate(this, collectionView);
-			//cvdelegate.ScrollHandler = (x, y) =>
-			//	VirtualView?.RaiseScrolled(new ScrolledEventArgs(x, y));
-
-			//collectionView.AllowsSelection = VirtualView.SelectionMode != SelectionMode.None;
-			//collectionView.AllowsMultipleSelection = VirtualView.SelectionMode == SelectionMode.Multiple;
+            //cvdelegate.ScrollHandler = (x, y) =>
+            //    VirtualView?.RaiseScrolled(new ScrolledEventArgs(x, y));
 
 			collectionView.DataSource = dataSource;
-			collectionView.ContentInset = new UIEdgeInsets(0, 0, 0, 0);
 			collectionView.Delegate = cvdelegate;
-
+			
 			collectionView.ReloadData();
 		}
 
@@ -101,11 +101,6 @@ namespace Microsoft.Maui
 
 		public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		{
-			//if (handler?.PlatformView != null)
-			//{
-			//	handler.PlatformView.AllowsSelection = virtualListView.SelectionMode != SelectionMode.None;
-			//	handler.PlatformView.AllowsMultipleSelection = virtualListView.SelectionMode == SelectionMode.Multiple;
-			//}
 		}
 
 		public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)

@@ -7,13 +7,16 @@ using Microsoft.Maui.Controls.Xaml;
 
 namespace VirtualListViewSample
 {
-	public partial class MainPage : ContentPage
+	public partial class MainPage : ContentPage, ISafeAreaView
 	{
 		MainViewModel vm;
 
 		public MainPage()
 		{
 			InitializeComponent();
+
+			Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific.Page.SetUseSafeArea(this, false);
+
 			vm = new MainViewModel();
 			BindingContext = vm;
 
