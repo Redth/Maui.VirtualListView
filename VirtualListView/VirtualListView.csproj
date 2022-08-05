@@ -2,26 +2,29 @@
 	<PropertyGroup>
 		<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows')) and '$(MSBuildRuntimeType)' == 'Full'">$(TargetFrameworks);net6.0-windows10.0.19041</TargetFrameworks>
+		
 		<UseMaui>true</UseMaui>
 		<SingleProject>true</SingleProject>
 		<ImplicitUsings>enable</ImplicitUsings>
 
 		<AssemblyName>VirtualListView</AssemblyName>
-		<RootNamespace>Microsoft.Maui.Controls.VirtualListViewControl</RootNamespace>
-		<PackageId>Microsoft.Maui.Controls.VirtualListView</PackageId>
+		<RootNamespace>Microsoft.Maui.Controls</RootNamespace>
+		<AndroidResgenNamespace>Microsoft.Maui.Controls.PlatformResources</AndroidResgenNamespace>
+		<PackageId>Maui.VirtualListView</PackageId>
 		<Summary>A virtual ListView for .NET MAUI</Summary>
-		<Title>VirtualListView for .NET MAUI</Title>
-		<Product>$(AssemblyName) ($(TargetFramework))</Product>
-		<AssemblyVersion>1.0.0.0</AssemblyVersion>
-		<AssemblyFileVersion>1.0.0.0</AssemblyFileVersion>
-		<Version>1.0.0</Version>
-		<PackageVersion>1.0.0</PackageVersion>
+		<Title>Virtual ListView for .NET MAUI</Title>
+		<AssemblyFileVersion>$(PackageVersion)</AssemblyFileVersion>
 		<Authors>Microsoft, Redth</Authors>
 		<NeutralLanguage>en</NeutralLanguage>
 		<Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
-		<RepositoryUrl>https://github.com/redth/Xamarin.Forms.VirtualListView</RepositoryUrl>
+		<GitThisAssemblyMetadata>True</GitThisAssemblyMetadata>
+		<RepositoryUrl>$(GitRepositoryUrl)</RepositoryUrl>
+		<RepositoryCommit>$(GitCommit)</RepositoryCommit>
+		<RepositoryBranch>$(GitBranch)</RepositoryBranch>
+		<RepositoryType>git</RepositoryType>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<DebugType>portable</DebugType>
-		<LangVersion>10.0</LangVersion>
+		<DebugSymbols>true</DebugSymbols>
 
 		<SupportedOSPlatformVersion Condition="'$(TargetFramework)' == 'net6.0-ios'">14.2</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="'$(TargetFramework)' == 'net6.0-maccatalyst'">14.0</SupportedOSPlatformVersion>
@@ -29,12 +32,12 @@
 		<SupportedOSPlatformVersion Condition="$(TargetFramework.Contains('-windows'))">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$(TargetFramework.Contains('-windows'))">10.0.17763.0</TargetPlatformMinVersion>
 	</PropertyGroup>
-	<PropertyGroup Condition=" '$(Configuration)'=='Debug' ">
-		<DebugSymbols>true</DebugSymbols>
-	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="GitInfo" Version="2.2.0" PrivateAssets="all" />
+	</ItemGroup>
 
+	<ItemGroup>
 		<Compile Update="**\*.ios*$(DefaultLanguageSourceExtension)">
 			<ExcludeFromCurrentConfiguration>true</ExcludeFromCurrentConfiguration>
 		</Compile>
@@ -66,10 +69,8 @@
 		<Compile Condition=" '$(TargetPlatformIdentifier)' == 'tizen' " Update="**\*.tizen*$(DefaultLanguageSourceExtension)">
 			<ExcludeFromCurrentConfiguration>False</ExcludeFromCurrentConfiguration>
 		</Compile>
-
 	</ItemGroup>
 
-	
 	<Target Name="_MauiRemovePlatformFileNamePatternCompileItems" BeforeTargets="_MauiRemovePlatformCompileItems">
 		<ItemGroup>
 			<Compile Condition=" '%(Compile.ExcludeFromCurrentConfiguration)' == 'true' " Remove="**\*.ios*$(DefaultLanguageSourceExtension)" />
@@ -79,6 +80,5 @@
 			<Compile Condition=" '%(Compile.ExcludeFromCurrentConfiguration)' == 'true' " Remove="**\*.tizen*$(DefaultLanguageSourceExtension)" />
 		</ItemGroup>
 	</Target>
-
 
 </Project>
