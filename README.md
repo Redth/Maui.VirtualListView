@@ -34,6 +34,26 @@ To add the Virtual List View control to your project, you need to add `.UseVirtu
 		}
 ```
 
+Additionally, you need to add DataTemplate references to the `Maui.Controls`' `IrItemContentControls`. Add these references to your `Platforms/Windows/App.xaml` file:
+
+```xaml
+<maui:MauiWinUIApplication
+    x:Class="VirtualListViewSample.Application"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mauictrls="using:Microsoft.Maui.Controls"
+    xmlns:maui="using:Microsoft.Maui">
+    <Application.Resources>
+        <ResourceDictionary>
+            <DataTemplate x:Key="Container">
+                <mauictrls:IrItemContentControl>
+                </mauictrls:IrItemContentControl>
+            </DataTemplate>
+        </ResourceDictionary>
+    </Application.Resources>
+</maui:MauiWinUIApplication>
+
+```
 
 To create an adapter for the VirtualListView, you need to implement the following interface:
 
