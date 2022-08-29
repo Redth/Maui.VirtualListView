@@ -21,6 +21,20 @@ Instead of starting with a typical C# collection such as ObservableCollection, t
 
 This pattern is optimal since it allows for easily creating adapters backed by direct access data stores such as databases.  Instead of trying to load data from the actual datastore, and trying to deal with cache invalidation for an in memory collection you can write your adapter directly against any type of storage.
 
+To add the Virtual List View control to your project, you need to add `.UseVirtualListView()` to your app builder:
+
+```csharp
+		public static MauiApp Create()
+		{
+			var builder = MauiApp.CreateBuilder();
+			builder
+				.UseMauiApp<App>()
+				.UseVirtualListView(); // <---
+			return builder.Build();
+		}
+```
+
+
 To create an adapter for the VirtualListView, you need to implement the following interface:
 
 ```csharp
