@@ -10,7 +10,7 @@
 		<AssemblyName>VirtualListView</AssemblyName>
 		<RootNamespace>Microsoft.Maui.Controls</RootNamespace>
 		<AndroidResgenNamespace>Microsoft.Maui.Controls.PlatformResources</AndroidResgenNamespace>
-		<PackageId>Maui.VirtualListView</PackageId>
+		<PackageId>Redth.Maui.VirtualListView</PackageId>
 		<Summary>A virtual ListView for .NET MAUI</Summary>
 		<Title>Virtual ListView for .NET MAUI</Title>
 		<AssemblyFileVersion>$(PackageVersion)</AssemblyFileVersion>
