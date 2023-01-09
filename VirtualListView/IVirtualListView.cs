@@ -8,7 +8,9 @@ namespace Microsoft.Maui
 {
 	public interface IVirtualListView : IView
 	{
-		IVirtualListViewAdapter Adapter { get; }
+		void RaiseScrolled(ScrolledEventArgs args);
+
+        IVirtualListViewAdapter Adapter { get; }
 
 		IVirtualListViewSelector ViewSelector { get; }
 

@@ -71,9 +71,7 @@ namespace Microsoft.Maui.Controls
 
 		public static readonly BindableProperty ItemTemplateSelectorProperty =
 			BindableProperty.Create(nameof(ItemTemplateSelector), typeof(VirtualListViewItemTemplateSelector), typeof(VirtualListView), default);
-
-
-
+		
 		public DataTemplate SectionHeaderTemplate
 		{
 			get => (DataTemplate)GetValue(SectionHeaderTemplateProperty);
@@ -91,8 +89,6 @@ namespace Microsoft.Maui.Controls
 
 		public static readonly BindableProperty SectionHeaderTemplateSelectorProperty =
 			BindableProperty.Create(nameof(SectionHeaderTemplateSelector), typeof(VirtualListViewSectionTemplateSelector), typeof(VirtualListView), default);
-
-
 
 		public DataTemplate SectionFooterTemplate
 		{
@@ -148,8 +144,6 @@ namespace Microsoft.Maui.Controls
 		public static readonly BindableProperty OrientationProperty =
 			BindableProperty.Create(nameof(Orientation), typeof(ListOrientation), typeof(VirtualListView), ListOrientation.Vertical);
 
-
-
 		public IVirtualListViewSelector ViewSelector => this;
 
 		public IView Header => GlobalHeader;
@@ -163,8 +157,6 @@ namespace Microsoft.Maui.Controls
 			lock (selectedItemsLocker)
 				return selectedItems.Contains(new ItemPosition(sectionIndex, itemIndex));
 		}
-
-
 
 		public void SetSelected(params ItemPosition[] paths)
 		{
@@ -222,7 +214,8 @@ namespace Microsoft.Maui.Controls
 		public event EventHandler<ScrolledEventArgs> Scrolled;
 		public event EventHandler DataInvalidated;
 
-		internal void RaiseScrolled(ScrolledEventArgs args)
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void RaiseScrolled(ScrolledEventArgs args)
 			=> Scrolled?.Invoke(this, args);
 
 		public void InvalidateData()
@@ -338,5 +331,5 @@ namespace Microsoft.Maui.Controls
 				VisualDiagnostics.OnChildAdded(this, elem);
 			}
 		}
-	}
+    }
 }

@@ -1,7 +1,11 @@
 ﻿using Microsoft.Maui.Controls;
 using Microsoft.Maui.Handlers;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using System;
+using System.Collections.Generic;
+using System.Xml.Linq;
 using WStackLayout = Microsoft.UI.Xaml.Controls.StackLayout;
 
 namespace Microsoft.Maui
@@ -15,8 +19,27 @@ namespace Microsoft.Maui
 		IrSource irSource;
 		IrDataTemplateSelector templateSelector;
 		WStackLayout layout;
+        ScrollViewer _scrollViewer;
 
-		internal PositionalViewSelector PositionalViewSelector { get; private set; }
+        ItemsRepeaterScrollHost Control
+		{
+			get
+			{
+				return this.PlatformView as ItemsRepeaterScrollHost;
+            }
+		}
+
+        ScrollViewer GetScrollViewer()
+        {
+            if (_scrollViewer == null)
+			{
+                _scrollViewer = this.PlatformView.GetFirstDescendant<ScrollViewer>();
+            }
+
+            return _scrollViewer;
+        }
+
+        internal PositionalViewSelector PositionalViewSelector { get; private set; }
 
 		Orientation NativeOrientation =>
 			VirtualView.Orientation switch
@@ -51,9 +74,25 @@ namespace Microsoft.Maui
 			irSource = new IrSource(MauiContext, PositionalViewSelector, VirtualView);
 
 			itemsRepeater.ItemsSource = irSource;
-		}
 
-		protected override void DisconnectHandler(ItemsRepeaterScrollHost nativeView)
+			if (this.Control != null)
+			{
+                this.Control.Loaded += Control_Loaded;
+			}
+        }
+
+        private void Control_Loaded(object sender, UI.Xaml.RoutedEventArgs e)
+        {
+            this.Control.Loaded -= Control_Loaded;
+            var scrollViewer = GetScrollViewer();
+            scrollViewer?.RegisterPropertyChangedCallback(ScrollViewer.VerticalOffsetProperty, (o, dp) =>
+            {
+                var args = new ScrolledEventArgs(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset);
+				this.VirtualView.RaiseScrolled(args);
+            });
+        }
+
+        protected override void DisconnectHandler(ItemsRepeaterScrollHost nativeView)
 		{
 			itemsRepeater.ItemTemplate = null;
 			//dataTemplateSelector.Dispose();
