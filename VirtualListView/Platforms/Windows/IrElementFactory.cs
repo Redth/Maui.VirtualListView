@@ -57,7 +57,7 @@ namespace Microsoft.Maui
 					}
 				}
 
-				var view = PositionalViewSelector?.ViewSelector?.CreateView(info, data);
+				var view = container?.VirtualView ?? PositionalViewSelector?.ViewSelector?.CreateView(info, data);
 
 				if (view is IPositionInfo viewWithPositionInfo)
 					viewWithPositionInfo.Update(info);
