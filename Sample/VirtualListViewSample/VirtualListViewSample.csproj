@@ -23,7 +23,10 @@
 
 	</PropertyGroup>
 
-	
+
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+		<PackageReference Include="Microsoft.WindowsAppSdk" Version="1.3.230202101-experimental1" />
+	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="LiteDb" Version="5.0.11" />
 	</ItemGroup>
