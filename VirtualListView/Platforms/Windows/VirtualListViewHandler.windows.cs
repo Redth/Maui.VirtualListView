@@ -11,9 +11,8 @@ namespace Microsoft.Maui
 		ItemsRepeaterScrollHost itemsRepeaterScrollHost;
 		ScrollViewer scrollViewer;
 		ItemsRepeater itemsRepeater;
-		//IrDataTemplateSelector dataTemplateSelector;
 		IrSource irSource;
-		IrDataTemplateSelector templateSelector;
+		IrElementFactory elementFactory;
 		WStackLayout layout;
 
 		internal PositionalViewSelector PositionalViewSelector { get; private set; }
@@ -45,9 +44,10 @@ namespace Microsoft.Maui
 		{
 			base.ConnectHandler(nativeView);
 
-			templateSelector = new IrDataTemplateSelector(VirtualView);
-			itemsRepeater.ItemTemplate = templateSelector;
 			PositionalViewSelector = new PositionalViewSelector(VirtualView);
+			elementFactory = new IrElementFactory(MauiContext, PositionalViewSelector);
+			itemsRepeater.ItemTemplate = elementFactory;
+
 			irSource = new IrSource(MauiContext, PositionalViewSelector, VirtualView);
 
 			itemsRepeater.ItemsSource = irSource;
@@ -56,6 +56,8 @@ namespace Microsoft.Maui
 		protected override void DisconnectHandler(ItemsRepeaterScrollHost nativeView)
 		{
 			itemsRepeater.ItemTemplate = null;
+			elementFactory.Dispose();
+			elementFactory = null;
 			//dataTemplateSelector.Dispose();
 			//dataTemplateSelector = null;
 
@@ -113,7 +115,7 @@ namespace Microsoft.Maui
 
 				var elem = handler.itemsRepeater.TryGetElement(position);
 				
-				if (elem is IrItemContentControl contentControl)
+				if (elem is Microsoft.Maui.Controls.IrItemContentControl contentControl)
 				{
 					contentControl.Data.position.IsSelected = selected;
 
