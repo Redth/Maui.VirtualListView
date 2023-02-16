@@ -115,11 +115,11 @@ namespace Microsoft.Maui
 
 				var elem = handler.itemsRepeater.TryGetElement(position);
 				
-				if (elem is Microsoft.Maui.Controls.IrItemContentControl contentControl)
+				if (elem is IrElementContainer contentControl)
 				{
-					contentControl.Data.position.IsSelected = selected;
+					contentControl.PositionInfo.IsSelected = selected;
 
-					if (contentControl?.View is IPositionInfo viewPositionInfo)
+					if (contentControl?.VirtualView is IPositionInfo viewPositionInfo)
 						viewPositionInfo.IsSelected = selected;
 				}
 			}
