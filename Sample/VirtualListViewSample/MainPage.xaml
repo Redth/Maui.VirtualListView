@@ -28,14 +28,14 @@
 			<DataTemplate x:DataType="local:AlbumInfo">
 				<Grid ColumnDefinitions="Auto,*" BackgroundColor="#0B2161" Padding="10" ColumnSpacing="10" HorizontalOptions="FillAndExpand">
 					<Image
-								Source="https://community.mp3tag.de/uploads/default/original/2X/a/acf3edeb055e7b77114f9e393d1edeeda37e50c9.png"
-								WidthRequest="40" HeightRequest="40"
-								Grid.Column="0"
-								VerticalOptions="Center"/>
-					<StackLayout HorizontalOptions="FillAndExpand" Grid.Column="1" Spacing="0">
+						Source="https://community.mp3tag.de/uploads/default/original/2X/a/acf3edeb055e7b77114f9e393d1edeeda37e50c9.png"
+						WidthRequest="40" HeightRequest="40"
+						Grid.Column="0"
+						VerticalOptions="Center"/>
+					<VerticalStackLayout HorizontalOptions="FillAndExpand" Grid.Column="1" Spacing="0">
 						<Label VerticalOptions="Center" Text="{Binding ArtistName}" FontSize="Subtitle" TextColor="White" />
 						<Label VerticalOptions="Center" Text="{Binding AlbumTitle}" FontSize="Caption" TextColor="White" />
-					</StackLayout>
+					</VerticalStackLayout>
 				</Grid>
 			</DataTemplate>
 		</vlv:VirtualListView.SectionHeaderTemplate>
