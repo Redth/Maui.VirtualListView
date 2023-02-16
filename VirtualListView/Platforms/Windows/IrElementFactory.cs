@@ -68,6 +68,7 @@ namespace Microsoft.Maui
 
 				PositionalViewSelector?.ViewSelector?.RecycleView(info, data, view);
 
+				container.UpdateLayout();
 
 				return container;
 			}
