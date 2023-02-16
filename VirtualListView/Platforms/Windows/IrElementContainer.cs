@@ -5,6 +5,8 @@ using Microsoft.UI.Xaml.Input;
 
 namespace Microsoft.Maui
 {
+	
+
 	internal class IrElementContainer : ContentControl
 	{
 		public IrElementContainer(IMauiContext context, string reuseId, PositionalViewSelector positionalViewSelector, object data)
@@ -37,8 +39,6 @@ namespace Microsoft.Maui
 
 		public IView VirtualView { get; private set; }
 
-		public UIElement NativeView { get; private set; }
-
 		public void Update(PositionInfo positionInfo, object data, IView newView)
 		{
 			PositionInfo = positionInfo;
@@ -49,23 +49,19 @@ namespace Microsoft.Maui
 
 		void SwapView(IView newView)
 		{
-			if (VirtualView == null || VirtualView.Handler == null || NativeView == null)
+			if (VirtualView == null || VirtualView.Handler == null || Content == null)
 			{
-				NativeView = newView.ToPlatform(MauiContext);
+				Content = newView.ToPlatform(MauiContext);
 				VirtualView = newView;
-
-				Content = NativeView;
 			}
 			else
 			{
-				var handler = VirtualView.Handler;
-				newView.Handler = handler;
-				handler.SetVirtualView(newView);
-				VirtualView = newView;
-
-				this.InvalidateMeasure(VirtualView);
-				this.InvalidateMeasure();
-				this.InvalidateArrange();
+				
+				//var handler = VirtualView.Handler;
+				//newView.Handler = handler;
+				//handler.SetVirtualView(newView);
+				//VirtualView = newView;
+				
 			}
 		}
 
