@@ -9,8 +9,13 @@ namespace Microsoft.Maui
 		public RvViewContainer ViewContainer { get; private set; }
 		public PositionInfo PositionInfo { get; set; }
 
-		public RvItemHolder(IMauiContext mauiContext)
-			: base(new RvViewContainer(mauiContext))
+		public RvItemHolder(IMauiContext mauiContext, ListOrientation orientation)
+			: base(new RvViewContainer(mauiContext)
+			{
+				LayoutParameters = new RecyclerView.LayoutParams(
+					orientation == ListOrientation.Vertical ? ViewGroup.LayoutParams.MatchParent : ViewGroup.LayoutParams.WrapContent,
+					orientation == ListOrientation.Vertical ? ViewGroup.LayoutParams.WrapContent : ViewGroup.LayoutParams.MatchParent)
+			})
 		{
 			ViewContainer = ItemView as RvViewContainer;
 		}

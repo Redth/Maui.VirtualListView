@@ -127,7 +127,7 @@ namespace Microsoft.Maui
 
 		public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)
 		{
-			var viewHolder = new RvItemHolder(handler.MauiContext);
+			var viewHolder = new RvItemHolder(handler.MauiContext, handler.VirtualView.Orientation);
 
 			clickListener = new RvViewHolderClickListener(viewHolder, rvh =>
 			{
