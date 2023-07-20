@@ -71,7 +71,7 @@ namespace Microsoft.Maui
 				if (info == null)
 					return null;
 
-				var data = PositionalViewSelector.Adapter.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
+				var data = dataWrapper.data;
 				var reuseId = PositionalViewSelector.ViewSelector?.GetReuseId(info, data);
 
 				var container = GetRecycledElement(reuseId)
