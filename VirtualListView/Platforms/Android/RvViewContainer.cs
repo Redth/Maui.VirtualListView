@@ -39,12 +39,6 @@ namespace Microsoft.Maui
 				handler.SetVirtualView(newView);
 				VirtualView = newView;
 			}
-
-			//VirtualView.InvalidateMeasure();
-			//VirtualView.InvalidateArrange();
-
-			//Invalidate();
 		}
-
 	}
 }

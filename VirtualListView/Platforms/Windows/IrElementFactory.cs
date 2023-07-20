@@ -75,14 +75,11 @@ namespace Microsoft.Maui
 				var reuseId = PositionalViewSelector.ViewSelector?.GetReuseId(info, data);
 
 				var container = GetRecycledElement(reuseId)
-					?? new IrElementContainer(MauiContext, reuseId, PositionalViewSelector, data);
+					?? new IrElementContainer(MauiContext, reuseId, PositionalViewSelector);
 
 				var view = container.VirtualView ?? PositionalViewSelector.ViewSelector?.CreateView(info, data);
 
-				if (view is IPositionInfo viewWithPositionInfo)
-					viewWithPositionInfo.Update(info);
-
-				container.Update(info, data, view);
+				container.Update(info, view);
 
 				container.IsRecycled = false;
 				PositionalViewSelector.ViewSelector?.RecycleView(info, data, view);

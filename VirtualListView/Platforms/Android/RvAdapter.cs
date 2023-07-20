@@ -75,13 +75,9 @@ namespace Microsoft.Maui
 					_ => null
 				};
 
-				if (!itemHolder.HasView)
-				{
-					var view = positionalViewSelector?.ViewSelector?.CreateView(info, data);
-					itemHolder.SwapView(view);
-				}
+				var view = itemHolder?.VirtualView ?? positionalViewSelector?.ViewSelector?.CreateView(info, data);
 
-				itemHolder.PositionInfo = info;
+				itemHolder.Update(info, view);
 
 				positionalViewSelector?.ViewSelector?.RecycleView(info, data, itemHolder.ViewContainer.VirtualView);
 			}

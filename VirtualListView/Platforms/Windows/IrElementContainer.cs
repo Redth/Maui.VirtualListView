@@ -1,4 +1,5 @@
-﻿using Microsoft.Maui.Platform;
+﻿using Microsoft.Maui.Controls;
+using Microsoft.Maui.Platform;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
@@ -8,13 +9,12 @@ namespace Microsoft.Maui
 {
 	internal class IrElementContainer : ContentControl
 	{
-		public IrElementContainer(IMauiContext context, string reuseId, PositionalViewSelector positionalViewSelector, object data)
+		public IrElementContainer(IMauiContext context, string reuseId, PositionalViewSelector positionalViewSelector)
 			: base()
 		{
 			MauiContext = context;
 			ReuseId = reuseId;
 			PositionalViewSelector = positionalViewSelector;
-			Data = data;
 
 			if (positionalViewSelector.VirtualListView.Orientation == ListOrientation.Vertical)
 			{
@@ -27,8 +27,6 @@ namespace Microsoft.Maui
 				VerticalAlignment = UI.Xaml.VerticalAlignment.Stretch;
 			}
 		}
-
-		public object Data { get; private set; }
 
 		public readonly string ReuseId;
 		public readonly IMauiContext MauiContext;
@@ -52,10 +50,12 @@ namespace Microsoft.Maui
 
 		public IView VirtualView { get; private set; }
 
-		public void Update(PositionInfo positionInfo, object data, IView newView)
+		public void Update(PositionInfo positionInfo, IView newView)
 		{
 			PositionInfo = positionInfo;
-			Data = data;
+
+			if (newView is IPositionInfo viewWithPositionInfo)
+				viewWithPositionInfo.Update(PositionInfo);
 
 			SwapView(newView);
 		}

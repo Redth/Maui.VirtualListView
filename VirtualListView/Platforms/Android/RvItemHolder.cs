@@ -1,13 +1,12 @@
 ﻿using Android.Views;
 using AndroidX.RecyclerView.Widget;
-using Microsoft.Maui.HotReload;
-using AFrameLayout = Android.Widget.FrameLayout;
+
 namespace Microsoft.Maui
 {
 	internal class RvItemHolder : RecyclerView.ViewHolder
 	{
 		public RvViewContainer ViewContainer { get; private set; }
-		public PositionInfo PositionInfo { get; set; }
+		public PositionInfo PositionInfo { get; private set; }
 
 		public RvItemHolder(IMauiContext mauiContext, ListOrientation orientation)
 			: base(new RvViewContainer(mauiContext)
@@ -20,12 +19,22 @@ namespace Microsoft.Maui
 			ViewContainer = ItemView as RvViewContainer;
 		}
 
-		public void SwapView(IView view)
+		public IView VirtualView
+			=> ViewContainer?.VirtualView;
+
+		public void Update(PositionInfo positionInfo, IView newView)
+		{
+			PositionInfo = positionInfo;
+
+			if (newView is IPositionInfo viewWithPositionInfo)
+				viewWithPositionInfo.Update(PositionInfo);
+
+			SwapView(newView);
+		}
+
+		void SwapView(IView view)
 		{
 			ViewContainer.SwapView(view);
 		}
-
-		public bool HasView
-			=> ViewContainer.VirtualView != null;
 	}
 }
