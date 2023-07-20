@@ -44,6 +44,8 @@ namespace Microsoft.Maui
 			refreshControl.AddTarget(new EventHandler((s, a) =>
 			{
 				VirtualView?.Refresh();
+				refreshControl.EndRefreshing();
+
 			}), UIControlEvent.ValueChanged);
 
 			collectionView.AddSubview(refreshControl);
