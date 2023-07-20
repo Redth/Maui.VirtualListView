@@ -16,14 +16,12 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    - name: Setup .NET 6.0
-      uses: actions/setup-dotnet@v1
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '6.0.x'
-    - name: Setup NuGet 5.x
-      uses: nuget/setup-nuget@v1
-      with:
-        nuget-version: '5.x'
+        dotnet-version: '8.0.x'
+
     - name: Setup MAUI
       shell: pwsh
       run: |
@@ -65,10 +63,6 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: NuGet
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: '6.0.x'
       - name: Push NuGet
         run: |
           dotnet nuget push NuGet\*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_ORG_API_KEY }}
