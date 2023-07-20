@@ -89,8 +89,6 @@ namespace Microsoft.Maui
 
 				PositionalViewSelector.ViewSelector?.ViewAttached(info, view);
 
-				//container.UpdateLayout();
-				//container.InvalidateMeasure(view);
 				return container;
 			}
 

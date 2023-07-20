@@ -58,8 +58,6 @@ namespace Microsoft.Maui
 			itemsRepeater.ItemTemplate = null;
 			elementFactory.Dispose();
 			elementFactory = null;
-			//dataTemplateSelector.Dispose();
-			//dataTemplateSelector = null;
 
 			itemsRepeater.ItemsSource = null;
 			irSource = null;
@@ -69,7 +67,6 @@ namespace Microsoft.Maui
 
 		public void InvalidateData()
 		{
-			//dataTemplateSelector?.Reset();
 			irSource?.Reset();
 		}
 
@@ -130,24 +127,5 @@ namespace Microsoft.Maui
 			handler.layout.Orientation = handler.NativeOrientation;
 			handler.InvalidateData();
 		}
-
-		//internal static void AddLibraryResources(string key, string uri)
-		//{
-		//	var resources = UI.Xaml.Application.Current?.Resources;
-		//	if (resources == null)
-		//		return;
-
-		//	var dictionaries = resources.MergedDictionaries;
-		//	if (dictionaries == null)
-		//		return;
-
-		//	if (!resources.ContainsKey(key))
-		//	{
-		//		dictionaries.Add(new UI.Xaml.ResourceDictionary
-		//		{
-		//			Source = new Uri(uri)
-		//		});
-		//	}
-		//}
 	}
 }

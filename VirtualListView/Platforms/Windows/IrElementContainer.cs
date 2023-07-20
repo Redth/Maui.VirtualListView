@@ -6,8 +6,6 @@ using Microsoft.UI.Xaml.Input;
 
 namespace Microsoft.Maui
 {
-	
-
 	internal class IrElementContainer : ContentControl
 	{
 		public IrElementContainer(IMauiContext context, string reuseId, PositionalViewSelector positionalViewSelector, object data)
