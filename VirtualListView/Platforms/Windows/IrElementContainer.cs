@@ -37,6 +37,18 @@ namespace Microsoft.Maui
 
 		public PositionInfo PositionInfo { get; private set; }
 
+		bool isRecycled = false;
+
+		internal bool IsRecycled
+		{
+			get => isRecycled;
+			set
+			{
+				isRecycled = value;
+
+			}
+		}
+
 		public IView VirtualView { get; private set; }
 
 		public void Update(PositionInfo positionInfo, object data, IView newView)
@@ -56,12 +68,10 @@ namespace Microsoft.Maui
 			}
 			else
 			{
-				
-				//var handler = VirtualView.Handler;
-				//newView.Handler = handler;
-				//handler.SetVirtualView(newView);
-				//VirtualView = newView;
-				
+				var handler = VirtualView.Handler;
+				newView.Handler = handler;
+				handler.SetVirtualView(newView);
+				VirtualView = newView;
 			}
 		}
 
