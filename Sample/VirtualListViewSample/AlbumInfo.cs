@@ -15,6 +15,9 @@ namespace VirtualListViewSample
 
         public int TrackCount { get; set; }
 
+        public string SemanticDescription
+            => $"Start of Album: {AlbumTitle} by {ArtistName}";
+
         public override string ToString()
             => $"{AlbumTitle} - {ArtistName}";
     }

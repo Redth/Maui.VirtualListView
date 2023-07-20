@@ -9,6 +9,7 @@
 	BackgroundColor="#ffffff"
 	UnselectedBackgroundColor="#ffffff"
 	SelectedBackgroundColor="#efefef"
+	SemanticProperties.Description="{Binding SemanticDescription}"
 	x:DataType="local:TrackInfo">
 	<vlv:VirtualViewCell.Content>
 		<Grid RowDefinitions="Auto, Auto" ColumnDefinitions="Auto,*">

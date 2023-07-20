@@ -6,7 +6,9 @@
 	xmlns:local="clr-namespace:VirtualListViewSample"
 	x:Name="self"
 	x:DataType="local:TrackInfo"
-	x:Class="VirtualListViewSample.PopViewCell">
+	x:Class="VirtualListViewSample.PopViewCell"
+	SemanticProperties.Description="{Binding SemanticDescription}"
+	>
 	<VerticalStackLayout Spacing="0">
 
 		<BoxView

@@ -28,6 +28,10 @@ namespace VirtualListViewSample
 
         public override string ToString()
             => $"{TrackName} - {ArtistName} - {AlbumTitle}";
-	}
+
+        public string SemanticDescription
+            => $"Track: {TrackId} {TrackName}";
+
+    }
 
 }

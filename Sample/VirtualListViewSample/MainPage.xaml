@@ -26,7 +26,9 @@
 
 		<vlv:VirtualListView.SectionHeaderTemplate>
 			<DataTemplate x:DataType="local:AlbumInfo">
-				<Grid ColumnDefinitions="Auto,*" BackgroundColor="#0B2161" Padding="10" ColumnSpacing="10" HorizontalOptions="FillAndExpand">
+				<Grid ColumnDefinitions="Auto,*" BackgroundColor="#0B2161" Padding="10" ColumnSpacing="10" HorizontalOptions="FillAndExpand"
+					SemanticProperties.Description="{Binding SemanticDescription}"
+					SemanticProperties.HeadingLevel="Level2">
 					<Image
 						Source="https://community.mp3tag.de/uploads/default/original/2X/a/acf3edeb055e7b77114f9e393d1edeeda37e50c9.png"
 						WidthRequest="40" HeightRequest="40"
@@ -43,7 +45,9 @@
 		<vlv:VirtualListView.SectionFooterTemplate>
 			<DataTemplate x:DataType="local:AlbumInfo">
 
-				<Grid BackgroundColor="LightGray" HorizontalOptions="FillAndExpand">
+				<Grid BackgroundColor="LightGray" HorizontalOptions="FillAndExpand"
+					SemanticProperties.Description="{Binding TrackCount, StringFormat='End of Album, {0} Tracks'}"
+					SemanticProperties.HeadingLevel="Level2">
 					<Label Margin="10,6,10,6" Text="{Binding TrackCount, StringFormat='{0} Tracks'}" TextColor="Black" HorizontalOptions="Center" />
 				</Grid>
 
@@ -52,13 +56,17 @@
 		</vlv:VirtualListView.SectionFooterTemplate>
 
 		<vlv:VirtualListView.GlobalHeader>
-			<Grid BackgroundColor="#045FB4">
-				<Label Padding="20" Text="Music Library" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
+			<Grid BackgroundColor="#045FB4"
+				SemanticProperties.Description="Music Library"
+				SemanticProperties.HeadingLevel="Level1">
+				<Label Padding="20" Text="Music Library" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center"/>
 			</Grid>
 		</vlv:VirtualListView.GlobalHeader>
 
 		<vlv:VirtualListView.GlobalFooter>
-			<Grid BackgroundColor="Navy">
+			<Grid BackgroundColor="Navy"
+				SemanticProperties.Description="End of Music Library"
+				SemanticProperties.HeadingLevel="Level1" >
 				<Label Padding="20" Text="That's all folks!" TextColor="White" HorizontalOptions="Center" />
 			</Grid>
 		</vlv:VirtualListView.GlobalFooter>
