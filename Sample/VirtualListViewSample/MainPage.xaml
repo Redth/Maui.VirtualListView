@@ -19,6 +19,7 @@
 		HorizontalOptions="FillAndExpand"
 		VerticalOptions="FillAndExpand"
 		BackgroundColor="#045FB4"
+		RefreshCommand="{Binding RefreshCommand}"
 		Adapter="{Binding Adapter}"
 		SelectionMode="Multiple"
 		SelectedItemsChanged="VirtualListView_SelectedItemsChanged"

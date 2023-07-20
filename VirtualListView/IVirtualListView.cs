@@ -19,6 +19,10 @@ namespace Microsoft.Maui
 		event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
 		event EventHandler DataInvalidated;
 
+		void Refresh();
+		
+		void Scrolled(ScrolledEventArgs args);
+
 		SelectionMode SelectionMode { get; }
 
 		IReadOnlyList<ItemPosition> SelectedItems { get; }

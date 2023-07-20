@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Windows.Input;
 
 namespace Microsoft.Maui.Controls
 {
@@ -139,6 +140,29 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+
+		public event EventHandler<EventArgs> OnRefresh;
+
+		void IVirtualListView.Refresh()
+		{
+			if (RefreshCommand != null && RefreshCommand.CanExecute(null))
+			{
+				RefreshCommand.Execute(null);
+			}
+
+			OnRefresh?.Invoke(this, EventArgs.Empty);
+		}
+
+		public ICommand RefreshCommand
+		{
+			get => (ICommand)GetValue(RefreshCommandProperty);
+			set => SetValue(RefreshCommandProperty, value);
+		}
+
+		public static readonly BindableProperty RefreshCommandProperty =
+			BindableProperty.Create(nameof(RefreshCommandProperty), typeof(ICommand), typeof(VirtualListView), default);
+
+
 		public ListOrientation Orientation
 		{
 			get => (ListOrientation)GetValue(OrientationProperty);
@@ -219,11 +243,15 @@ namespace Microsoft.Maui.Controls
 			SelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(prev, current));
 		}
 
-		public event EventHandler<ScrolledEventArgs> Scrolled;
 		public event EventHandler DataInvalidated;
 
-		internal void RaiseScrolled(ScrolledEventArgs args)
-			=> Scrolled?.Invoke(this, args);
+
+		public event EventHandler<ScrolledEventArgs> OnScrolled;
+
+		public void Scrolled(ScrolledEventArgs args)
+		{
+			OnScrolled?.Invoke(this, args);
+		}
 
 		public void InvalidateData()
 		{

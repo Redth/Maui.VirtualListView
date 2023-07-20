@@ -1,8 +1,10 @@
-﻿using System.ComponentModel;
+﻿using CommunityToolkit.Mvvm.Input;
+using System.ComponentModel;
+using System.Windows.Input;
 
 namespace VirtualListViewSample
 {
-	public class MainViewModel : INotifyPropertyChanged
+	public partial class MainViewModel : INotifyPropertyChanged
 	{
 		public MainViewModel()
 		{
@@ -15,6 +17,13 @@ namespace VirtualListViewSample
 			=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
 		public event PropertyChangedEventHandler PropertyChanged;
+
+		[RelayCommand]
+		async Task RefreshAsync()
+		{
+			await Task.Delay(3000);
+			NotifyPropertyChanged(nameof(Adapter));
+		}
 	}
 
 }
