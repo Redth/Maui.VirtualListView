@@ -15,6 +15,21 @@ Controls used on each platform:
   - Android: RecyclerView
   - UWP: ListView (Virtualized)
 
+## Setup
+
+To add the Virtual List View control to your project, you need to add `.UseVirtualListView()` to your app builder:
+
+```csharp
+		public static MauiApp Create()
+		{
+			var builder = MauiApp.CreateBuilder();
+			builder
+				.UseMauiApp<App>()
+				.UseVirtualListView(); // <---
+			return builder.Build();
+		}
+```
+
 ## Adapter / Data Source
 
 Instead of starting with a typical C# collection such as ObservableCollection, the VirtualListView takes the adapter approach that is common to iOS and Android has the concept of grouping built in (called Sections).
@@ -203,10 +218,8 @@ In the future there will be bindable properties and maybe a way to cancel a sele
 
 Looking ahead, there are a few goals:
 
-1. WinAppSdk Support - this is currently a work in progress
-2. Even Rows - by default every cell is assumed uneven and measured every time the context changes or the cell is recycled.  Adding an option to assume each template type is the same size will make performance even better, but will be an explicit opt-in
-3. Horizontal support - this should be relatively easy to implement
-4. Bindable properties for item selection
+1. Even Rows - by default every cell is assumed uneven and measured every time the context changes or the cell is recycled.  Adding an option to assume each template type is the same size will make performance even better, but will be an explicit opt-in
+2. Bindable properties for item selection
 
 Some current non-goals but considerations for even later:
 - Grid / Column support
