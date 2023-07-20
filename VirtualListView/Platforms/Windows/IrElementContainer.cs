@@ -100,5 +100,12 @@ namespace Microsoft.Maui
 			else
 				return base.GetChildrenInTabFocusOrder();
 		}
+
+		IrAutomationPeer automationPeer;
+
+		protected override AutomationPeer OnCreateAutomationPeer()
+		{
+			return automationPeer ??= new IrAutomationPeer(this);
+		}
 	}
 }
