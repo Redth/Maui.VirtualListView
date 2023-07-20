@@ -260,7 +260,8 @@ namespace Microsoft.Maui.Controls
 		{
 			if (view is View controlsView)
 			{
-				controlsView.BindingContext = data;
+				controlsView.SetValue(View.BindingContextProperty, data);
+				//controlsView.BindingContext = data;
 			}
 		}
 
@@ -268,20 +269,33 @@ namespace Microsoft.Maui.Controls
 			=> position.Kind switch
 			{
 				PositionKind.Item =>
-					"ITEM_" + (ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)
-						?? ItemTemplate).GetHashCode().ToString(),
+					"ITEM_" + (GetDataTemplateId(
+						ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)
+						?? ItemTemplate) ?? "0"),
 				PositionKind.SectionHeader =>
-					"SECTION_HEADER_" + (SectionHeaderTemplateSelector?.SelectTemplate(data, position.SectionIndex)
-						?? SectionHeaderTemplate).GetHashCode().ToString(),
+					"SECTION_HEADER_" + (GetDataTemplateId(
+						SectionHeaderTemplateSelector?.SelectTemplate(data, position.SectionIndex)
+						?? SectionHeaderTemplate) ?? "0"),
 				PositionKind.SectionFooter =>
-					"SECTION_FOOTER_" + (SectionFooterTemplateSelector?.SelectTemplate(data, position.SectionIndex)
-						?? SectionFooterTemplate).GetHashCode().ToString(),
+					"SECTION_FOOTER_" + (GetDataTemplateId(
+						SectionFooterTemplateSelector?.SelectTemplate(data, position.SectionIndex)
+						?? SectionFooterTemplate) ?? "0"),
 				PositionKind.Header =>
-					"GLOBAL_HEADER_" + (Header?.GetContentTypeHashCode().ToString() ?? "NIL"),
+					"GLOBAL_HEADER_" + (Header?.GetType()?.FullName ?? "NIL"),
 				PositionKind.Footer =>
-					"GLOBAL_FOOTER_" + (Footer?.GetContentTypeHashCode().ToString() ?? "NIL"),
+					"GLOBAL_FOOTER_" + (Footer?.GetType()?.FullName ?? "NIL"),
 				_ => "UNKNOWN"
 			};
+
+		static PropertyInfo DataTemplateIdPropertyInfo;
+
+		string? GetDataTemplateId(DataTemplate dataTemplate)
+		{
+			DataTemplateIdPropertyInfo ??= dataTemplate.GetType().GetProperty("Id", BindingFlags.Instance | BindingFlags.NonPublic);
+
+			return DataTemplateIdPropertyInfo.GetValue(dataTemplate)?.ToString();
+
+		}
 
 		public IReadOnlyList<IVisualTreeElement> GetVisualChildren()
 		{

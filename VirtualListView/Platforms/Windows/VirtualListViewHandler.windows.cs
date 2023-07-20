@@ -11,9 +11,8 @@ namespace Microsoft.Maui
 		ItemsRepeaterScrollHost itemsRepeaterScrollHost;
 		ScrollViewer scrollViewer;
 		ItemsRepeater itemsRepeater;
-		//IrDataTemplateSelector dataTemplateSelector;
 		IrSource irSource;
-		IrDataTemplateSelector templateSelector;
+		IrElementFactory elementFactory;
 		WStackLayout layout;
 
 		internal PositionalViewSelector PositionalViewSelector { get; private set; }
@@ -45,9 +44,10 @@ namespace Microsoft.Maui
 		{
 			base.ConnectHandler(nativeView);
 
-			templateSelector = new IrDataTemplateSelector(VirtualView);
-			itemsRepeater.ItemTemplate = templateSelector;
 			PositionalViewSelector = new PositionalViewSelector(VirtualView);
+			elementFactory = new IrElementFactory(MauiContext, PositionalViewSelector);
+			itemsRepeater.ItemTemplate = elementFactory;
+
 			irSource = new IrSource(MauiContext, PositionalViewSelector, VirtualView);
 
 			itemsRepeater.ItemsSource = irSource;
@@ -56,8 +56,8 @@ namespace Microsoft.Maui
 		protected override void DisconnectHandler(ItemsRepeaterScrollHost nativeView)
 		{
 			itemsRepeater.ItemTemplate = null;
-			//dataTemplateSelector.Dispose();
-			//dataTemplateSelector = null;
+			elementFactory.Dispose();
+			elementFactory = null;
 
 			itemsRepeater.ItemsSource = null;
 			irSource = null;
@@ -67,7 +67,6 @@ namespace Microsoft.Maui
 
 		public void InvalidateData()
 		{
-			//dataTemplateSelector?.Reset();
 			irSource?.Reset();
 		}
 
@@ -113,11 +112,11 @@ namespace Microsoft.Maui
 
 				var elem = handler.itemsRepeater.TryGetElement(position);
 				
-				if (elem is IrItemContentControl contentControl)
+				if (elem is IrElementContainer contentControl)
 				{
-					contentControl.Data.position.IsSelected = selected;
+					contentControl.PositionInfo.IsSelected = selected;
 
-					if (contentControl?.View is IPositionInfo viewPositionInfo)
+					if (contentControl?.VirtualView is IPositionInfo viewPositionInfo)
 						viewPositionInfo.IsSelected = selected;
 				}
 			}
@@ -128,24 +127,5 @@ namespace Microsoft.Maui
 			handler.layout.Orientation = handler.NativeOrientation;
 			handler.InvalidateData();
 		}
-
-		//internal static void AddLibraryResources(string key, string uri)
-		//{
-		//	var resources = UI.Xaml.Application.Current?.Resources;
-		//	if (resources == null)
-		//		return;
-
-		//	var dictionaries = resources.MergedDictionaries;
-		//	if (dictionaries == null)
-		//		return;
-
-		//	if (!resources.ContainsKey(key))
-		//	{
-		//		dictionaries.Add(new UI.Xaml.ResourceDictionary
-		//		{
-		//			Source = new Uri(uri)
-		//		});
-		//	}
-		//}
 	}
 }

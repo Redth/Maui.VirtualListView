@@ -4,18 +4,4 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mauictrls="using:Microsoft.Maui.Controls"
     xmlns:maui="using:Microsoft.Maui">
-    <Application.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
-                <!-- Other merged dictionaries here -->
-            </ResourceDictionary.MergedDictionaries>
-            <!-- Other app resources here -->
-
-            <DataTemplate x:Key="Container">
-                <mauictrls:IrItemContentControl>
-                </mauictrls:IrItemContentControl>
-            </DataTemplate>
-        </ResourceDictionary>
-    </Application.Resources>
 </maui:MauiWinUIApplication>
