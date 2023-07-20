@@ -32,12 +32,7 @@ namespace Microsoft.Maui
 		{
 			swipeRefreshLayout.SetOnRefreshListener(new SrlRefreshListener(() =>
 			{
-				try { VirtualView?.Refresh(); }
-				catch (Exception ex)
-				{
-					Console.WriteLine(ex);
-				}
-
+				VirtualView?.Refresh();
 				swipeRefreshLayout.Refreshing = false;
 			}));
 
