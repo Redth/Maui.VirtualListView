@@ -261,7 +261,6 @@ namespace Microsoft.Maui.Controls
 			if (view is View controlsView)
 			{
 				controlsView.SetValue(View.BindingContextProperty, data);
-				//controlsView.BindingContext = data;
 			}
 		}
 
