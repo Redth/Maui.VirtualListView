@@ -16,6 +16,7 @@ namespace Microsoft.Maui
 		CvLayout layout;
 		CvDelegate cvdelegate;
 		UICollectionView collectionView;
+		UIRefreshControl refreshControl;
 
 		internal PositionalViewSelector PositionalViewSelector { get; private set; }
 		protected override UICollectionView CreatePlatformView()
@@ -37,7 +38,18 @@ namespace Microsoft.Maui
 			//collectionView.ContentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentBehavior.Never;
 			collectionView.AllowsMultipleSelection = false;
 			collectionView.AllowsSelection = false;
-			
+
+
+			refreshControl = new UIRefreshControl();
+			refreshControl.AddTarget(new EventHandler((s, a) =>
+			{
+				VirtualView?.Refresh();
+			}), UIControlEvent.ValueChanged);
+
+			collectionView.AddSubview(refreshControl);
+
+			collectionView.AlwaysBounceVertical = true;
+
 			//collectionView.ContentInset = new UIEdgeInsets(0, 0, 0, 0);
 			//collectionView.ScrollIndicatorInsets = new UIEdgeInsets(0, 0, 0, 0);
 			//collectionView.AutomaticallyAdjustsScrollIndicatorInsets = false;
@@ -56,8 +68,8 @@ namespace Microsoft.Maui
 				VirtualView?.IsItemSelected(realSection, realIndex) ?? false;
 
 			cvdelegate = new CvDelegate(this, collectionView);
-            //cvdelegate.ScrollHandler = (x, y) =>
-            //    VirtualView?.RaiseScrolled(new ScrolledEventArgs(x, y));
+			cvdelegate.ScrollHandler = (x, y) =>
+				VirtualView?.Scrolled(new ScrolledEventArgs(x, y));
 
 			collectionView.DataSource = dataSource;
 			collectionView.Delegate = cvdelegate;
@@ -74,6 +86,10 @@ namespace Microsoft.Maui
 			collectionView.Delegate = null;
 			cvdelegate.Dispose();
 			cvdelegate = null;
+
+			refreshControl.RemoveFromSuperview();
+			refreshControl.Dispose();
+			refreshControl = null;
 
 			collectionView.Dispose();
 			collectionView = null;
