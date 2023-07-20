@@ -1,22 +1,46 @@
 ﻿using Android.Views;
 using AndroidX.RecyclerView.Widget;
+using AndroidX.SwipeRefreshLayout.Widget;
 using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Platform;
 using System;
 
 namespace Microsoft.Maui
 {
-	public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, RecyclerView>
+	public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, SwipeRefreshLayout>
 	{
+		SwipeRefreshLayout swipeRefreshLayout;
 		RvAdapter adapter;
 		RecyclerView recyclerView;
 		LinearLayoutManager layoutManager;
 		PositionalViewSelector positionalViewSelector;
 
-		protected override RecyclerView CreatePlatformView()
-			=> recyclerView ??= new RecyclerView(Context);
-
-		protected override void ConnectHandler(RecyclerView nativeView)
+		protected override SwipeRefreshLayout CreatePlatformView()
 		{
+			recyclerView ??= new RecyclerView(Context);
+
+			if (swipeRefreshLayout is null)
+			{
+				swipeRefreshLayout = new SwipeRefreshLayout(Context);
+				swipeRefreshLayout.AddView(recyclerView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
+			}
+
+			return swipeRefreshLayout;
+		}
+
+		protected override void ConnectHandler(SwipeRefreshLayout nativeView)
+		{
+			swipeRefreshLayout.SetOnRefreshListener(new SrlRefreshListener(() =>
+			{
+				try { VirtualView?.Refresh(); }
+				catch (Exception ex)
+				{
+					Console.WriteLine(ex);
+				}
+
+				swipeRefreshLayout.Refreshing = false;
+			}));
+
 			layoutManager = new LinearLayoutManager(Context);
 			//layoutManager.Orientation = LinearLayoutManager.Horizontal;
 
@@ -26,11 +50,10 @@ namespace Microsoft.Maui
 			
 			recyclerView.AddOnScrollListener(new RvScrollListener((rv, dx, dy) =>
 			{
-				//var x = Context.FromPixels(dx);
-				//var y = Context.FromPixels(dy);
-				// TODO: Proxy up to event
-
-				// VirtualView?.RaiseScrolled((x, y));
+				var x = Context.FromPixels(dx);
+				var y = Context.FromPixels(dy);
+				
+				VirtualView?.Scrolled(new ScrolledEventArgs(x, y));
 			}));
 
 			recyclerView.SetLayoutManager(layoutManager);
@@ -39,7 +62,7 @@ namespace Microsoft.Maui
 				ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
 		}
 
-		protected override void DisconnectHandler(RecyclerView nativeView)
+		protected override void DisconnectHandler(SwipeRefreshLayout nativeView)
 		{
 			recyclerView.ClearOnScrollListeners();
 			recyclerView.SetAdapter(null);
@@ -130,6 +153,18 @@ namespace Microsoft.Maui
 
 				ScrollHandler?.Invoke(recyclerView, dx, dy);
 			}
+		}
+
+		class SrlRefreshListener : Java.Lang.Object, SwipeRefreshLayout.IOnRefreshListener
+		{
+			public SrlRefreshListener(Action refreshHandler)
+			{
+				RefreshHandler = refreshHandler;
+			}
+			Action RefreshHandler { get; }
+
+			public void OnRefresh()
+				=> RefreshHandler?.Invoke();
 		}
 	}
 }
