@@ -1,5 +1,8 @@
 ﻿using Microsoft.Maui.Controls;
+using Microsoft.Maui.Platform;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,9 +26,42 @@ namespace Microsoft.Maui
 
 		internal record IrRecycledElement(string reuseId, UIElement element);
 
-		List<IrElementContainer> recycledElements = new();
+		Dictionary<string, Queue<IrElementContainer>> recycledElements = new();
 
-		int createdCount = 0;
+
+		IrElementContainer GetRecycledElement(string reuseId)
+		{
+			lock (lockObj)
+			{
+				if (!recycledElements.TryGetValue(reuseId, out var queue))
+				{
+					queue = new Queue<IrElementContainer>();
+					recycledElements[reuseId] = queue;
+				}
+
+				if (queue.TryDequeue(out var element))
+					return element;
+			}
+
+			return null;
+		}
+
+		void AddRecycledElement(IrElementContainer element)
+		{
+			var reuseId = element.ReuseId;
+
+			lock (lockObj)
+			{
+				if (!recycledElements.TryGetValue(reuseId, out var queue))
+				{
+					queue = new Queue<IrElementContainer>();
+					recycledElements[reuseId] = queue;
+				}
+
+				queue.Enqueue(element);
+			}
+		}
+
 
 		public UIElement GetElement(UI.Xaml.ElementFactoryGetArgs args)
 		{
@@ -36,40 +72,25 @@ namespace Microsoft.Maui
 					return null;
 
 				var data = PositionalViewSelector.Adapter.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
+				var reuseId = PositionalViewSelector.ViewSelector?.GetReuseId(info, data);
 
-				var reuseId = PositionalViewSelector?.ViewSelector?.GetReuseId(info, data);
+				var container = GetRecycledElement(reuseId)
+					?? new IrElementContainer(MauiContext, reuseId, PositionalViewSelector, data);
 
-				IrElementContainer container;
-
-				lock (lockObj)
-				{
-					container = recycledElements?.FirstOrDefault(re => re.ReuseId == reuseId);
-
-					if (container == null)
-					{
-						createdCount++;
-						container = new IrElementContainer(MauiContext, reuseId, PositionalViewSelector, data);
-						System.Diagnostics.Debug.WriteLine($"Creating: {reuseId},count: {createdCount}");
-					}
-					else
-					{
-						System.Diagnostics.Debug.WriteLine($"Reused: {reuseId}");
-					}
-				}
-
-				var view = container?.VirtualView ?? PositionalViewSelector?.ViewSelector?.CreateView(info, data);
+				var view = container.VirtualView ?? PositionalViewSelector.ViewSelector?.CreateView(info, data);
 
 				if (view is IPositionInfo viewWithPositionInfo)
 					viewWithPositionInfo.Update(info);
 
 				container.Update(info, data, view);
 
-				PositionalViewSelector.ViewSelector.ViewAttached(info, view);
+				container.IsRecycled = false;
+				PositionalViewSelector.ViewSelector?.RecycleView(info, data, view);
 
-				PositionalViewSelector?.ViewSelector?.RecycleView(info, data, view);
+				PositionalViewSelector.ViewSelector?.ViewAttached(info, view);
 
-				container.UpdateLayout();
-
+				//container.UpdateLayout();
+				//container.InvalidateMeasure(view);
 				return container;
 			}
 
@@ -80,13 +101,11 @@ namespace Microsoft.Maui
 		{
 			if (args.Element is IrElementContainer container && container != null)
 			{
+				container.IsRecycled = true;
+
 				PositionalViewSelector.ViewSelector.ViewDetached(container.PositionInfo, container.VirtualView);
 
-				//PositionalViewSelector.ViewSelector.RecycleView(container.PositionInfo, container.Data, container.VirtualView);
-				lock (lockObj)
-					recycledElements.Add(container);
-
-				System.Diagnostics.Debug.WriteLine($"Adding to Recycle: {container.ReuseId}");
+				AddRecycledElement(container);
 			}
 		}
 
