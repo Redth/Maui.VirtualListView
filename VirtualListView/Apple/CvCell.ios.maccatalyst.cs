@@ -24,6 +24,18 @@ namespace Microsoft.Maui
 
 		public Action<CvCell> TapHandler { get; set; }
 
+		public override UIKeyCommand[] KeyCommands => new[]
+		{
+			UIKeyCommand.Create(new NSString("\r"), 0, new ObjCRuntime.Selector("keyCommandSelect")),
+			UIKeyCommand.Create(new NSString(" "), 0, new ObjCRuntime.Selector("keyCommandSelect")),
+		};
+
+		[Export("keyCommandSelect")]
+		public void KeyCommandSelect()
+		{
+			this.TapHandler?.Invoke(this);
+		}
+
 		public override UICollectionViewLayoutAttributes PreferredLayoutAttributesFittingAttributes(UICollectionViewLayoutAttributes layoutAttributes)
 		{
 			if (NativeView == null || VirtualView == null)
