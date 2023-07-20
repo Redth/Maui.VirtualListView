@@ -138,9 +138,6 @@ namespace Microsoft.Maui
 					handler.VirtualView?.SetSelected(p);
 				else
 					handler.VirtualView?.SetDeselected(p);
-
-				//if (rvh.ViewContainer.VirtualView is IPositionInfo viewPositionInfo)
-				//	viewPositionInfo.IsSelected = rvh.PositionInfo.IsSelected;
 			});
 
 			viewHolder.ItemView.SetOnClickListener(clickListener);
