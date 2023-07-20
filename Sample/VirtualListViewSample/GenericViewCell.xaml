@@ -6,10 +6,10 @@
 	xmlns:local="clr-namespace:VirtualListViewSample"
 	x:Class="VirtualListViewSample.GenericViewCell"
 	x:Name="self"
-	BackgroundColor="#ffffff"
-	UnselectedBackgroundColor="#ffffff"
-	SelectedBackgroundColor="#efefef"
+	UnselectedBackground="#ffffff"
+	SelectedBackground="#efefef"
 	SemanticProperties.Description="{Binding SemanticDescription}"
+	SemanticProperties.HeadingLevel="Level3"
 	x:DataType="local:TrackInfo">
 	<vlv:VirtualViewCell.Content>
 		<Grid RowDefinitions="Auto, Auto" ColumnDefinitions="Auto,*">

@@ -9,22 +9,27 @@ namespace Microsoft.Maui.Controls
 {
 	public class VirtualViewCell : ContentView, IPositionInfo
 	{
-		public static readonly BindableProperty SelectedBackgroundColorProperty =
-			BindableProperty.Create(nameof(SelectedBackgroundColor), typeof(Color), typeof(VirtualViewCell), Colors.Transparent);
-
-		public Color SelectedBackgroundColor
+		public VirtualViewCell() : base()
 		{
-			get => (Color)GetValue(SelectedBackgroundColorProperty);
-			set => SetValue(SelectedBackgroundColorProperty, value);
+			UpdateBackground();
 		}
 
-		public static readonly BindableProperty UnselectedBackgroundColorProperty =
-			BindableProperty.Create(nameof(UnselectedBackgroundColor), typeof(Color), typeof(VirtualViewCell), Colors.Transparent);
+		public static readonly BindableProperty SelectedBackgroundProperty =
+			BindableProperty.Create(nameof(SelectedBackground), typeof(Brush), typeof(VirtualViewCell), new SolidColorBrush(Colors.Transparent));
 
-		public Color UnselectedBackgroundColor
+		public Brush SelectedBackground
 		{
-			get => (Color)GetValue(UnselectedBackgroundColorProperty);
-			set => SetValue(UnselectedBackgroundColorProperty, value);
+			get => (Brush)GetValue(SelectedBackgroundProperty);
+			set => SetValue(SelectedBackgroundProperty, value);
+		}
+
+		public static readonly BindableProperty UnselectedBackgroundProperty =
+			BindableProperty.Create(nameof(UnselectedBackground), typeof(Brush), typeof(VirtualViewCell), new SolidColorBrush(Colors.Transparent));
+
+		public Brush UnselectedBackground
+		{
+			get => (Brush)GetValue(UnselectedBackgroundProperty);
+			set => SetValue(UnselectedBackgroundProperty, value);
 		}
 
 		public static readonly BindableProperty IsSelectedProperty =
@@ -113,8 +118,6 @@ namespace Microsoft.Maui.Controls
 		}
 
 
-
-
 		public bool IsLastItemInSection => ItemIndex >= ItemsInSection - 1;
 		public bool IsNotLastItemInSection => !IsLastItemInSection;
 		public bool IsFirstItemInSection => ItemIndex == 0;
@@ -125,10 +128,11 @@ namespace Microsoft.Maui.Controls
 		{
 			base.OnPropertyChanged(propertyName);
 
-			if (propertyName == IsSelectedProperty.PropertyName)
+			if (propertyName == IsSelectedProperty.PropertyName
+				|| propertyName == UnselectedBackgroundProperty.PropertyName
+				|| propertyName == SelectedBackgroundProperty.PropertyName)
 			{
-				var c = IsSelected ? SelectedBackgroundColor : UnselectedBackgroundColor;
-				Background = new SolidColorBrush(c);
+				UpdateBackground();
 			}
 
 			if (propertyName == ItemIndexProperty.PropertyName
@@ -141,6 +145,12 @@ namespace Microsoft.Maui.Controls
 				OnPropertyChanged(nameof(IsFirstItemInSection));
 				OnPropertyChanged(nameof(IsLastItemInSection));
 			}
+		}
+
+		void UpdateBackground()
+		{
+			var c = IsSelected ? SelectedBackground : UnselectedBackground;
+			Background = c;
 		}
 	}
 }
