@@ -1,5 +1,6 @@
 ﻿using Microsoft.Maui.Platform;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 
@@ -46,6 +47,8 @@ namespace Microsoft.Maui
 			{
 				isRecycled = value;
 
+				if (automationPeer != null)
+					automationPeer.IsRecycled = value;
 			}
 		}
 
@@ -88,10 +91,14 @@ namespace Microsoft.Maui
 				PositionalViewSelector?.VirtualListView?.SetSelected(itemPos);
 			else
 				PositionalViewSelector?.VirtualListView?.SetDeselected(itemPos);
+		}
 
-			// Update only IsSelected on the view
-			//if (View is IPositionInfo positionInfoView)
-			//	positionInfoView.IsSelected = Data.position.IsSelected;
+		protected override IEnumerable<DependencyObject> GetChildrenInTabFocusOrder()
+		{
+			if (IsRecycled)
+				return Enumerable.Empty<DependencyObject>();
+			else
+				return base.GetChildrenInTabFocusOrder();
 		}
 	}
 }
