@@ -1,4 +1,5 @@
-﻿using Microsoft.Maui.Controls.Xaml.Diagnostics;
+﻿using Microsoft.Maui.Adapters;
+using Microsoft.Maui.Controls.Xaml.Diagnostics;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ using System.Windows.Input;
 namespace Microsoft.Maui.Controls
 {
 
-	public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector, IVisualTreeElement
+    public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector, IVisualTreeElement
 	{
 		static VirtualListView()
 		{
@@ -201,13 +202,26 @@ namespace Microsoft.Maui.Controls
 
 			lock (selectedItemsLocker)
 			{
-				foreach (var path in paths)
+				if (SelectionMode == Maui.SelectionMode.Single)
 				{
-					if (!selectedItems.Contains(path))
-						selectedItems.Add(path);
+					current = paths.Any()
+						? new List<ItemPosition> { paths.First() }
+						: new List<ItemPosition>();
 				}
+				else if (SelectionMode == Maui.SelectionMode.Multiple)
+				{
+					foreach (var path in paths)
+					{
+						if (!selectedItems.Contains(path))
+							selectedItems.Add(path);
+					}
 
-				current = selectedItems;
+					current = selectedItems;
+				}
+				else
+				{
+					current = new List<ItemPosition>();
+				}
 			}
 
 
@@ -228,13 +242,20 @@ namespace Microsoft.Maui.Controls
 
 			lock (selectedItemsLocker)
 			{
-				foreach (var path in paths)
+				if (SelectionMode == Maui.SelectionMode.Multiple)
 				{
-					if (selectedItems.Contains(path))
-						selectedItems.Remove(path);
-				}
+					foreach (var path in paths)
+					{
+						if (selectedItems.Contains(path))
+							selectedItems.Remove(path);
+					}
 
-				current = selectedItems ?? new List<ItemPosition>();
+					current = selectedItems ?? new List<ItemPosition>();
+				}
+				else
+				{
+					current = new List<ItemPosition>();
+				}
 			}
 
 			(Handler as VirtualListViewHandler)?.Invoke(nameof(SetDeselected), paths);
