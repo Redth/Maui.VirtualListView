@@ -148,7 +148,10 @@ namespace Microsoft.Maui
 		public void Reset()
 		{
 			lock (lockObj)
+			{
 				cachedReuseIds.Clear();
+				positionalViewSelector.Reset();
+			}
 		}
 	}
 }

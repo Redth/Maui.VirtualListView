@@ -23,6 +23,7 @@ namespace Microsoft.Maui
 
 		public void Reset()
 		{
+			PositionalViewSelector.Reset();
 			CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
 		}
 

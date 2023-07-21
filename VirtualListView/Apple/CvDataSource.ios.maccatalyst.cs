@@ -140,6 +140,8 @@ namespace Microsoft.Maui
 			sectionFooterIdManager.ResetTemplates(collectionView);
 
 			cachedNumberOfSections = null;
+
+			Handler?.PositionalViewSelector?.Reset();
 		}
 	}
 }
