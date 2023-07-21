@@ -267,7 +267,7 @@ You can access these properties from your templates.  Here's an example of displ
 
 			<Border Background="#f0f0f0" StrokeShape="{RoundedRectangle CornerRadius=14}" Margin="10,5,10,5" Padding="10">
 				<Label Text="{Binding TrackName}" />
-			</Frame>
+			</Border>
 
 		</StackLayout>
 	</xct:VirtualViewCell>
