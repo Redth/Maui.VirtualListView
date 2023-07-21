@@ -248,10 +248,24 @@ namespace Microsoft.Maui.Controls
 
 		public event EventHandler<ScrolledEventArgs> OnScrolled;
 
-		public void Scrolled(ScrolledEventArgs args)
+		void IVirtualListView.Scrolled(ScrolledEventArgs args)
 		{
+			if (ScrolledCommand != null && ScrolledCommand.CanExecute(args))
+			{
+				ScrolledCommand.Execute(args);
+			}
+
 			OnScrolled?.Invoke(this, args);
 		}
+
+		public ICommand ScrolledCommand
+		{
+			get => (ICommand)GetValue(ScrolledCommandProperty);
+			set => SetValue(ScrolledCommandProperty, value);
+		}
+
+		public static readonly BindableProperty ScrolledCommandProperty =
+			BindableProperty.Create(nameof(ScrolledCommandProperty), typeof(ICommand), typeof(VirtualListView), default);
 
 		public void InvalidateData()
 		{

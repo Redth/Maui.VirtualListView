@@ -37,7 +37,16 @@ namespace Microsoft.Maui
 			scrollViewer.Content = itemsRepeater;
 			itemsRepeaterScrollHost.ScrollViewer = scrollViewer;
 
+			itemsRepeaterScrollHost.Loaded += ItemsRepeaterScrollHost_Loaded; ;
 			return itemsRepeaterScrollHost;
+		}
+
+		private void ItemsRepeaterScrollHost_Loaded(object sender, UI.Xaml.RoutedEventArgs e)
+		{
+			itemsRepeaterScrollHost.Loaded -= ItemsRepeaterScrollHost_Loaded;
+
+			scrollViewer?.RegisterPropertyChangedCallback(ScrollViewer.VerticalOffsetProperty, (o, dp) =>
+				VirtualView.Scrolled(new ScrolledEventArgs(scrollViewer.HorizontalOffset, scrollViewer.VerticalOffset)));
 		}
 
 		protected override void ConnectHandler(ItemsRepeaterScrollHost nativeView)
