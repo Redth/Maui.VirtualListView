@@ -74,9 +74,6 @@ namespace Microsoft.Maui
 			adapter?.NotifyDataSetChanged();
 		}
 
-		public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
-			=> handler.InvalidateData();
-
 		public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler.InvalidateData();
 

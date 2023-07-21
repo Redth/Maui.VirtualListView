@@ -1,4 +1,4 @@
-
+using Microsoft.Maui.Adapters;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Primitives;
 using System;
@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Maui
 {
-	public interface IVirtualListView : IView
+    public interface IVirtualListView : IView
 	{
 		IVirtualListViewAdapter Adapter { get; }
 
@@ -35,7 +35,7 @@ namespace Microsoft.Maui
 
 		void SetDeselected(params ItemPosition[] paths);
 
-		void InvalidateData();
+		//void InvalidateData();
 	}
 
 	public enum ListOrientation

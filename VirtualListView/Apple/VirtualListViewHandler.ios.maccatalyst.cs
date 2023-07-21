@@ -19,6 +19,7 @@ namespace Microsoft.Maui
 		UIRefreshControl refreshControl;
 
 		internal PositionalViewSelector PositionalViewSelector { get; private set; }
+
 		protected override UICollectionView CreatePlatformView()
 		{
 			layout = new (this);
@@ -105,9 +106,6 @@ namespace Microsoft.Maui
 		internal CvCell GetCell(NSIndexPath indexPath)
 			=> dataSource?.GetCell(collectionView, indexPath) as CvCell;
 
-		public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
-			=> handler?.InvalidateData();
-
 		public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler?.InvalidateData();
 
@@ -150,7 +148,7 @@ namespace Microsoft.Maui
 				var cell = handler.collectionView.CellForItem(realIndex);
 
 				if (cell is CvCell cvcell)
-                {
+				{
 					cvcell.PositionInfo.IsSelected = selected;
 
 					if (cvcell.VirtualView is IPositionInfo positionInfo)

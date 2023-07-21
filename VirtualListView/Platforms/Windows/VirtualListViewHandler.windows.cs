@@ -1,4 +1,5 @@
-﻿using Microsoft.Maui.Controls;
+﻿using Microsoft.Maui.Adapters;
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.Handlers;
 using Microsoft.UI.Xaml.Controls;
 using System;
@@ -14,6 +15,7 @@ namespace Microsoft.Maui
 		IrSource irSource;
 		IrElementFactory elementFactory;
 		WStackLayout layout;
+
 
 		internal PositionalViewSelector PositionalViewSelector { get; private set; }
 
@@ -78,9 +80,6 @@ namespace Microsoft.Maui
 		{
 			irSource?.Reset();
 		}
-
-		public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
-			=> handler?.InvalidateData();
 
 		public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
 			=> handler?.InvalidateData();

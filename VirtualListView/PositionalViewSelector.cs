@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Microsoft.Maui.Adapters;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Microsoft.Maui
 {
-	internal partial class PositionalViewSelector
+    internal partial class PositionalViewSelector
 	{
 		public readonly IVirtualListView VirtualListView;
 		public IVirtualListViewAdapter Adapter => VirtualListView?.Adapter;

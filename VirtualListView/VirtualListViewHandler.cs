@@ -1,3 +1,4 @@
+using Microsoft.Maui.Adapters;
 using System;
 using System.Collections.Generic;
 
@@ -17,7 +18,6 @@ namespace Microsoft.Maui
 
 		public static CommandMapper<IVirtualListView, VirtualListViewHandler> VirtualListViewCommandMapper = new(VirtualListViewHandler.ViewCommandMapper)
 		{
-			[nameof(IVirtualListView.InvalidateData)] = MapInvalidateData,
 			[nameof(IVirtualListView.SetSelected)] = MapSetSelected,
 			[nameof(IVirtualListView.SetDeselected)] = MapSetDeselected
 		};
@@ -30,6 +30,25 @@ namespace Microsoft.Maui
 		public VirtualListViewHandler(PropertyMapper mapper = null, CommandMapper commandMapper = null) : base(mapper ?? VirtualListViewMapper, commandMapper ?? VirtualListViewCommandMapper)
 		{
 
+		}
+
+		public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		{
+			if (handler.currentAdapter != null)
+				handler.currentAdapter.OnDataInvalidated -= handler.Adapter_OnDataInvalidated;
+
+			if (virtualListView?.Adapter != null)
+				virtualListView.Adapter.OnDataInvalidated += handler.Adapter_OnDataInvalidated;
+
+			handler.currentAdapter = virtualListView.Adapter;
+			handler?.InvalidateData();
+		}
+
+		IVirtualListViewAdapter currentAdapter = default;
+
+		void Adapter_OnDataInvalidated(object sender, EventArgs e)
+		{
+			InvalidateData();
 		}
 	}
 }
