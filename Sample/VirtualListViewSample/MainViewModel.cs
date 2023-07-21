@@ -24,6 +24,12 @@ namespace VirtualListViewSample
 			await Task.Delay(3000);
 			NotifyPropertyChanged(nameof(Adapter));
 		}
+
+		[RelayCommand]
+		void Scrolled(ScrolledEventArgs e)
+		{
+			System.Diagnostics.Debug.WriteLine($"Scrolled: {e.ScrollX}, {e.ScrollY}");
+		}
 	}
 
 }

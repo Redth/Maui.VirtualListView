@@ -22,6 +22,7 @@
 		RefreshCommand="{Binding RefreshCommand}"
 		Adapter="{Binding Adapter}"
 		SelectionMode="Multiple"
+		ScrolledCommand="{Binding ScrolledCommand}"
 		SelectedItemsChanged="VirtualListView_SelectedItemsChanged"
 		ItemTemplateSelector="{StaticResource itemTemplateSelector}">
 
