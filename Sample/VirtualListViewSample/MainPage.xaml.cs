@@ -14,33 +14,21 @@ namespace VirtualListViewSample
 		public MainPage()
 		{
 			InitializeComponent();
-
-			Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific.Page.SetUseSafeArea(this, false);
-
-			vm = new MainViewModel();
-			BindingContext = vm;
-
-			Task.Delay(2000).ContinueWith(t =>
-			{
-				Dispatcher.Dispatch(() =>
-				{
-					vlv.SetSelected(new ItemPosition(0, 2), new ItemPosition(0, 4));
-				});
-			});
 		}
 
-		protected override void OnNavigatedTo(NavigatedToEventArgs args)
+		private void Button_Clicked(object sender, EventArgs e)
 		{
-			base.OnNavigatedTo(args);
-
-			
-			
+			Navigation.PushAsync(new MusicLibraryPage());
 		}
 
-		void VirtualListView_SelectedItemsChanged(System.Object sender, SelectedItemsChangedEventArgs e)
+		private void Button_Clicked_1(object sender, EventArgs e)
 		{
-			System.Diagnostics.Debug.WriteLine($"Selected Items:"
-				+ string.Join(", ", e.NewSelection.Select(s => $"{s.SectionIndex}:{s.ItemIndex}")));
+			Navigation.PushAsync(new ObservableCollectionPage());
+		}
+
+		private void Button_Clicked_2(object sender, EventArgs e)
+		{
+			Navigation.PushAsync(new SectionedAdapterPage());
 		}
 	}
 }

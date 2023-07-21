@@ -20,7 +20,7 @@ namespace VirtualListViewSample
 
 		protected override Window CreateWindow(IActivationState activationState)
 		{
-			return new Microsoft.Maui.Controls.Window(new MainPage());
+			return new Microsoft.Maui.Controls.Window(new NavigationPage(new MainPage()));
 		}
 	}
 }
