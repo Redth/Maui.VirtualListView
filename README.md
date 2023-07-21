@@ -13,7 +13,7 @@ The implementation uses fast native controls in its renderers and optimizes for 
 Controls used on each platform:
   - iOS: UICollectionView
   - Android: RecyclerView
-  - UWP: ListView (Virtualized)
+  - WinAppSDK: ItemsRepeaterScrollHost with IElementFactory
 
 ## Setup
 
@@ -25,14 +25,14 @@ To add the Virtual List View control to your project, you need to add `.UseVirtu
 			var builder = MauiApp.CreateBuilder();
 			builder
 				.UseMauiApp<App>()
-				.UseVirtualListView(); // <---
+				.UseVirtualListView(); // <--- THIS
 			return builder.Build();
 		}
 ```
 
 ## Adapter / Data Source
 
-Instead of starting with a typical C# collection such as ObservableCollection, the VirtualListView takes the adapter approach that is common to iOS and Android has the concept of grouping built in (called Sections).
+Instead of starting with a typical C# collection such as `ObservableCollection`, the VirtualListView takes the adapter approach that is common to iOS and Android has the concept of grouping built in (called Sections).
 
 This pattern is optimal since it allows for easily creating adapters backed by direct access data stores such as databases.  Instead of trying to load data from the actual datastore, and trying to deal with cache invalidation for an in memory collection you can write your adapter directly against any type of storage.
 
@@ -48,55 +48,113 @@ public interface IVirtualListViewAdapter
 	int ItemsForSection(int sectionIndex);
 
 	object Item(int sectionIndex, int itemIndex);
+
+	event EventHandler OnDataInvalidated;
+
+	void InvalidateData();
 }
 ```
 
-Here's a pseduo example of how to implement an adapter against a database with a bit of caching for optimal performance:
+There are a few implementations included in the box to use:
+
+### `VirtualListViewAdapter`
+
+This is a basic adapter backed by an `IList<TItem>`:
 
 ```csharp
-public class DatabaseAdapter : IVirtualListViewAdapter
+var adapter = new VirtualListViewAdapter<string>(
+	new [] {
+		"Item 1",
+		"Item 2",
+		"Item 3",
+		//...
+	});
+```
+
+### `ObservableCollectionAdapter`
+
+Many developers are accustomed to using `ObservableCollection`.  While I recommend against using this if possible, there is a built in adapter that takes in an `ObservableCollection<TItem>` instance to help map it to the adapter pattern:
+
+```csharp
+var items = new ObservableCollection<string>();
+items.Add("Item 1");
+items.Add("Item 2");
+
+var adapter = new ObservableCollectionAdapter<string>(items);
+
+items.Add("Item 3");
+```
+
+When using this adapter, the adapter will automatically invalidate itself (by calling `this.InvalidateData()` when the collection changes via the `CollectionView.CollectionChanged` event).
+
+
+### Custom Adapter
+
+For many scenarios, it is ideal to create your own adapter implementation.  You can implement the `IVirtualListViewAdapter` directly, or subclass `VirtualListViewAdapterBase<TSection, TItem>`.
+
+Here's an example of a custom adapter for a flat list (no sections/grouping).  Notice that we cache commonly used data such as `ItemsForSection` and we will reset the cache anytime the data is invalidated:
+
+```csharp
+public class SQLiteAdapter : VirtualListViewAdapterBase<object, ItemInfo>
 {
-	public DatabaseAdapter()
+	public SQLiteAdapter() : base()
 	{
 		Db = new Database(...);
 	}
 
 	public Database Db { get; }
 
-	public void InvalidateCache()
+	int? cachedItemCount = null;
+
+	// No sections/grouping, so disregard the sectionIndex
+	public override int ItemsForSection(int sectionIndex)
+		=> cachedItemCount ??= Db.ExecuteScalar<int>("SELECT COUNT(Id) FROM Items");
+
+	public override string Item(int sectionIndex, int itemIndex)
+		=> Db.FindWithQuery<ItemInfo>("SELECT * FROM Items ORDER BY Id LIMIT 1 OFFSET ?", itemIndex);
+
+	public override void InvalidateData()
 	{
-		cachedSectionSummaries.Clear();
+		// Clear our item count cache
+		// Also do this any time we may insert or delete data 
+		cachedItemCount = null;
+		base.InvalidateData();
+	}
+}
+```
+
+Here's an example of a more sophisticated adapter with grouping/sections. Again, notice we cache Section count and Item count per section:
+
+```csharp
+public class SQLiteSectionedAdapter : VirtualListViewAdapterBase<GroupInfo, ItemInfo>
+{
+	public SQLiteSectionedAdapter() : base()
+	{
+		Db = new Database(...);
 	}
 
-	Dictionary<int, GroupInfo> cachedSectionSummaries = new Dictionary<int, GroupInfo>();
+	public Database Db { get; }
+
+	Dictionary<int, GroupInfo> cachedSectionSummaries = new ();
 
 	int? cachedNumberOfSections = null;
 
 	public int Sections
-		=> cachedNumberOfSections ??= Db.ExecuteScalar<int>("SELECT COUNT(GroupId) FROM Group");
+		=> cachedNumberOfSections ??= Db.ExecuteScalar<int>("SELECT DISTINCT COUNT(GroupId) FROM Items");
 
-	public object Item(int sectionIndex, int itemIndex)
-	{
-		var groupInfo = Section(sectionIndex);
+	// No sections/grouping, so disregard the sectionIndex
+	public override int ItemsForSection(int sectionIndex)
+		=> cachedItemCount ??= Db.ExecuteScalar<int>("SELECT COUNT(Id) FROM Items");
 
-		return Db.FindWithQuery<ItemInfo>("SELECT * FROM Item WHERE GroupId = ? LIMIT 1 OFFSET ?", groupInfo.Id, itemIndex);
-	}
-
-	public int ItemsForSection(int sectionIndex)
-		=> (Section(sectionIndex) as GroupInfo)?.ItemCount ?? 0;
-
-	public object Section(int sectionIndex)
+	public GroupInfo Section(int sectionIndex)
 	{
 		if (cachedSectionSummaries.ContainsKey(sectionIndex))
 			return cachedSectionSummaries[sectionIndex];
 
 		var sql = @"
-				SELECT 
-					g.GroupId,
-					g.GroupName,
-					Count(*) as ItemCount
-				FROM Group g
-					INNER JOIN Item i ON item.GroupId = g.GroupId
+				SELECT DISTINCT g.GroupId, g.GroupName, Count(i.Id) as ItemCount
+				FROM Items g
+					INNER JOIN Items i ON i.GroupId = g.GroupId
 				GROUP BY g.GroupId
 				ORDER BY g.GroupName
 				LIMIT 1 OFFSET ?
@@ -109,10 +167,23 @@ public class DatabaseAdapter : IVirtualListViewAdapter
 
 		return groupInfo;
 	}
+
+	public override string Item(int sectionIndex, int itemIndex)
+		=> Db.FindWithQuery<ItemInfo>("SELECT * FROM Items WHERE GroupId=? ORDER BY Id LIMIT 1 OFFSET ?", sectionIndex, itemIndex);
+
+	public override void InvalidateData()
+	{
+		// Clear our caches
+		// Also do this any time we may insert or delete data 
+		cachedItemCount = null;
+		cachedNumberOfSections.Clear();
+
+		base.InvalidateData();
+	}
 }
 ```
 
-Using this pattern as a base, it would be possible to use any collection as an adapter.  In the future it might be helpful to provide wrappers around this for ObservableCollection and other in memory collection types to make it easier to use for those cases.
+
 
 ## Templates
 
@@ -154,9 +225,9 @@ public class MyItemTemplateSelector
 
 For section template selectors, subclass `AdapterSectionDataTemplateSelector`.
 
-## ViewCells
+## Virtual ViewCells
 
-All templates must contain a single `VirtualViewCell` child element.
+All templates can contain a single `IView`, or alternatively you can use `VirtualViewCell` to wrap your view.
 
 The `VirtualViewCell` adds some additional bindable properties that are useful for adapting your views for things like separators and selection state:
 
@@ -194,8 +265,8 @@ You can access these properties from your templates.  Here's an example of displ
 				BackgroundColor="#f8f8f8"
 				IsVisible="{Binding Source={x:Reference self}, Path=IsNotFirstItemInSection}" />
 
-			<Frame BackgroundColor="#f0f0f0" HasShadow="False" CornerRadius="14" Margin="10,5,10,5" Padding="10">
-				<Label Text="{Binding TrackName}" FontSize="Subtitle" />
+			<Border Background="#f0f0f0" StrokeShape="{RoundedRectangle CornerRadius=14}" Margin="10,5,10,5" Padding="10">
+				<Label Text="{Binding TrackName}" />
 			</Frame>
 
 		</StackLayout>
@@ -212,6 +283,17 @@ There are 3 selection modes: None, Single, and Multiple.  Currently there is no 
 Only `Item` types are selectable.
 
 In the future there will be bindable properties and maybe a way to cancel a selection event.
+
+
+## Refreshing
+
+Pull to refresh is enabled for iOS/MacCatalyst and Android.  WindowsAppSDK does not have the equivalent feature so there is no support for it.
+
+You can use the `RefreshCommand` or subscribe to the `OnRefresh` event to perform your logic while the refresh indicator displays.
+
+## Scrolled
+
+Scrolled notifications can be observed with `ScrolledCommand` which will pass a `ScrolledEventArgs` parameter, or the `OnScrolled` event with a parameter of the same type.  The event args contain the X/Y position scrolled.
 
 
 ## Future
