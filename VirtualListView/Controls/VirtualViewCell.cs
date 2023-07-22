@@ -15,7 +15,14 @@ namespace Microsoft.Maui.Controls
 		}
 
 		public static readonly BindableProperty SelectedBackgroundProperty =
-			BindableProperty.Create(nameof(SelectedBackground), typeof(Brush), typeof(VirtualViewCell), new SolidColorBrush(Colors.Transparent));
+			BindableProperty.Create(nameof(SelectedBackground), typeof(Brush), typeof(VirtualViewCell), new SolidColorBrush(Colors.Transparent),
+				propertyChanged: (bindableObj, oldValue, newValue) =>
+				{
+					if (bindableObj is VirtualViewCell self)
+					{
+						self.UpdateBackground();
+					}
+				});
 
 		public Brush SelectedBackground
 		{
@@ -24,7 +31,14 @@ namespace Microsoft.Maui.Controls
 		}
 
 		public static readonly BindableProperty UnselectedBackgroundProperty =
-			BindableProperty.Create(nameof(UnselectedBackground), typeof(Brush), typeof(VirtualViewCell), new SolidColorBrush(Colors.Transparent));
+			BindableProperty.Create(nameof(UnselectedBackground), typeof(Brush), typeof(VirtualViewCell), new SolidColorBrush(Colors.Transparent),
+				propertyChanged: (bindableObj, oldValue, newValue) =>
+				{
+					if (bindableObj is VirtualViewCell self)
+					{
+						self.UpdateBackground();
+					}
+				});
 
 		public Brush UnselectedBackground
 		{
@@ -33,7 +47,15 @@ namespace Microsoft.Maui.Controls
 		}
 
 		public static readonly BindableProperty IsSelectedProperty =
-			BindableProperty.Create(nameof(IsSelected), typeof(bool), typeof(VirtualViewCell), false);
+			BindableProperty.Create(nameof(IsSelected), typeof(bool), typeof(VirtualViewCell), false,
+				propertyChanged: (bindableObj, oldValue, newValue) =>
+				{
+					if (bindableObj is VirtualViewCell self)
+					{
+						self.Resources[nameof(IsSelected)] = newValue;
+						self.UpdateBackground();
+					}
+				});
 
 		public bool IsSelected
 		{
@@ -42,7 +64,14 @@ namespace Microsoft.Maui.Controls
 		}
 
 		public static readonly BindableProperty SectionIndexProperty =
-			BindableProperty.Create(nameof(SectionIndex), typeof(int), typeof(VirtualViewCell), -1);
+			BindableProperty.Create(nameof(SectionIndex), typeof(int), typeof(VirtualViewCell), -1,
+				propertyChanged: (bindableObj, oldValue, newValue) =>
+				{
+					if (bindableObj is VirtualViewCell self)
+					{
+						self.Resources[nameof(SectionIndex)] = newValue;
+					}
+				});
 
 		public int SectionIndex
 		{
@@ -51,7 +80,14 @@ namespace Microsoft.Maui.Controls
 		}
 
 		public static readonly BindableProperty ItemIndexProperty =
-			BindableProperty.Create(nameof(ItemIndex), typeof(int), typeof(VirtualViewCell), -1);
+			BindableProperty.Create(nameof(ItemIndex), typeof(int), typeof(VirtualViewCell), -1,
+				propertyChanged: (bindableObj, oldValue, newValue) =>
+				{
+					if (bindableObj is VirtualViewCell self)
+					{
+						self.Resources[nameof(ItemIndex)] = newValue;
+					}
+				});
 
 		public int ItemIndex
 		{
@@ -60,7 +96,14 @@ namespace Microsoft.Maui.Controls
 		}
 
 		public static readonly BindableProperty ItemsInSectionProperty =
-			BindableProperty.Create(nameof(ItemsInSection), typeof(int), typeof(VirtualViewCell), -1);
+			BindableProperty.Create(nameof(ItemsInSection), typeof(int), typeof(VirtualViewCell), -1,
+				propertyChanged: (bindableObj, oldValue, newValue) =>
+				{
+					if (bindableObj is VirtualViewCell self)
+					{
+						self.Resources[nameof(ItemsInSection)] = newValue;
+					}
+				});
 
 		public int ItemsInSection
 		{
@@ -69,7 +112,14 @@ namespace Microsoft.Maui.Controls
 		}
 
 		public static readonly BindableProperty NumberOfSectionsProperty =
-			BindableProperty.Create(nameof(NumberOfSections), typeof(int), typeof(VirtualViewCell), -1);
+			BindableProperty.Create(nameof(NumberOfSections), typeof(int), typeof(VirtualViewCell), -1,
+				propertyChanged: (bindableObj, oldValue, newValue) =>
+				{
+					if (bindableObj is VirtualViewCell self)
+					{
+						self.Resources[nameof(NumberOfSections)] = newValue;
+					}
+				});
 
 		public int NumberOfSections
 		{
@@ -80,7 +130,14 @@ namespace Microsoft.Maui.Controls
 
 
 		public static readonly BindableProperty IsGlobalHeaderProperty =
-			BindableProperty.Create(nameof(IsGlobalHeader), typeof(bool), typeof(VirtualViewCell), false);
+			BindableProperty.Create(nameof(IsGlobalHeader), typeof(bool), typeof(VirtualViewCell), false,
+				propertyChanged: (bindableObj, oldValue, newValue) =>
+				{
+					if (bindableObj is VirtualViewCell self)
+					{
+						self.Resources[nameof(IsGlobalHeader)] = newValue;
+					}
+				});
 
 		public bool IsGlobalHeader
 		{
@@ -90,7 +147,14 @@ namespace Microsoft.Maui.Controls
 
 
 		public static readonly BindableProperty IsGlobalFooterProperty =
-			BindableProperty.Create(nameof(IsGlobalFooter), typeof(bool), typeof(VirtualViewCell), false);
+			BindableProperty.Create(nameof(IsGlobalFooter), typeof(bool), typeof(VirtualViewCell), false,
+				propertyChanged: (bindableObj, oldValue, newValue) =>
+				{
+					if (bindableObj is VirtualViewCell self)
+					{
+						self.Resources[nameof(IsGlobalFooter)] = newValue;
+					}
+				});
 
 		public bool IsGlobalFooter
 		{
@@ -99,7 +163,14 @@ namespace Microsoft.Maui.Controls
 		}
 
 		public static readonly BindableProperty IsSectionHeaderProperty =
-			BindableProperty.Create(nameof(IsSectionHeader), typeof(bool), typeof(VirtualViewCell), false);
+			BindableProperty.Create(nameof(IsSectionHeader), typeof(bool), typeof(VirtualViewCell), false,
+				propertyChanged: (bindableObj, oldValue, newValue) =>
+				{
+					if (bindableObj is VirtualViewCell self)
+					{
+						self.Resources[nameof(IsSectionHeader)] = newValue;
+					}
+				});
 
 		public bool IsSectionHeader
 		{
@@ -109,7 +180,14 @@ namespace Microsoft.Maui.Controls
 
 
 		public static readonly BindableProperty KindProperty =
-			BindableProperty.Create(nameof(Kind), typeof(PositionKind), typeof(VirtualViewCell), PositionKind.Item);
+			BindableProperty.Create(nameof(Kind), typeof(PositionKind), typeof(VirtualViewCell), PositionKind.Item,
+				propertyChanged: (bindableObj, oldValue, newValue) =>
+				{
+					if (bindableObj is VirtualViewCell self)
+					{
+						self.Resources[nameof(Kind)] = newValue;
+					}
+				});
 
 		public PositionKind Kind
 		{
