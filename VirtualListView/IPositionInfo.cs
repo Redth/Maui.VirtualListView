@@ -17,5 +17,11 @@
 		public bool IsNotLastItemInSection => !IsLastItemInSection;
 		public bool IsFirstItemInSection => ItemIndex == 0;
 		public bool IsNotFirstItemInSection => !IsFirstItemInSection;
+
+		public bool IsSectionHeader => Kind == PositionKind.SectionHeader;
+		public bool IsSectionFooter => Kind == PositionKind.SectionFooter;
+
+		public bool IsGlobalHeader => Kind == PositionKind.Header;
+		public bool IsGlobalFooter => Kind == PositionKind.Footer;
 	}
 }
