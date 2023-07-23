@@ -5,18 +5,18 @@ using System.Linq;
 
 namespace Microsoft.Maui.Adapters
 {
-    public interface IVirtualListViewAdapter
-    {
-        int Sections { get; }
+	public interface IVirtualListViewAdapter
+	{
+		int Sections { get; }
 
-        object Section(int sectionIndex);
+		object Section(int sectionIndex);
 
-        int ItemsForSection(int sectionIndex);
+		int ItemsForSection(int sectionIndex);
 
-        object Item(int sectionIndex, int itemIndex);
+		object Item(int sectionIndex, int itemIndex);
 
-        event EventHandler OnDataInvalidated;
+		event EventHandler OnDataInvalidated;
 
-        void InvalidateData();
-    }
+		void InvalidateData();
+	}
 }

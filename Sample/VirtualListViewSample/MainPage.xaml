@@ -7,13 +7,13 @@
 	x:DataType="local:MainViewModel"
 	x:Class="VirtualListViewSample.MainPage">
 
-    <ScrollView Padding="30">
-        <VerticalStackLayout Spacing="20">
-            <Button Text="Music Library Demo" Clicked="Button_Clicked" />
+	<ScrollView Padding="30">
+		<VerticalStackLayout Spacing="20">
+			<Button Text="Music Library Demo" Clicked="Button_Clicked" />
 
-            <Button Text="Observable Collection Demo" Clicked="Button_Clicked_1" />
+			<Button Text="Observable Collection Demo" Clicked="Button_Clicked_1" />
 
-            <Button Text="Sectioned Adapter Demo" Clicked="Button_Clicked_2" />
-        </VerticalStackLayout>
-    </ScrollView>
+			<Button Text="Sectioned Adapter Demo" Clicked="Button_Clicked_2" />
+		</VerticalStackLayout>
+	</ScrollView>
 </ContentPage>

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Microsoft.Maui
 {
-    internal partial class PositionalViewSelector
+	internal partial class PositionalViewSelector
 	{
 		public readonly IVirtualListView VirtualListView;
 		public IVirtualListViewAdapter Adapter => VirtualListView?.Adapter;
