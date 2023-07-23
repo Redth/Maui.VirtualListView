@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Maui
 {
-    public interface IVirtualListView : IView
+	public interface IVirtualListView : IView
 	{
 		IVirtualListViewAdapter Adapter { get; }
 
@@ -17,6 +17,8 @@ namespace Microsoft.Maui
 		IView Footer { get; }
 
 		event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
+		void OnSelectedItemsChanged(SelectedItemsChangedEventArgs eventArgs);
+
 		event EventHandler DataInvalidated;
 
 		void Refresh();
@@ -34,6 +36,8 @@ namespace Microsoft.Maui
 		void SetSelected(params ItemPosition[] paths);
 
 		void SetDeselected(params ItemPosition[] paths);
+
+		void ClearSelection();
 
 		//void InvalidateData();
 	}

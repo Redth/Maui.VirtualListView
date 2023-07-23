@@ -50,5 +50,114 @@ namespace Microsoft.Maui
 		{
 			InvalidateData();
 		}
+
+		readonly object selectedItemsLocker = new object();
+		readonly List<ItemPosition> selectedItems = new List<ItemPosition>();
+
+		public IReadOnlyList<ItemPosition> SelectedItems
+		{
+			get
+			{
+				if (VirtualView.SelectionMode == SelectionMode.None)
+					return new List<ItemPosition>();
+
+				lock (selectedItemsLocker)
+					return selectedItems.AsReadOnly();
+			}
+		}
+
+		public bool IsItemSelected(int sectionIndex, int itemIndex)
+		{
+			if (VirtualView is null)
+				return false;
+
+			if (VirtualView.SelectionMode == SelectionMode.None)
+				return false;
+
+			lock (selectedItemsLocker)
+				return selectedItems.Contains(new ItemPosition(sectionIndex, itemIndex));
+		}
+
+		public void SetSelected(params ItemPosition[] paths)
+		{
+			if (VirtualView is null)
+				return;
+
+			if (VirtualView.SelectionMode == SelectionMode.None)
+				return;
+
+			var prev = selectedItems.ToArray();
+
+			IReadOnlyList<ItemPosition> current;
+
+			lock (selectedItemsLocker)
+			{
+				if (VirtualView.SelectionMode == SelectionMode.Single)
+				{
+					current = paths.Any()
+						? new List<ItemPosition> { paths.First() }
+						: new List<ItemPosition>();
+				}
+				else if (VirtualView.SelectionMode == SelectionMode.Multiple)
+				{
+					foreach (var path in paths)
+					{
+						if (!selectedItems.Contains(path))
+							selectedItems.Add(path);
+					}
+
+					current = selectedItems;
+				}
+				else
+				{
+					current = new List<ItemPosition>();
+				}
+			}
+
+			// Raise event
+			VirtualView.OnSelectedItemsChanged(new SelectedItemsChangedEventArgs(prev, current));
+		}
+
+		public void SetDeselected(params ItemPosition[] paths)
+		{
+			if (VirtualView is null)
+				return;
+
+			if (VirtualView.SelectionMode == Maui.SelectionMode.None)
+				return;
+
+			var prev = new List<ItemPosition>(selectedItems);
+
+			IReadOnlyList<ItemPosition> current;
+
+			lock (selectedItemsLocker)
+			{
+				if (VirtualView.SelectionMode == Maui.SelectionMode.Multiple)
+				{
+					foreach (var path in paths)
+					{
+						if (selectedItems.Contains(path))
+							selectedItems.Remove(path);
+					}
+
+					current = selectedItems ?? new List<ItemPosition>();
+				}
+				else
+				{
+					current = new List<ItemPosition>();
+				}
+			}
+
+			// Raise event
+			VirtualView.OnSelectedItemsChanged(new SelectedItemsChangedEventArgs(prev, current));
+		}
+
+		public void ClearSelection()
+		{
+			if (VirtualView is null)
+				return;
+
+			selectedItems.Clear();
+		}
 	}
 }

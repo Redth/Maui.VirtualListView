@@ -13,7 +13,7 @@ using System.Windows.Input;
 namespace Microsoft.Maui.Controls
 {
 
-    public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector, IVisualTreeElement
+	public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector, IVisualTreeElement
 	{
 		static VirtualListView()
 		{
@@ -126,22 +126,6 @@ namespace Microsoft.Maui.Controls
 
 		public event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
 
-		readonly object selectedItemsLocker = new object();
-		readonly List<ItemPosition> selectedItems = new List<ItemPosition>();
-
-		public IReadOnlyList<ItemPosition> SelectedItems
-		{
-			get
-			{
-				if (SelectionMode == Maui.SelectionMode.None)
-					return new List<ItemPosition>();
-
-				lock (selectedItemsLocker)
-					return selectedItems.AsReadOnly();
-			}
-		}
-
-
 		public event EventHandler<EventArgs> OnRefresh;
 
 		void IVirtualListView.Refresh()
@@ -180,89 +164,7 @@ namespace Microsoft.Maui.Controls
 		public IView Header => GlobalHeader;
 		public IView Footer => GlobalFooter;
 
-		public bool IsItemSelected(int sectionIndex, int itemIndex)
-		{
-			if (SelectionMode == Maui.SelectionMode.None)
-				return false;
-
-			lock (selectedItemsLocker)
-				return selectedItems.Contains(new ItemPosition(sectionIndex, itemIndex));
-		}
-
-
-
-		public void SetSelected(params ItemPosition[] paths)
-		{
-			if (SelectionMode == Maui.SelectionMode.None)
-				return;
-
-			var prev = selectedItems.ToArray();
-
-			IReadOnlyList<ItemPosition> current;
-
-			lock (selectedItemsLocker)
-			{
-				if (SelectionMode == Maui.SelectionMode.Single)
-				{
-					current = paths.Any()
-						? new List<ItemPosition> { paths.First() }
-						: new List<ItemPosition>();
-				}
-				else if (SelectionMode == Maui.SelectionMode.Multiple)
-				{
-					foreach (var path in paths)
-					{
-						if (!selectedItems.Contains(path))
-							selectedItems.Add(path);
-					}
-
-					current = selectedItems;
-				}
-				else
-				{
-					current = new List<ItemPosition>();
-				}
-			}
-
-
-			(Handler as VirtualListViewHandler)?.Invoke(nameof(SetSelected), paths);
-
-			// Raise event
-			SelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(prev, current));
-		}
-
-		public void SetDeselected(params ItemPosition[] paths)
-		{
-			if (SelectionMode == Maui.SelectionMode.None)
-				return;
-
-			var prev = new List<ItemPosition>(selectedItems);
-
-			IReadOnlyList<ItemPosition> current;
-
-			lock (selectedItemsLocker)
-			{
-				if (SelectionMode == Maui.SelectionMode.Multiple)
-				{
-					foreach (var path in paths)
-					{
-						if (selectedItems.Contains(path))
-							selectedItems.Remove(path);
-					}
-
-					current = selectedItems ?? new List<ItemPosition>();
-				}
-				else
-				{
-					current = new List<ItemPosition>();
-				}
-			}
-
-			(Handler as VirtualListViewHandler)?.Invoke(nameof(SetDeselected), paths);
-
-			// Raise event
-			SelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(prev, current));
-		}
+		
 
 		public event EventHandler DataInvalidated;
 
@@ -284,6 +186,8 @@ namespace Microsoft.Maui.Controls
 			get => (ICommand)GetValue(ScrolledCommandProperty);
 			set => SetValue(ScrolledCommandProperty, value);
 		}
+
+		public IReadOnlyList<ItemPosition> SelectedItems => throw new NotImplementedException();
 
 		public static readonly BindableProperty ScrolledCommandProperty =
 			BindableProperty.Create(nameof(ScrolledCommandProperty), typeof(ICommand), typeof(VirtualListView), default);
@@ -383,17 +287,17 @@ namespace Microsoft.Maui.Controls
 				Element elem= null;
 
 				for (var i = 0; i < logicalChildren.Count; i++)
-                {
+				{
 					var child = logicalChildren[i];
 
 					if (child.section == position.SectionIndex
 						&& child.item == position.ItemIndex)
-                    {
+					{
 						elem = child.view;
 						oldLogicalIndex = i;
 						break;
-                    }
-                }
+					}
+				}
 
 				if (oldLogicalIndex >= 0)
 				{
@@ -414,5 +318,20 @@ namespace Microsoft.Maui.Controls
 				VisualDiagnostics.OnChildAdded(this, elem);
 			}
 		}
+
+		public bool IsItemSelected(int sectionIndex, int itemIndex)
+			=> (Handler as VirtualListViewHandler).IsItemSelected(sectionIndex, itemIndex);
+
+		public void OnSelectedItemsChanged(SelectedItemsChangedEventArgs args)
+			=> this.SelectedItemsChanged?.Invoke(this, args);
+
+		public void SetSelected(params ItemPosition[] paths)
+			=> (Handler as VirtualListViewHandler).SetSelected(paths);
+
+		public void SetDeselected(params ItemPosition[] paths)
+			=> (Handler as VirtualListViewHandler).SetDeselected(paths);
+
+		public void ClearSelection()
+			=> (Handler as VirtualListViewHandler).ClearSelection();
 	}
 }
