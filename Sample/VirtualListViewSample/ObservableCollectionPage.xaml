@@ -1,32 +1,34 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="VirtualListViewSample.ObservableCollectionPage"
-    xmlns:local="clr-namespace:VirtualListViewSample"
-    xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
-    Title="ObservableCollectionPage">
-    <Grid RowDefinitions="*,Auto" ColumnDefinitions="*,Auto" Padding="20">
-        <vlv:VirtualListView
-            Grid.Row="0"
-            Grid.Column="0" Grid.ColumnSpan="2"
-            x:Name="vlv"
-            SelectedItemsChanged="vlv_SelectedItemsChanged"
-            SelectionMode="Single">
-            <vlv:VirtualListView.ItemTemplate>
-                <DataTemplate>
-                    <Border
-                        Margin="10,0,0,0"
-                        Padding="4"
-                        Background="LightBlue"
-                        StrokeShape="{RoundRectangle CornerRadius=10}">
-                        <Label Margin="10,6,10,6" Text="{Binding .}" />
-                    </Border>
-                </DataTemplate>
-            </vlv:VirtualListView.ItemTemplate>
-        </vlv:VirtualListView>
+	xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+	x:Class="VirtualListViewSample.ObservableCollectionPage"
+	xmlns:local="clr-namespace:VirtualListViewSample"
+	xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
+	Title="ObservableCollectionPage">
+	<Grid RowDefinitions="*,Auto" ColumnDefinitions="*,Auto" Padding="20">
+		<vlv:VirtualListView
+			Grid.Row="0"
+			Grid.Column="0" Grid.ColumnSpan="2"
+			x:Name="vlv"
+			SelectedItemsChanged="vlv_SelectedItemsChanged"
+			SelectionMode="Multiple">
+			<vlv:VirtualListView.ItemTemplate>
+				<DataTemplate>
+					<vlv:VirtualViewCell>
+						<Border
+							Margin="10,0,0,0"
+							Padding="4"
+							Background="LightBlue"
+							StrokeShape="{RoundRectangle CornerRadius=10}">
+							<Label Margin="10,6,10,6" Text="{Binding .}" />
+						</Border>
+					</vlv:VirtualViewCell>
+				</DataTemplate>
+			</vlv:VirtualListView.ItemTemplate>
+		</vlv:VirtualListView>
 
-        <Entry x:Name="entryItem" Grid.Row="1" Grid.Column="0" Placeholder="Item" />
-        <Button Grid.Row="1" Grid.Column="1" Text="Add" Clicked="Button_Clicked" />
-    </Grid>
+		<Entry x:Name="entryItem" Grid.Row="1" Grid.Column="0" Placeholder="Item" />
+		<Button Grid.Row="1" Grid.Column="1" Text="Add" Clicked="Button_Clicked" />
+	</Grid>
 </ContentPage>

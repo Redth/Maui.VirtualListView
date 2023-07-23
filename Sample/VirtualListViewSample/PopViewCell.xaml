@@ -11,22 +11,23 @@
 	>
 	<VerticalStackLayout Spacing="0">
 
-		<BoxView
+		<ContentView
 			HorizontalOptions="FillAndExpand"
 			HeightRequest="1.4"
-			BackgroundColor="#f8f8f8"
+			Background="#f8f8f8"
 			x:DataType="vlv:VirtualViewCell"
 			BindingContext="{x:Reference self}"
 			IsVisible="{Binding IsNotFirstItemInSection}" />
 
 
-		<Grid ColumnDefinitions="40,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="0" ColumnSpacing="10" BackgroundColor="#f0f0f0" 
+		<Grid ColumnDefinitions="40,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="0" ColumnSpacing="10" Background="#f0f0f0" 
 				Margin="10,5,10,5" Padding="10">
 
-			<Image Source="https://community.mp3tag.de/uploads/default/original/2X/a/acf3edeb055e7b77114f9e393d1edeeda37e50c9.png"
-							WidthRequest="40" HeightRequest="40"
-							Grid.Column="0" Grid.Row="0" Grid.RowSpan="3"
-							VerticalOptions="Center"/>
+			<Image
+				Source="https://community.mp3tag.de/uploads/default/original/2X/a/acf3edeb055e7b77114f9e393d1edeeda37e50c9.png"
+				WidthRequest="40" HeightRequest="40"
+				Grid.Column="0" Grid.Row="0" Grid.RowSpan="3"
+				VerticalOptions="Center"/>
 
 			<Label Text="{Binding ArtistName}" FontSize="Subtitle" Grid.Column="1" Grid.Row="0" TextColor="DarkGray" />
 			<Label Text="{Binding TrackName}" FontSize="Title" Grid.Column="1" Grid.Row="1" TextColor="Black" />

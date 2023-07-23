@@ -9,7 +9,6 @@ namespace Microsoft.Maui
 {
 	internal class CvDelegate : UICollectionViewDelegateFlowLayout
 	{
-
 		public CvDelegate(VirtualListViewHandler handler, UICollectionView collectionView)
 			: base()
 		{
@@ -18,7 +17,6 @@ namespace Microsoft.Maui
 		}
 
 		internal readonly UICollectionView NativeCollectionView;
-		internal readonly CvDataSource DataSource;
 		internal readonly VirtualListViewHandler Handler;
 
 		public Action<NFloat, NFloat> ScrollHandler { get; set; }

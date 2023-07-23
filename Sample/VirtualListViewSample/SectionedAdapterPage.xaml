@@ -1,42 +1,43 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="VirtualListViewSample.SectionedAdapterPage"
-             xmlns:local="clr-namespace:VirtualListViewSample"
-xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
-             Title="SectionedAdapterPage">
-    <Grid RowDefinitions="*,Auto" ColumnDefinitions="*,*,Auto" Padding="20">
-        <vlv:VirtualListView
-        Grid.Row="0"
-        Grid.Column="0" Grid.ColumnSpan="3"
-        x:Name="vlv"
-        SelectedItemsChanged="vlv_SelectedItemsChanged"
-        SelectionMode="Single">
-            <vlv:VirtualListView.SectionHeaderTemplate>
-                <DataTemplate>
-                    <Border
-                    Padding="4"
-                    Background="DarkBlue"
-                    StrokeShape="{RoundRectangle CornerRadius=10}">
-                        <Label Margin="10,6,10,6" Text="{Binding Title}" TextColor="White" />
-                    </Border>
-                </DataTemplate>
-            </vlv:VirtualListView.SectionHeaderTemplate>
-            <vlv:VirtualListView.ItemTemplate>
-                <DataTemplate>
-                    <Border
-                    Margin="10,0,0,0"
-                    Padding="4"
-                    Background="LightBlue"
-                    StrokeShape="{RoundRectangle CornerRadius=10}">
-                        <Label Margin="10,6,10,6" Text="{Binding .}" />
-                    </Border>
-                </DataTemplate>
-            </vlv:VirtualListView.ItemTemplate>
-        </vlv:VirtualListView>
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+	xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+	x:Class="VirtualListViewSample.SectionedAdapterPage"
+	xmlns:local="clr-namespace:VirtualListViewSample"
+	xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
+	Title="SectionedAdapterPage">
+	<Grid RowDefinitions="*,Auto" ColumnDefinitions="*,*,Auto" Padding="20">
+		<vlv:VirtualListView
+			Grid.Row="0"
+			Grid.Column="0" Grid.ColumnSpan="3"
+			x:Name="vlv"
+			SelectedItemsChanged="vlv_SelectedItemsChanged"
+			SelectionMode="Single">
+			<vlv:VirtualListView.SectionHeaderTemplate>
+				<DataTemplate>
+					<Border
+						Padding="4"
+						Background="DarkBlue"
+						StrokeShape="{RoundRectangle CornerRadius=10}">
+						<Label Margin="10,6,10,6" Text="{Binding Title}" TextColor="White" />
+					</Border>
+				</DataTemplate>
+			</vlv:VirtualListView.SectionHeaderTemplate>
+			<vlv:VirtualListView.ItemTemplate>
+				<DataTemplate>
+					<Border
+					Margin="10,0,0,0"
+					Padding="4"
+					Background="LightBlue"
+					StrokeShape="{RoundRectangle CornerRadius=10}">
+						<Label Margin="10,6,10,6" Text="{Binding .}" />
+					</Border>
+				</DataTemplate>
+			</vlv:VirtualListView.ItemTemplate>
+		</vlv:VirtualListView>
 
-        <Entry x:Name="entrySection" Grid.Row="1" Grid.Column="0" Placeholder="Section" />
-        <Entry x:Name="entryItem" Grid.Row="1" Grid.Column="1" Placeholder="Item" />
-        <Button Grid.Row="1" Grid.Column="3" Text="Add" Clicked="Button_Clicked" />
-    </Grid>
+		<Entry x:Name="entrySection" Grid.Row="1" Grid.Column="0" Placeholder="Section" />
+		<Entry x:Name="entryItem" Grid.Row="1" Grid.Column="1" Placeholder="Item" />
+		<Button Grid.Row="1" Grid.Column="3" Text="Add" Clicked="Button_Clicked" />
+	</Grid>
 </ContentPage>

@@ -40,5 +40,7 @@ public partial class ObservableCollectionPage : ContentPage
 		{
 			Items.RemoveAt(item.Value.ItemIndex);
 		}
+
+		(sender as IVirtualListView).ClearSelection();
 	}
 }
