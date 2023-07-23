@@ -177,10 +177,17 @@ namespace Microsoft.Maui
 
 		public void InvalidateData()
 		{
-			PositionalViewSelector?.Reset();
-			dataSource?.Reset(collectionView);
-			collectionView?.ReloadData();
-			layout?.InvalidateLayout();
+			this.PlatformView.InvokeOnMainThread(() => {
+				dataSource?.Reset(collectionView);
+				PositionalViewSelector?.Reset();
+				layout?.InvalidateLayout();
+				collectionView?.SetNeedsLayout();
+
+				collectionView?.ReloadData();
+
+				collectionView?.LayoutIfNeeded();
+			});
+			
 		}
 	}
 }
