@@ -1,50 +1,45 @@
 using Microsoft.Maui.Adapters;
-using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Primitives;
-using System;
-using System.Collections.Generic;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui;
+
+public interface IVirtualListView : IView
 {
-	public interface IVirtualListView : IView
-	{
-		IVirtualListViewAdapter Adapter { get; }
+	IVirtualListViewAdapter Adapter { get; }
 
-		IVirtualListViewSelector ViewSelector { get; }
+	IVirtualListViewSelector ViewSelector { get; }
 
-		IView Header { get; }
+	IView Header { get; }
 
-		IView Footer { get; }
+	IView Footer { get; }
 
-		event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
-		void OnSelectedItemsChanged(SelectedItemsChangedEventArgs eventArgs);
+	event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
+	void OnSelectedItemsChanged(SelectedItemsChangedEventArgs eventArgs);
 
-		event EventHandler DataInvalidated;
+	event EventHandler DataInvalidated;
 
-		void Refresh();
-		
-		void Scrolled(ScrolledEventArgs args);
+	void Refresh();
+	
+	void Scrolled(ScrolledEventArgs args);
 
-		SelectionMode SelectionMode { get; }
+	SelectionMode SelectionMode { get; }
 
-		IReadOnlyList<ItemPosition> SelectedItems { get; }
+	IReadOnlyList<ItemPosition> SelectedItems { get; }
 
-		ListOrientation Orientation { get; }
+	ListOrientation Orientation { get; }
 
-		bool IsItemSelected(int sectionIndex, int itemIndex);
+	bool IsItemSelected(int sectionIndex, int itemIndex);
 
-		void SetSelected(params ItemPosition[] paths);
+	void SetSelected(params ItemPosition[] paths);
 
-		void SetDeselected(params ItemPosition[] paths);
+	void SetDeselected(params ItemPosition[] paths);
 
-		void ClearSelection();
+	void ClearSelection();
 
-		//void InvalidateData();
-	}
+	//void InvalidateData();
+}
 
-	public enum ListOrientation
-	{
-		Vertical,
-		Horizontal
-	}
+public enum ListOrientation
+{
+	Vertical,
+	Horizontal
 }

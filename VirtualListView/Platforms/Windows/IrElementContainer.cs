@@ -5,105 +5,104 @@ using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui;
+
+internal class IrElementContainer : ContentControl
 {
-	internal class IrElementContainer : ContentControl
+	public IrElementContainer(IMauiContext context, string reuseId, PositionalViewSelector positionalViewSelector)
+		: base()
 	{
-		public IrElementContainer(IMauiContext context, string reuseId, PositionalViewSelector positionalViewSelector)
-			: base()
+		MauiContext = context;
+		ReuseId = reuseId;
+		PositionalViewSelector = positionalViewSelector;
+
+		if (positionalViewSelector.VirtualListView.Orientation == ListOrientation.Vertical)
 		{
-			MauiContext = context;
-			ReuseId = reuseId;
-			PositionalViewSelector = positionalViewSelector;
-
-			if (positionalViewSelector.VirtualListView.Orientation == ListOrientation.Vertical)
-			{
-				HorizontalContentAlignment = UI.Xaml.HorizontalAlignment.Stretch;
-				HorizontalAlignment = UI.Xaml.HorizontalAlignment.Stretch;
-			}
-			else
-			{
-				VerticalContentAlignment = UI.Xaml.VerticalAlignment.Stretch;
-				VerticalAlignment = UI.Xaml.VerticalAlignment.Stretch;
-			}
+			HorizontalContentAlignment = UI.Xaml.HorizontalAlignment.Stretch;
+			HorizontalAlignment = UI.Xaml.HorizontalAlignment.Stretch;
 		}
-
-		public readonly string ReuseId;
-		public readonly IMauiContext MauiContext;
-		public readonly PositionalViewSelector PositionalViewSelector;
-
-		public PositionInfo PositionInfo { get; private set; }
-
-		bool isRecycled = false;
-
-		internal bool IsRecycled
+		else
 		{
-			get => isRecycled;
-			set
-			{
-				isRecycled = value;
-
-				if (automationPeer != null)
-					automationPeer.IsRecycled = value;
-			}
+			VerticalContentAlignment = UI.Xaml.VerticalAlignment.Stretch;
+			VerticalAlignment = UI.Xaml.VerticalAlignment.Stretch;
 		}
+	}
 
-		public IView VirtualView { get; private set; }
+	public readonly string ReuseId;
+	public readonly IMauiContext MauiContext;
+	public readonly PositionalViewSelector PositionalViewSelector;
 
-		public void Update(PositionInfo positionInfo, IView newView)
+	public PositionInfo PositionInfo { get; private set; }
+
+	bool isRecycled = false;
+
+	internal bool IsRecycled
+	{
+		get => isRecycled;
+		set
 		{
-			PositionInfo = positionInfo;
+			isRecycled = value;
 
-			if (newView is IPositionInfo viewWithPositionInfo)
-				viewWithPositionInfo.Update(PositionInfo);
-
-			SwapView(newView);
+			if (automationPeer != null)
+				automationPeer.IsRecycled = value;
 		}
+	}
 
-		void SwapView(IView newView)
+	public IView VirtualView { get; private set; }
+
+	public void Update(PositionInfo positionInfo, IView newView)
+	{
+		PositionInfo = positionInfo;
+
+		if (newView is IPositionInfo viewWithPositionInfo)
+			viewWithPositionInfo.Update(PositionInfo);
+
+		SwapView(newView);
+	}
+
+	void SwapView(IView newView)
+	{
+		if (VirtualView == null || VirtualView.Handler == null || Content == null)
 		{
-			if (VirtualView == null || VirtualView.Handler == null || Content == null)
-			{
-				Content = newView.ToPlatform(MauiContext);
-				VirtualView = newView;
-			}
-			else
-			{
-				var handler = VirtualView.Handler;
-				newView.Handler = handler;
-				handler.SetVirtualView(newView);
-				VirtualView = newView;
-			}
+			Content = newView.ToPlatform(MauiContext);
+			VirtualView = newView;
 		}
-
-		protected override void OnTapped(TappedRoutedEventArgs e)
+		else
 		{
-			base.OnTapped(e);
-
-			if (PositionInfo != null)
-				PositionInfo.IsSelected = !PositionInfo.IsSelected;
-
-			var itemPos = new ItemPosition(PositionInfo?.SectionIndex ?? 0, PositionInfo?.ItemIndex ?? 0);
-
-			if (PositionInfo?.IsSelected ?? false)
-				PositionalViewSelector?.VirtualListView?.SetSelected(itemPos);
-			else
-				PositionalViewSelector?.VirtualListView?.SetDeselected(itemPos);
+			var handler = VirtualView.Handler;
+			newView.Handler = handler;
+			handler.SetVirtualView(newView);
+			VirtualView = newView;
 		}
+	}
 
-		protected override IEnumerable<DependencyObject> GetChildrenInTabFocusOrder()
-		{
-			if (IsRecycled)
-				return Enumerable.Empty<DependencyObject>();
-			else
-				return base.GetChildrenInTabFocusOrder();
-		}
+	protected override void OnTapped(TappedRoutedEventArgs e)
+	{
+		base.OnTapped(e);
 
-		IrAutomationPeer automationPeer;
+		if (PositionInfo != null)
+			PositionInfo.IsSelected = !PositionInfo.IsSelected;
 
-		protected override AutomationPeer OnCreateAutomationPeer()
-		{
-			return automationPeer ??= new IrAutomationPeer(this);
-		}
+		var itemPos = new ItemPosition(PositionInfo?.SectionIndex ?? 0, PositionInfo?.ItemIndex ?? 0);
+
+		if (PositionInfo?.IsSelected ?? false)
+			PositionalViewSelector?.VirtualListView?.SetSelected(itemPos);
+		else
+			PositionalViewSelector?.VirtualListView?.SetDeselected(itemPos);
+	}
+
+	protected override IEnumerable<DependencyObject> GetChildrenInTabFocusOrder()
+	{
+		if (IsRecycled)
+			return Enumerable.Empty<DependencyObject>();
+		else
+			return base.GetChildrenInTabFocusOrder();
+	}
+
+	IrAutomationPeer automationPeer;
+
+	protected override AutomationPeer OnCreateAutomationPeer()
+	{
+		return automationPeer ??= new IrAutomationPeer(this);
 	}
 }

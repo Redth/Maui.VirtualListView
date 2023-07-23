@@ -1,11 +1,10 @@
-namespace Microsoft.Maui
+namespace Microsoft.Maui;
+
+public enum PositionKind
 {
-	public enum PositionKind
-	{
-		Header,
-		SectionHeader,
-		Item,
-		SectionFooter,
-		Footer
-	}
+	Header,
+	SectionHeader,
+	Item,
+	SectionFooter,
+	Footer
 }
