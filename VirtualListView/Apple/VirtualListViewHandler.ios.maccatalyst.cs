@@ -117,7 +117,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
 		=> handler?.InvalidateData();
 
-	public static void MapSetSelected(VirtualListViewHandler handler, IVirtualListView virtualListView, object parameter)
+	public static void MapSelectItems(VirtualListViewHandler handler, IVirtualListView virtualListView, object parameter)
 	{
 		if (parameter is ItemPosition[] items)
 		{
@@ -125,7 +125,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		}
 	}
 
-	public static void MapSetDeselected(VirtualListViewHandler handler, IVirtualListView virtualListView, object parameter)
+	public static void MapDeselectItems(VirtualListViewHandler handler, IVirtualListView virtualListView, object parameter)
 	{
 		if (parameter is ItemPosition[] items)
 		{

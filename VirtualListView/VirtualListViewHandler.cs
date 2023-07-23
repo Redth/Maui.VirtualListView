@@ -16,8 +16,8 @@ public partial class VirtualListViewHandler
 
 	public static CommandMapper<IVirtualListView, VirtualListViewHandler> VirtualListViewCommandMapper = new(VirtualListViewHandler.ViewCommandMapper)
 	{
-		[nameof(IVirtualListView.SetSelected)] = MapSetSelected,
-		[nameof(IVirtualListView.SetDeselected)] = MapSetDeselected
+		[nameof(IVirtualListView.SelectItems)] = MapSelectItems,
+		[nameof(IVirtualListView.DeselectItems)] = MapDeselectItems,
 	};
 
 	public VirtualListViewHandler() : base(VirtualListViewMapper, VirtualListViewCommandMapper)
@@ -76,78 +76,83 @@ public partial class VirtualListViewHandler
 			return selectedItems.Contains(new ItemPosition(sectionIndex, itemIndex));
 	}
 
-	public void SetSelected(params ItemPosition[] paths)
+	public void SelectItems(params ItemPosition[] paths)
 	{
 		if (VirtualView is null)
 			return;
 
+		// Can't select any items in none mode
 		if (VirtualView.SelectionMode == SelectionMode.None)
 			return;
 
-		var prev = selectedItems.ToArray();
+		// Can't select multiple items in single mode
+		if (VirtualView.SelectionMode == SelectionMode.Single && selectedItems.Count > 0)
+			return;
 
-		IReadOnlyList<ItemPosition> current;
+		// Keep track of previous selection state
+		var prev = new List<ItemPosition>(selectedItems);
 
 		lock (selectedItemsLocker)
 		{
-			if (VirtualView.SelectionMode == SelectionMode.Single)
-			{
-				current = paths.Any()
-					? new List<ItemPosition> { paths.First() }
-					: new List<ItemPosition>();
-			}
-			else if (VirtualView.SelectionMode == SelectionMode.Multiple)
-			{
-				foreach (var path in paths)
-				{
-					if (!selectedItems.Contains(path))
-						selectedItems.Add(path);
-				}
+			var toAdd = new List<ItemPosition>();
 
-				current = selectedItems;
-			}
-			else
+			foreach (var path in paths)
 			{
-				current = new List<ItemPosition>();
+				// Check if the item is already selected
+				if (selectedItems.Contains(path))
+					continue;
+
+				toAdd.Add(path);
 			}
+
+			foreach (var path in toAdd)
+				selectedItems.Add(path);
+
+			Invoke(nameof(SelectItems), toAdd.ToArray());
 		}
 
 		// Raise event
-		VirtualView.OnSelectedItemsChanged(new SelectedItemsChangedEventArgs(prev, current));
+		VirtualView.OnSelectedItemsChanged(new SelectedItemsChangedEventArgs(prev, selectedItems));
 	}
 
-	public void SetDeselected(params ItemPosition[] paths)
+
+
+	public void DeselectItems(params ItemPosition[] paths)
 	{
 		if (VirtualView is null)
 			return;
 
-		if (VirtualView.SelectionMode == Maui.SelectionMode.None)
+		// Nothing to deselect in none mode
+		if (VirtualView.SelectionMode == SelectionMode.None)
+			return;
+
+		// Nothing to deselect in single mode if we have no items selected
+		if (VirtualView.SelectionMode == SelectionMode.Single && selectedItems.Count <= 0)
 			return;
 
 		var prev = new List<ItemPosition>(selectedItems);
 
-		IReadOnlyList<ItemPosition> current;
-
 		lock (selectedItemsLocker)
 		{
-			if (VirtualView.SelectionMode == Maui.SelectionMode.Multiple)
-			{
-				foreach (var path in paths)
-				{
-					if (selectedItems.Contains(path))
-						selectedItems.Remove(path);
-				}
+			var toRemove = new List<ItemPosition>();
 
-				current = selectedItems ?? new List<ItemPosition>();
-			}
-			else
+			foreach (var path in paths)
 			{
-				current = new List<ItemPosition>();
+				// If our selection doesn't contain the requested item, we can't deselect it
+				if (!selectedItems.Contains(path))
+					continue;
+
+				toRemove.Add(path);
 			}
+
+			foreach (var path in toRemove)
+				selectedItems.Remove(path);
+
+			Invoke(nameof(DeselectItems), toRemove.ToArray());
 		}
 
 		// Raise event
-		VirtualView.OnSelectedItemsChanged(new SelectedItemsChangedEventArgs(prev, current));
+		VirtualView.OnSelectedItemsChanged(new SelectedItemsChangedEventArgs(prev, selectedItems));
 	}
 
 	public void ClearSelection()
@@ -155,6 +160,20 @@ public partial class VirtualListViewHandler
 		if (VirtualView is null)
 			return;
 
-		selectedItems.Clear();
+		if (VirtualView.SelectionMode == SelectionMode.None)
+			return;
+
+		var prev = new List<ItemPosition>(selectedItems);
+
+		lock (selectedItemsLocker)
+		{
+			var toRemove = new List<ItemPosition>(selectedItems);
+			selectedItems.Clear();
+
+			Invoke(nameof(ClearSelection), toRemove.ToArray());
+		}
+
+		// Raise event
+		//VirtualView.OnSelectedItemsChanged(new SelectedItemsChangedEventArgs(prev, selectedItems));
 	}
 }

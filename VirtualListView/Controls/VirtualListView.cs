@@ -316,11 +316,11 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public void OnSelectedItemsChanged(SelectedItemsChangedEventArgs args)
 		=> this.SelectedItemsChanged?.Invoke(this, args);
 
-	public void SetSelected(params ItemPosition[] paths)
-		=> (Handler as VirtualListViewHandler).SetSelected(paths);
+	public void SelectItems(params ItemPosition[] paths)
+		=> (Handler as VirtualListViewHandler).SelectItems(paths);
 
-	public void SetDeselected(params ItemPosition[] paths)
-		=> (Handler as VirtualListViewHandler).SetDeselected(paths);
+	public void DeselectItems(params ItemPosition[] paths)
+		=> (Handler as VirtualListViewHandler).DeselectItems(paths);
 
 	public void ClearSelection()
 		=> (Handler as VirtualListViewHandler).ClearSelection();

@@ -88,13 +88,13 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Swip
 	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
 		=> handler.InvalidateData();
 
-	public static void MapSetSelected(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+	public static void MapSelectItems(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
 	{
 		if (parameter is ItemPosition[] itemPositions)
 			UpdateSelection(handler, itemPositions, true);
 	}
 
-	public static void MapSetDeselected(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+	public static void MapDeselectItems(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
 	{
 		if (parameter is ItemPosition[] itemPositions)
 			UpdateSelection(handler, itemPositions, false);

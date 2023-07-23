@@ -134,9 +134,9 @@ internal partial class RvAdapter : RecyclerView.Adapter
 				positionInfo.IsSelected = rvh.PositionInfo.IsSelected;
 
 			if (rvh.PositionInfo.IsSelected)
-				handler.VirtualView?.SetSelected(p);
+				handler.VirtualView?.SelectItems(p);
 			else
-				handler.VirtualView?.SetDeselected(p);
+				handler.VirtualView?.DeselectItems(p);
 		});
 
 		viewHolder.ItemView.SetOnClickListener(clickListener);

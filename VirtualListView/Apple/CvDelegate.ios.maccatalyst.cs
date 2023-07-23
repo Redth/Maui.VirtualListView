@@ -38,9 +38,9 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 				selectedCell.PositionInfo.ItemIndex);
 
 			if (selected)
-				Handler?.VirtualView?.SetSelected(itemPos);
+				Handler?.VirtualView?.SelectItems(itemPos);
 			else
-				Handler?.VirtualView?.SetDeselected(itemPos);
+				Handler?.VirtualView?.DeselectItems(itemPos);
 		}
 
 		//var updatedVisibleRect = collectionView.ConvertRectToView(collectionView.Bounds, selectedCell);

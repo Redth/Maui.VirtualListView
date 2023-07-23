@@ -86,12 +86,9 @@ internal class IrElementContainer : ContentControl
 		var itemPos = new ItemPosition(PositionInfo?.SectionIndex ?? 0, PositionInfo?.ItemIndex ?? 0);
 
 		if (PositionInfo?.IsSelected ?? false)
-			PositionalViewSelector?.VirtualListView?.SetSelected(itemPos);
+			PositionalViewSelector?.VirtualListView?.SelectItems(itemPos);
 		else
-			PositionalViewSelector?.VirtualListView?.SetDeselected(itemPos);
-
-		if (VirtualView is IPositionInfo positionInfo)
-			positionInfo.IsSelected = PositionInfo?.IsSelected ?? false;
+			PositionalViewSelector?.VirtualListView?.DeselectItems(itemPos);
 	}
 
 	protected override IEnumerable<DependencyObject> GetChildrenInTabFocusOrder()

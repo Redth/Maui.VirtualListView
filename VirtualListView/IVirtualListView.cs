@@ -29,9 +29,9 @@ public interface IVirtualListView : IView
 
 	bool IsItemSelected(int sectionIndex, int itemIndex);
 
-	void SetSelected(params ItemPosition[] paths);
+	void SelectItems(params ItemPosition[] paths);
 
-	void SetDeselected(params ItemPosition[] paths);
+	void DeselectItems(params ItemPosition[] paths);
 
 	void ClearSelection();
 
