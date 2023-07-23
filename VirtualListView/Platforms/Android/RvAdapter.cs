@@ -129,6 +129,9 @@ internal partial class RvAdapter : RecyclerView.Adapter
 			var p = new ItemPosition(rvh.PositionInfo.SectionIndex, rvh.PositionInfo.ItemIndex);
 
 			rvh.PositionInfo.IsSelected = !rvh.PositionInfo.IsSelected;
+			
+			if (rvh.VirtualView is IPositionInfo positionInfo)
+				positionInfo.IsSelected = rvh.PositionInfo.IsSelected;
 
 			if (rvh.PositionInfo.IsSelected)
 				handler.VirtualView?.SetSelected(p);
