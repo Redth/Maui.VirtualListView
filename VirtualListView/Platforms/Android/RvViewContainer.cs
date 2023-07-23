@@ -1,44 +1,37 @@
-﻿using System;
-using AContext = Android.Content.Context;
-using AView = Android.Views.View;
-using AViewGroup = Android.Views.ViewGroup;
-using Microsoft.Maui;
-using Microsoft.Maui.HotReload;
-using Microsoft.Maui.Graphics;
+﻿using AView = Android.Views.View;
 using Microsoft.Maui.Platform;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui;
+
+sealed class RvViewContainer : Android.Widget.FrameLayout
 {
-	sealed class RvViewContainer : Android.Widget.FrameLayout // AViewGroup
+	public RvViewContainer(IMauiContext context)
+		: base(context.Context ?? throw new ArgumentNullException($"{nameof(context.Context)}"))
 	{
-		public RvViewContainer(IMauiContext context)
-			: base(context.Context ?? throw new ArgumentNullException($"{nameof(context.Context)}"))
+		MauiContext = context;
+		Id = AView.GenerateViewId();
+	}
+
+	public readonly IMauiContext MauiContext;
+
+	public IView VirtualView { get; private set; }
+
+	public AView NativeView { get; private set; }
+
+	public void SwapView(IView newView)
+	{
+		if (VirtualView == null || VirtualView.Handler == null || NativeView == null)
 		{
-			MauiContext = context;
-			Id = AView.GenerateViewId();
+			NativeView = newView.ToPlatform(MauiContext);
+			VirtualView = newView;
+			AddView(NativeView);
 		}
-
-		public readonly IMauiContext MauiContext;
-
-		public IView VirtualView { get; private set; }
-
-		public AView NativeView { get; private set; }
-
-		public void SwapView(IView newView)
+		else
 		{
-			if (VirtualView == null || VirtualView.Handler == null || NativeView == null)
-			{
-				NativeView = newView.ToPlatform(MauiContext);
-				VirtualView = newView;
-				AddView(NativeView);
-			}
-			else
-			{
-				var handler = VirtualView.Handler;
-				newView.Handler = handler;
-				handler.SetVirtualView(newView);
-				VirtualView = newView;
-			}
+			var handler = VirtualView.Handler;
+			newView.Handler = handler;
+			handler.SetVirtualView(newView);
+			VirtualView = newView;
 		}
 	}
 }

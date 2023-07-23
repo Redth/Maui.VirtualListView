@@ -17,7 +17,7 @@ public partial class MusicLibraryPage : ContentPage
 		{
 			Dispatcher.Dispatch(() =>
 			{
-				vlv.SetSelected(new ItemPosition(0, 2), new ItemPosition(0, 4));
+				vlv.SelectItems(new ItemPosition(0, 2), new ItemPosition(0, 4));
 			});
 		});
 	}

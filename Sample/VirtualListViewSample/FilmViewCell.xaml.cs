@@ -7,13 +7,12 @@ using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Xaml;
 
-namespace VirtualListViewSample
+namespace VirtualListViewSample;
+
+public partial class FilmViewCell : VirtualViewCell
 {
-	public partial class FilmViewCell : VirtualViewCell
+	public FilmViewCell()
 	{
-		public FilmViewCell()
-		{
-			InitializeComponent();
-		}
+		InitializeComponent();
 	}
 }

@@ -1,156 +1,180 @@
-using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Layouts;
-using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Text;
+namespace Microsoft.Maui.Controls;
 
-namespace Microsoft.Maui.Controls
+public class VirtualViewCell : ContentView, IPositionInfo
 {
-	public class VirtualViewCell : ContentView, IPositionInfo
+	public VirtualViewCell() : base()
 	{
-		public VirtualViewCell() : base()
+		UpdateBackground();
+	}
+
+	public static readonly BindableProperty SelectedBackgroundProperty =
+		BindableProperty.Create(nameof(SelectedBackground), typeof(Brush), typeof(VirtualViewCell), new SolidColorBrush(Colors.Transparent),
+			propertyChanged: (bindableObj, oldValue, newValue) =>
+			{
+				if (bindableObj is VirtualViewCell self)
+				{
+					self.UpdateBackground();
+				}
+			});
+
+	public Brush SelectedBackground
+	{
+		get => (Brush)GetValue(SelectedBackgroundProperty);
+		set => SetValue(SelectedBackgroundProperty, value);
+	}
+
+	public static readonly BindableProperty UnselectedBackgroundProperty =
+		BindableProperty.Create(nameof(UnselectedBackground), typeof(Brush), typeof(VirtualViewCell), new SolidColorBrush(Colors.Transparent),
+			propertyChanged: (bindableObj, oldValue, newValue) =>
+			{
+				if (bindableObj is VirtualViewCell self)
+				{
+					self.UpdateBackground();
+				}
+			});
+
+	public Brush UnselectedBackground
+	{
+		get => (Brush)GetValue(UnselectedBackgroundProperty);
+		set => SetValue(UnselectedBackgroundProperty, value);
+	}
+
+	bool isSelected = false;
+	public bool IsSelected
+	{
+		get => isSelected;
+		set
 		{
+			isSelected = value;
+			this.Resources[nameof(IsSelected)] = isSelected;
+			this.OnPropertyChanged(nameof(IsSelected));
+
 			UpdateBackground();
 		}
+	}
 
-		public static readonly BindableProperty SelectedBackgroundProperty =
-			BindableProperty.Create(nameof(SelectedBackground), typeof(Brush), typeof(VirtualViewCell), new SolidColorBrush(Colors.Transparent));
-
-		public Brush SelectedBackground
+	int sectionIndex = -1;
+	public int SectionIndex
+	{
+		get => sectionIndex;
+		set
 		{
-			get => (Brush)GetValue(SelectedBackgroundProperty);
-			set => SetValue(SelectedBackgroundProperty, value);
+			sectionIndex = value;
+			this.Resources[nameof(SectionIndex)] = sectionIndex;
+			this.OnPropertyChanged(nameof(SectionIndex));
 		}
+	}
 
-		public static readonly BindableProperty UnselectedBackgroundProperty =
-			BindableProperty.Create(nameof(UnselectedBackground), typeof(Brush), typeof(VirtualViewCell), new SolidColorBrush(Colors.Transparent));
-
-		public Brush UnselectedBackground
+	int itemIndex = -1;
+	public int ItemIndex
+	{
+		get => itemIndex;
+		set
 		{
-			get => (Brush)GetValue(UnselectedBackgroundProperty);
-			set => SetValue(UnselectedBackgroundProperty, value);
+			itemIndex = value;
+			this.Resources[nameof(ItemIndex)] = itemIndex;
+			this.OnPropertyChanged(nameof(ItemIndex));
+			this.OnPropertyChanged(nameof(IsFirstItemInSection));
+			this.OnPropertyChanged(nameof(IsNotFirstItemInSection));
+			this.OnPropertyChanged(nameof(IsLastItemInSection));
+			this.OnPropertyChanged(nameof(IsNotLastItemInSection));
 		}
+	}
 
-		public static readonly BindableProperty IsSelectedProperty =
-			BindableProperty.Create(nameof(IsSelected), typeof(bool), typeof(VirtualViewCell), false);
+	int itemsInSection = 0;
 
-		public bool IsSelected
+	public int ItemsInSection
+	{
+		get => itemsInSection;
+		set
 		{
-			get => (bool)GetValue(IsSelectedProperty);
-			set => SetValue(IsSelectedProperty, value);
+			itemsInSection = value;
+			this.Resources[nameof(ItemsInSection)] = itemsInSection;
+			this.OnPropertyChanged(nameof(ItemsInSection));
 		}
+	}
 
-		public static readonly BindableProperty SectionIndexProperty =
-			BindableProperty.Create(nameof(SectionIndex), typeof(int), typeof(VirtualViewCell), -1);
-
-		public int SectionIndex
+	int numberOfSections = 0;
+	public int NumberOfSections
+	{
+		get => numberOfSections;
+		set
 		{
-			get => (int)GetValue(SectionIndexProperty);
-			set => SetValue(SectionIndexProperty, value);
+			numberOfSections = value;
+			this.Resources[nameof(NumberOfSections)] = numberOfSections;
+			this.OnPropertyChanged(nameof(NumberOfSections));
 		}
+	}
 
-		public static readonly BindableProperty ItemIndexProperty =
-			BindableProperty.Create(nameof(ItemIndex), typeof(int), typeof(VirtualViewCell), -1);
-
-		public int ItemIndex
+	bool isGlobalHeader = false;
+	public bool IsGlobalHeader
+	{
+		get => isGlobalHeader;
+		set
 		{
-			get => (int)GetValue(ItemIndexProperty);
-			set => SetValue(ItemIndexProperty, value);
+			isGlobalHeader = value;
+			this.Resources[nameof(IsGlobalHeader)] = IsGlobalHeader;
+			this.OnPropertyChanged(nameof(IsGlobalHeader));
 		}
+	}
 
-		public static readonly BindableProperty ItemsInSectionProperty =
-			BindableProperty.Create(nameof(ItemsInSection), typeof(int), typeof(VirtualViewCell), -1);
-
-		public int ItemsInSection
+	bool isGlobalFooter = false;
+	public bool IsGlobalFooter
+	{
+		get => isGlobalFooter;
+		set
 		{
-			get => (int)GetValue(ItemsInSectionProperty);
-			set => SetValue(ItemsInSectionProperty, value);
+			isGlobalFooter = value;
+			this.Resources[nameof(IsGlobalFooter)] = isGlobalFooter;
+			this.OnPropertyChanged(nameof(IsGlobalFooter));
 		}
+	}
 
-		public static readonly BindableProperty NumberOfSectionsProperty =
-			BindableProperty.Create(nameof(NumberOfSections), typeof(int), typeof(VirtualViewCell), -1);
-
-		public int NumberOfSections
+	bool isSectionHeader = false;
+	public bool IsSectionHeader
+	{
+		get => isSectionHeader;
+		set
 		{
-			get => (int)GetValue(NumberOfSectionsProperty);
-			set => SetValue(NumberOfSectionsProperty, value);
+			isSectionHeader = value;
+			this.Resources[nameof(IsSectionHeader)] = isSectionHeader;
+			this.OnPropertyChanged(nameof(IsSectionHeader));
 		}
+	}
 
-
-
-		public static readonly BindableProperty IsGlobalHeaderProperty =
-			BindableProperty.Create(nameof(IsGlobalHeader), typeof(bool), typeof(VirtualViewCell), false);
-
-		public bool IsGlobalHeader
+	bool isSectionFooter = false;
+	public bool IsSectionFooter
+	{
+		get => isSectionFooter;
+		set
 		{
-			get => (bool)GetValue(IsGlobalHeaderProperty);
-			set => SetValue(IsGlobalHeaderProperty, value);
+			isSectionFooter = value;
+			this.Resources[nameof(IsSectionFooter)] = isSectionFooter;
+			this.OnPropertyChanged(nameof(IsSectionFooter));
 		}
+	}
 
-
-		public static readonly BindableProperty IsGlobalFooterProperty =
-			BindableProperty.Create(nameof(IsGlobalFooter), typeof(bool), typeof(VirtualViewCell), false);
-
-		public bool IsGlobalFooter
+	PositionKind kind = PositionKind.Item;
+	public PositionKind Kind
+	{
+		get => kind;
+		set
 		{
-			get => (bool)GetValue(IsGlobalFooterProperty);
-			set => SetValue(IsGlobalFooterProperty, value);
+			kind = value;
+			this.Resources[nameof(Kind)] = kind;
+			this.OnPropertyChanged(nameof(Kind));
 		}
-
-		public static readonly BindableProperty IsSectionHeaderProperty =
-			BindableProperty.Create(nameof(IsSectionHeader), typeof(bool), typeof(VirtualViewCell), false);
-
-		public bool IsSectionHeader
-		{
-			get => (bool)GetValue(IsSectionHeaderProperty);
-			set => SetValue(IsSectionHeaderProperty, value);
-		}
+	}
 
 
-		public static readonly BindableProperty KindProperty =
-			BindableProperty.Create(nameof(Kind), typeof(PositionKind), typeof(VirtualViewCell), PositionKind.Item);
+	public bool IsLastItemInSection => ItemIndex >= ItemsInSection - 1;
+	public bool IsNotLastItemInSection => !IsLastItemInSection;
+	public bool IsFirstItemInSection => ItemIndex == 0;
+	public bool IsNotFirstItemInSection => !IsFirstItemInSection;
 
-		public PositionKind Kind
-		{
-			get => (PositionKind)GetValue(KindProperty);
-			set => SetValue(KindProperty, value);
-		}
-
-
-		public bool IsLastItemInSection => ItemIndex >= ItemsInSection - 1;
-		public bool IsNotLastItemInSection => !IsLastItemInSection;
-		public bool IsFirstItemInSection => ItemIndex == 0;
-		public bool IsNotFirstItemInSection => !IsFirstItemInSection;
-
-
-		protected override void OnPropertyChanged([CallerMemberName] string propertyName = null)
-		{
-			base.OnPropertyChanged(propertyName);
-
-			if (propertyName == IsSelectedProperty.PropertyName
-				|| propertyName == UnselectedBackgroundProperty.PropertyName
-				|| propertyName == SelectedBackgroundProperty.PropertyName)
-			{
-				UpdateBackground();
-			}
-
-			if (propertyName == ItemIndexProperty.PropertyName
-				|| propertyName == SectionIndexProperty.PropertyName
-				|| propertyName == NumberOfSectionsProperty.PropertyName
-				|| propertyName == ItemsInSectionProperty.PropertyName)
-			{
-				OnPropertyChanged(nameof(IsNotFirstItemInSection));
-				OnPropertyChanged(nameof(IsNotLastItemInSection));
-				OnPropertyChanged(nameof(IsFirstItemInSection));
-				OnPropertyChanged(nameof(IsLastItemInSection));
-			}
-		}
-
-		void UpdateBackground()
-		{
-			var c = IsSelected ? SelectedBackground : UnselectedBackground;
-			Background = c;
-		}
+	void UpdateBackground()
+	{
+		var c = IsSelected ? SelectedBackground : UnselectedBackground;
+		Background = c;
 	}
 }

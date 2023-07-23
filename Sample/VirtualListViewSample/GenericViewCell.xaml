@@ -13,16 +13,14 @@
 	x:DataType="local:TrackInfo">
 	<vlv:VirtualViewCell.Content>
 		<Grid RowDefinitions="Auto, Auto" ColumnDefinitions="Auto,*">
-			<BoxView
+			<ContentView
 				Grid.Row="0"
 				Grid.Column="0"
 				Grid.ColumnSpan="2"
 				HorizontalOptions="FillAndExpand"
 				HeightRequest="1.4"
-				BackgroundColor="#f8f8f8"
-				x:DataType="vlv:VirtualViewCell"
-				BindingContext="{x:Reference self}"
-				IsVisible="{Binding IsNotFirstItemInSection}" />
+				Background="#f8f8f8"
+				IsVisible="{DynamicResource IsNotFirstItemInSection}" />
 
 			<Label Text="{Binding TrackId}" Grid.Row="1" Grid.Column="0" FontSize="20" TextColor="#afafaf" Margin="8,6,0,6" VerticalOptions="Center" HorizontalOptions="End" />
 			<Label Text="{Binding TrackName}" TextColor="Black" Grid.Column="1" Grid.Row="1" FontSize="20" Margin="8,6,0,6"  />

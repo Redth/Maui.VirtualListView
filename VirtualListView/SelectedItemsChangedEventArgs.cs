@@ -1,21 +1,17 @@
-using System;
-using System.Collections.Generic;
+namespace Microsoft.Maui;
 
-namespace Microsoft.Maui
+public class SelectedItemsChangedEventArgs : EventArgs
 {
-	public class SelectedItemsChangedEventArgs : EventArgs
+	public SelectedItemsChangedEventArgs(
+		IReadOnlyList<ItemPosition> previousSelection,
+		IReadOnlyList<ItemPosition> newSelection)
+		: base()
 	{
-		public SelectedItemsChangedEventArgs(
-			IReadOnlyList<ItemPosition> previousSelection,
-			IReadOnlyList<ItemPosition> newSelection)
-			: base()
-		{
-			PreviousSelection = previousSelection;
-			NewSelection = newSelection;
-		}
-
-		public IReadOnlyList<ItemPosition> PreviousSelection { get; }
-
-		public IReadOnlyList<ItemPosition> NewSelection { get; }
+		PreviousSelection = previousSelection;
+		NewSelection = newSelection;
 	}
+
+	public IReadOnlyList<ItemPosition> PreviousSelection { get; }
+
+	public IReadOnlyList<ItemPosition> NewSelection { get; }
 }
