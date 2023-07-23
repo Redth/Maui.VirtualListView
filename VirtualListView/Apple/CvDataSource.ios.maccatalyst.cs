@@ -14,7 +14,7 @@ namespace Microsoft.Maui
 
 		VirtualListViewHandler Handler { get; }
 
- 		public Func<int, int, bool> IsSelectedHandler { get; set; }
+		public Func<int, int, bool> IsSelectedHandler { get; set; }
 
 		readonly ReusableIdManager itemIdManager = new ReusableIdManager("Item");
 		readonly ReusableIdManager globalIdManager = new ReusableIdManager("Global");
@@ -135,13 +135,11 @@ namespace Microsoft.Maui
 
 		public void Reset(UICollectionView collectionView)
 		{
-			itemIdManager.ResetTemplates(collectionView);
-			sectionHeaderIdManager.ResetTemplates(collectionView);
-			sectionFooterIdManager.ResetTemplates(collectionView);
+			//itemIdManager.ResetTemplates(collectionView);
+			//sectionHeaderIdManager.ResetTemplates(collectionView);
+			//sectionFooterIdManager.ResetTemplates(collectionView);
 
 			cachedNumberOfSections = null;
-
-			Handler?.PositionalViewSelector?.Reset();
 		}
 	}
 }
