@@ -229,7 +229,7 @@ For section template selectors, subclass `AdapterSectionDataTemplateSelector`.
 
 All templates can contain a single `IView`, or alternatively you can use `VirtualViewCell` to wrap your view.
 
-The `VirtualViewCell` adds some additional bindable properties that are useful for adapting your views for things like separators and selection state:
+The `VirtualViewCell`'s `ResourceDictionary` will contain a set of values which are are useful for adapting your views for things like separators and selection state:
 
   - int SectionIndex
   - int ItemIndex
@@ -244,6 +244,8 @@ The `VirtualViewCell` adds some additional bindable properties that are useful f
   - bool IsNotFirstItemInSection
   - bool IsSelected
 
+> NOTE: These are also available as properties on `VirtualViewCell` itself, since it implements `IPositionInfo`
+
 You can access these properties from your templates.  Here's an example of displaying an item separator using these properties, as well as changing the background color based on the selection state and a converter:
 
 ```xml
@@ -252,8 +254,7 @@ You can access these properties from your templates.  Here's an example of displ
 	xmlns:xct="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
 	xmlns="http://xamarin.com/schemas/2014/forms" 
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-	x:Class="VirtualListViewSample.GenericViewCell"
-	x:Name="self">
+	x:Class="VirtualListViewSample.GenericViewCell">
   <xct:VirtualViewCell>
 		<StackLayout
 			Spacing="0"
@@ -263,7 +264,8 @@ You can access these properties from your templates.  Here's an example of displ
 				HorizontalOptions="FillAndExpand"
 				HeightRequest="1"
 				BackgroundColor="#f8f8f8"
-				IsVisible="{Binding Source={x:Reference self}, Path=IsNotFirstItemInSection}" />
+				IsVisible="{DynamicResource IsNotFirstItemInSection}" <!-- Use the automatic property -->
+ 				/>
 
 			<Border Background="#f0f0f0" StrokeShape="{RoundedRectangle CornerRadius=14}" Margin="10,5,10,5" Padding="10">
 				<Label Text="{Binding TrackName}" />
@@ -274,7 +276,7 @@ You can access these properties from your templates.  Here's an example of displ
 </xct:VirtualViewCell>
 ```
 
-Notice the `xct:VirtualViewCell` has a `x:Name="self"` name.  This allows you to reference the object and its bindable properties as the example shows inside the `BoxView`'s visibility: `IsVisible="{Binding Source={x:Reference self}, Path=IsNotFirstItemInSection}"`.
+Notice the `IsVisible="{DynamicResource IsNotFirstItemInSection}"` references a resource which has been automatically populated by the `VirtualViewCell`.
 
 ## Selection
 
@@ -288,8 +290,22 @@ In the future there will be bindable properties and maybe a way to cancel a sele
 ## Refreshing
 
 Pull to refresh is enabled for iOS/MacCatalyst and Android.  WindowsAppSDK does not have the equivalent feature so there is no support for it.
-
 You can use the `RefreshCommand` or subscribe to the `OnRefresh` event to perform your logic while the refresh indicator displays.
+You must set `IsRefreshEnabled` to true to enable the gesture.  
+You can also set the `RefreshAccentColor` to change the color of the refresh indicator.
+
+## Empty View
+
+If your adapter has <= 1 section and no items, an empty view can be displayed automatically:
+
+```xaml
+<vlv:VirtualListView.EmptyView>
+  <Grid>
+    <Label HorizontalOptions="Center" VerticalOptions="Center" Text="EMPTY" />
+  </Grid>
+</vlv:VirtualListView.EmptyView>
+```
+
 
 ## Scrolled
 
