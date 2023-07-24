@@ -176,27 +176,27 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 
 
 
-	public View RefreshView
-	{
-		get => (View)GetValue(RefreshViewProperty);
-		set => SetValue(RefreshViewProperty, value);
-	}
+	//public View RefreshView
+	//{
+	//	get => (View)GetValue(RefreshViewProperty);
+	//	set => SetValue(RefreshViewProperty, value);
+	//}
 
-	public static readonly BindableProperty RefreshViewProperty =
-		BindableProperty.Create(nameof(EmptyView), typeof(View), typeof(VirtualListView), null,
-			propertyChanged: (bobj, oldValue, newValue) =>
-			{
-				if (bobj is VirtualListView virtualListView)
-				{
-					if (oldValue is IView oldView)
-						virtualListView.RemoveLogicalChild(oldView);
+	//public static readonly BindableProperty RefreshViewProperty =
+	//	BindableProperty.Create(nameof(EmptyView), typeof(View), typeof(VirtualListView), null,
+	//		propertyChanged: (bobj, oldValue, newValue) =>
+	//		{
+	//			if (bobj is VirtualListView virtualListView)
+	//			{
+	//				if (oldValue is IView oldView)
+	//					virtualListView.RemoveLogicalChild(oldView);
 
-					if (newValue is IView newView)
-						virtualListView.AddLogicalChild(newView);
-				}
-			});
+	//				if (newValue is IView newView)
+	//					virtualListView.AddLogicalChild(newView);
+	//			}
+	//		});
 
-	IView IVirtualListView.RefreshView => RefreshView;
+	//IView IVirtualListView.RefreshView => RefreshView;
 
 
 

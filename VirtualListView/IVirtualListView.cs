@@ -31,7 +31,7 @@ public interface IVirtualListView : IView
 
 	IView EmptyView { get; }
 
-	IView RefreshView { get; }
+	// IView RefreshView { get; }
 
 	bool IsItemSelected(int sectionIndex, int itemIndex);
 
