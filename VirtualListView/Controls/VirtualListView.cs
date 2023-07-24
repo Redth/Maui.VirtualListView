@@ -1,16 +1,10 @@
-﻿using Microsoft.Maui.Adapters;
-using System.Reflection;
-using System.Windows.Input;
+﻿using System.Windows.Input;
+using Microsoft.Maui.Adapters;
 
 namespace Microsoft.Maui.Controls;
 
 public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector, IVisualTreeElement
 {
-	static VirtualListView()
-	{
-
-	}
-
 	public static readonly BindableProperty PositionInfoProperty = BindableProperty.CreateAttached(
 		nameof(PositionInfo),
 		typeof(PositionInfo),
@@ -136,8 +130,25 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	}
 
 	public static readonly BindableProperty RefreshCommandProperty =
-		BindableProperty.Create(nameof(RefreshCommandProperty), typeof(ICommand), typeof(VirtualListView), default);
+		BindableProperty.Create(nameof(RefreshCommand), typeof(ICommand), typeof(VirtualListView), default);
 
+	public Color RefreshAccentColor
+	{
+		get => (Color)GetValue(RefreshAccentColorProperty);
+		set => SetValue(RefreshAccentColorProperty, value);
+	}
+
+	public static readonly BindableProperty RefreshAccentColorProperty =
+		BindableProperty.Create(nameof(RefreshAccentColor), typeof(Color), typeof(VirtualListView), null);
+
+	public bool IsRefreshEnabled
+	{
+		get => (bool)GetValue(IsRefreshEnabledProperty);
+		set => SetValue(IsRefreshEnabledProperty, value);
+	}
+
+	public static readonly BindableProperty IsRefreshEnabledProperty =
+		BindableProperty.Create(nameof(IsRefreshEnabled), typeof(bool), typeof(VirtualListView), false);
 
 	public ListOrientation Orientation
 	{
@@ -147,6 +158,54 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 
 	public static readonly BindableProperty OrientationProperty =
 		BindableProperty.Create(nameof(Orientation), typeof(ListOrientation), typeof(VirtualListView), ListOrientation.Vertical);
+
+
+	public View EmptyView
+	{
+		get => (View)GetValue(EmptyViewProperty);
+		set => SetValue(EmptyViewProperty, value);
+	}
+
+	public static readonly BindableProperty EmptyViewProperty =
+		BindableProperty.Create(nameof(EmptyView), typeof(View), typeof(VirtualListView), null,
+			propertyChanged: (bobj, oldValue, newValue) =>
+			{
+				if (bobj is VirtualListView virtualListView)
+				{
+					if (oldValue is IView oldView)
+						virtualListView.RemoveLogicalChild(oldView);
+
+					if (newValue is IView newView)
+						virtualListView.AddLogicalChild(newView);
+				}
+			});
+
+	IView IVirtualListView.EmptyView => EmptyView;
+
+
+
+	//public View RefreshView
+	//{
+	//	get => (View)GetValue(RefreshViewProperty);
+	//	set => SetValue(RefreshViewProperty, value);
+	//}
+
+	//public static readonly BindableProperty RefreshViewProperty =
+	//	BindableProperty.Create(nameof(EmptyView), typeof(View), typeof(VirtualListView), null,
+	//		propertyChanged: (bobj, oldValue, newValue) =>
+	//		{
+	//			if (bobj is VirtualListView virtualListView)
+	//			{
+	//				if (oldValue is IView oldView)
+	//					virtualListView.RemoveLogicalChild(oldView);
+
+	//				if (newValue is IView newView)
+	//					virtualListView.AddLogicalChild(newView);
+	//			}
+	//		});
+
+	//IView IVirtualListView.RefreshView => RefreshView;
+
 
 
 
@@ -226,17 +285,17 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		=> position.Kind switch
 		{
 			PositionKind.Item =>
-				"ITEM_" + (GetDataTemplateId(
-					ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)
-					?? ItemTemplate) ?? "0"),
+				"ITEM_" +
+					(ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)
+						?? ItemTemplate)?.GetDataTemplateId() ?? "0",
 			PositionKind.SectionHeader =>
-				"SECTION_HEADER_" + (GetDataTemplateId(
-					SectionHeaderTemplateSelector?.SelectTemplate(data, position.SectionIndex)
-					?? SectionHeaderTemplate) ?? "0"),
+				"SECTION_HEADER_" +
+					(SectionHeaderTemplateSelector?.SelectTemplate(data, position.SectionIndex)
+						?? SectionHeaderTemplate)?.GetDataTemplateId() ?? "0",
 			PositionKind.SectionFooter =>
-				"SECTION_FOOTER_" + (GetDataTemplateId(
-					SectionFooterTemplateSelector?.SelectTemplate(data, position.SectionIndex)
-					?? SectionFooterTemplate) ?? "0"),
+				"SECTION_FOOTER_" +
+					(SectionFooterTemplateSelector?.SelectTemplate(data, position.SectionIndex)
+						?? SectionFooterTemplate)?.GetDataTemplateId() ?? "0",
 			PositionKind.Header =>
 				"GLOBAL_HEADER_" + (Header?.GetType()?.FullName ?? "NIL"),
 			PositionKind.Footer =>
@@ -244,71 +303,11 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 			_ => "UNKNOWN"
 		};
 
-	static PropertyInfo DataTemplateIdPropertyInfo;
-
-	string? GetDataTemplateId(DataTemplate dataTemplate)
-	{
-		DataTemplateIdPropertyInfo ??= dataTemplate.GetType().GetProperty("Id", BindingFlags.Instance | BindingFlags.NonPublic);
-
-		return DataTemplateIdPropertyInfo.GetValue(dataTemplate)?.ToString();
-
-	}
-
-	public IReadOnlyList<IVisualTreeElement> GetVisualChildren()
-	{
-		var results = new List<IVisualTreeElement>();
-
-		foreach (var c in logicalChildren)
-		{
-			if (c.view is IVisualTreeElement vte)
-				results.Add(vte);
-		}
-
-		return results;
-	}
-
-	readonly object lockLogicalChildren = new();
-	readonly List<(int section, int item, Element view)> logicalChildren = new();
-
 	public void ViewDetached(PositionInfo position, IView view)
-	{
-		var oldLogicalIndex = -1;
-		lock (lockLogicalChildren)
-		{
-			Element elem= null;
-
-			for (var i = 0; i < logicalChildren.Count; i++)
-			{
-				var child = logicalChildren[i];
-
-				if (child.section == position.SectionIndex
-					&& child.item == position.ItemIndex)
-				{
-					elem = child.view;
-					oldLogicalIndex = i;
-					break;
-				}
-			}
-
-			if (oldLogicalIndex >= 0)
-			{
-				logicalChildren.RemoveAt(oldLogicalIndex);
-				if (elem != null)
-					VisualDiagnostics.OnChildRemoved(this, elem, oldLogicalIndex);
-			}
-		}
-	}
+		=> this.RemoveLogicalChild(view);
 
 	public void ViewAttached(PositionInfo position, IView view)
-	{
-		if (view is Element elem)
-		{
-			lock (lockLogicalChildren)
-				logicalChildren.Add((position.SectionIndex, position.ItemIndex, elem));
-
-			VisualDiagnostics.OnChildAdded(this, elem);
-		}
-	}
+		=> this.AddLogicalChild(view);
 
 	public bool IsItemSelected(int sectionIndex, int itemIndex)
 		=> (Handler as VirtualListViewHandler).IsItemSelected(sectionIndex, itemIndex);

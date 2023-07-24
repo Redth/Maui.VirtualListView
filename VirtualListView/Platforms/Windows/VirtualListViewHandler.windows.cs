@@ -1,13 +1,14 @@
-﻿using Microsoft.Maui.Adapters;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Handlers;
+﻿using Microsoft.Maui.Handlers;
 using Microsoft.UI.Xaml.Controls;
-using System;
 using WStackLayout = Microsoft.UI.Xaml.Controls.StackLayout;
+using WGrid = Microsoft.UI.Xaml.Controls.Grid;
+using WVisibility = Microsoft.UI.Xaml.Visibility;
+using WFrameworkElement = Microsoft.UI.Xaml.FrameworkElement;
+using Microsoft.Maui.Platform;
 
 namespace Microsoft.Maui;
 
-public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, ItemsRepeaterScrollHost>
+public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGrid>
 {
 	ItemsRepeaterScrollHost itemsRepeaterScrollHost;
 	ScrollViewer scrollViewer;
@@ -15,9 +16,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Item
 	IrSource irSource;
 	IrElementFactory elementFactory;
 	WStackLayout layout;
-
-
-	internal PositionalViewSelector PositionalViewSelector { get; private set; }
+	WGrid rootLayout;
+	WFrameworkElement emptyView;
 
 	Orientation NativeOrientation =>
 		VirtualView.Orientation switch
@@ -27,8 +27,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Item
 			_ => Orientation.Vertical
 		};
 
-	protected override ItemsRepeaterScrollHost CreatePlatformView()
+	protected override WGrid CreatePlatformView()
 	{
+		rootLayout = new WGrid();
 		itemsRepeaterScrollHost = new ItemsRepeaterScrollHost();
 		scrollViewer = new ScrollViewer();
 		itemsRepeater = new ItemsRepeater();
@@ -39,8 +40,11 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Item
 		scrollViewer.Content = itemsRepeater;
 		itemsRepeaterScrollHost.ScrollViewer = scrollViewer;
 
-		itemsRepeaterScrollHost.Loaded += ItemsRepeaterScrollHost_Loaded; ;
-		return itemsRepeaterScrollHost;
+		itemsRepeaterScrollHost.Loaded += ItemsRepeaterScrollHost_Loaded;
+
+		rootLayout.Children.Add(itemsRepeaterScrollHost);
+
+		return rootLayout;
 	}
 
 	private void ItemsRepeaterScrollHost_Loaded(object sender, UI.Xaml.RoutedEventArgs e)
@@ -51,7 +55,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Item
 			VirtualView.Scrolled(new ScrolledEventArgs(scrollViewer.HorizontalOffset, scrollViewer.VerticalOffset)));
 	}
 
-	protected override void ConnectHandler(ItemsRepeaterScrollHost nativeView)
+	protected override void ConnectHandler(WGrid nativeView)
 	{
 		base.ConnectHandler(nativeView);
 
@@ -64,7 +68,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Item
 		itemsRepeater.ItemsSource = irSource;
 	}
 
-	protected override void DisconnectHandler(ItemsRepeaterScrollHost nativeView)
+	protected override void DisconnectHandler(WGrid nativeView)
 	{
 		itemsRepeater.ItemTemplate = null;
 		elementFactory.Dispose();
@@ -79,6 +83,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Item
 	public void InvalidateData()
 	{
 		irSource?.Reset();
+		UpdateEmptyViewVisibility();
 	}
 
 	public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
@@ -134,5 +139,41 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Item
 	{
 		handler.layout.Orientation = handler.NativeOrientation;
 		handler.InvalidateData();
+	}
+
+	public static void MapRefreshAccentColor(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+	}
+
+	public static void MapIsRefreshEnabled(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+	}
+
+
+	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		handler?.UpdateEmptyView();
+	}
+
+	void UpdateEmptyViewVisibility()
+	{
+		if (emptyView is not null)
+		{
+			var visibility = ShouldShowEmptyView ? WVisibility.Visible : WVisibility.Collapsed;
+			emptyView.Visibility = visibility;
+		}
+	}
+
+	void UpdateEmptyView()
+	{
+		if (emptyView != null)
+		{
+			rootLayout.Children.Remove(emptyView);
+		}
+
+		emptyView = VirtualView?.EmptyView?.ToPlatform(MauiContext);
+		rootLayout.Children.Add(emptyView);
+
+		UpdateEmptyViewVisibility();
 	}
 }

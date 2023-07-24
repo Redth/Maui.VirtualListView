@@ -13,6 +13,11 @@
 			x:Name="vlv"
 			SelectedItemsChanged="vlv_SelectedItemsChanged"
 			SelectionMode="Multiple">
+			<vlv:VirtualListView.EmptyView>
+				<Grid>
+					<Label HorizontalOptions="Center" VerticalOptions="Center" Text="EMPTY!!!" />
+				</Grid>
+			</vlv:VirtualListView.EmptyView>
 			<vlv:VirtualListView.ItemTemplate>
 				<DataTemplate>
 					<vlv:VirtualViewCell>

@@ -18,7 +18,7 @@ public partial class MainViewModel : INotifyPropertyChanged
 	public event PropertyChangedEventHandler PropertyChanged;
 
 	[RelayCommand]
-	async Task RefreshAsync()
+	async Task Refresh()
 	{
 		await Task.Delay(3000);
 		NotifyPropertyChanged(nameof(Adapter));
