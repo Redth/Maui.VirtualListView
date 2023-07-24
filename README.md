@@ -30,6 +30,16 @@ To add the Virtual List View control to your project, you need to add `.UseVirtu
 		}
 ```
 
+### Windows App SDK 1.3.*
+
+There is a bug that is fixed in Windows App SDK 1.3.x and newer with `IElementFactory`.  You will need to explicitly specify a newer version of `Microsoft.WindowsAppSdk` NuGet package to use than is implicitly referenced by .NET MAUI at this time:
+
+```xml
+<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+  <PackageReference Include="Microsoft.WindowsAppSdk" Version="1.3.230602002" />
+</ItemGroup>
+```
+
 ## Adapter / Data Source
 
 Instead of starting with a typical C# collection such as `ObservableCollection`, the VirtualListView takes the adapter approach that is common to iOS and Android has the concept of grouping built in (called Sections).
