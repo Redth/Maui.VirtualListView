@@ -175,6 +175,12 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 			handler.refreshControl.TintColor = virtualListView.RefreshAccentColor.ToPlatform();
 	}
 
+	public static void MapIsRefreshEnabled(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		handler.refreshControl.Enabled = virtualListView.IsRefreshEnabled;
+	}
+
+
 	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
 		handler?.UpdateEmptyView();

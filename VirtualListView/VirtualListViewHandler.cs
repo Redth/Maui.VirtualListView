@@ -13,6 +13,7 @@ public partial class VirtualListViewHandler
 		[nameof(IVirtualListView.SelectionMode)] = MapSelectionMode,
 		[nameof(IVirtualListView.Orientation)] = MapOrientation,
 		[nameof(IVirtualListView.RefreshAccentColor)] = MapRefreshAccentColor,
+		[nameof(IVirtualListView.IsRefreshEnabled)] = MapIsRefreshEnabled,
 		[nameof(IVirtualListView.EmptyView)] = MapEmptyView,
 	};
 

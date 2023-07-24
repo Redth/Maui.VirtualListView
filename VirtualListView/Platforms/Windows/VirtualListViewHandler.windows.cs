@@ -145,6 +145,11 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	{
 	}
 
+	public static void MapIsRefreshEnabled(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+	}
+
+
 	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
 		handler?.UpdateEmptyView();

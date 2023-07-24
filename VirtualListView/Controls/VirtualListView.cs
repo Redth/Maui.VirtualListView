@@ -141,6 +141,14 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty RefreshAccentColorProperty =
 		BindableProperty.Create(nameof(RefreshAccentColor), typeof(Color), typeof(VirtualListView), null);
 
+	public bool IsRefreshEnabled
+	{
+		get => (bool)GetValue(IsRefreshEnabledProperty);
+		set => SetValue(IsRefreshEnabledProperty, value);
+	}
+
+	public static readonly BindableProperty IsRefreshEnabledProperty =
+		BindableProperty.Create(nameof(IsRefreshEnabled), typeof(bool), typeof(VirtualListView), false);
 
 	public ListOrientation Orientation
 	{

@@ -20,6 +20,8 @@ public interface IVirtualListView : IView
 	Color RefreshAccentColor { get; }
 
 	void Refresh();
+
+	bool IsRefreshEnabled { get; }
 	
 	void Scrolled(ScrolledEventArgs args);
 

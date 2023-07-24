@@ -142,6 +142,11 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 			handler.swipeRefreshLayout.SetColorSchemeColors(virtualListView.RefreshAccentColor.ToPlatform());
 	}
 
+	public static void MapIsRefreshEnabled(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		handler.swipeRefreshLayout.Enabled = virtualListView.IsRefreshEnabled;
+	}
+
 	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
 		handler?.UpdateEmptyView();
