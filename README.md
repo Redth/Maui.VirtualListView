@@ -1,6 +1,9 @@
 # VirtualListView for .NET MAUI
 This is an experiment in creating a virtualized ListView control for .NET MAUI to support simple, fast, multi-templated, uneven item sized lists by not adding too many bells and whistles and using an adapter pattern data source.
 
+![Nuget: Redth.Maui.VirtualListView](https://img.shields.io/nuget/vpre/Redth.Maui.VirtualListView?logo=nuget&label=Redth.Maui.VirtualListView&color=004880&link=https%3A%2F%2Fwww.nuget.org%2Fpackages%2FRedth.Maui.VirtualListView%2F)
+
+
 ## Vroooom!
 
 ![VirtualListView-Maui-MacCatalyst](https://user-images.githubusercontent.com/271950/129656785-ad302f84-4439-4f96-9405-29e62ed84861.gif)
