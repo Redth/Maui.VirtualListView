@@ -130,7 +130,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	}
 
 	public static readonly BindableProperty RefreshCommandProperty =
-		BindableProperty.Create(nameof(RefreshCommandProperty), typeof(ICommand), typeof(VirtualListView), default);
+		BindableProperty.Create(nameof(RefreshCommand), typeof(ICommand), typeof(VirtualListView), default);
 
 	public Color RefreshAccentColor
 	{
