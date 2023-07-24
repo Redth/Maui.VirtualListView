@@ -166,13 +166,13 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 	void UpdateEmptyView()
 	{
-		if (emptyView != null)
-		{
+		if (emptyView is not null)
 			rootLayout.Children.Remove(emptyView);
-		}
 
 		emptyView = VirtualView?.EmptyView?.ToPlatform(MauiContext);
-		rootLayout.Children.Add(emptyView);
+
+		if (emptyView is not null)
+			rootLayout.Children.Add(emptyView);
 
 		UpdateEmptyViewVisibility();
 	}
