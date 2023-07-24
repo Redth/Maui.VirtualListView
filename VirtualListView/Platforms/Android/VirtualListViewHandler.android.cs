@@ -1,4 +1,5 @@
 ﻿using Android.Views;
+using Android.Widget;
 using AndroidX.RecyclerView.Widget;
 using AndroidX.SwipeRefreshLayout.Widget;
 using Microsoft.Maui.Handlers;
@@ -6,16 +7,19 @@ using Microsoft.Maui.Platform;
 
 namespace Microsoft.Maui;
 
-public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, SwipeRefreshLayout>
+public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, FrameLayout>
 {
+	FrameLayout rootLayout;
 	SwipeRefreshLayout swipeRefreshLayout;
 	RvAdapter adapter;
 	RecyclerView recyclerView;
 	LinearLayoutManager layoutManager;
-	PositionalViewSelector positionalViewSelector;
+	Android.Views.View emptyView;
 
-	protected override SwipeRefreshLayout CreatePlatformView()
+	protected override FrameLayout CreatePlatformView()
 	{
+		rootLayout ??= new FrameLayout(Context);
+
 		recyclerView ??= new RecyclerView(Context);
 
 		if (swipeRefreshLayout is null)
@@ -24,10 +28,12 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Swip
 			swipeRefreshLayout.AddView(recyclerView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
 		}
 
-		return swipeRefreshLayout;
+		rootLayout.AddView(swipeRefreshLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
+
+		return rootLayout;
 	}
 
-	protected override void ConnectHandler(SwipeRefreshLayout nativeView)
+	protected override void ConnectHandler(FrameLayout nativeView)
 	{
 		swipeRefreshLayout.SetOnRefreshListener(new SrlRefreshListener(() =>
 		{
@@ -38,9 +44,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Swip
 		layoutManager = new LinearLayoutManager(Context);
 		//layoutManager.Orientation = LinearLayoutManager.Horizontal;
 
-		positionalViewSelector = new PositionalViewSelector(VirtualView);
+		PositionalViewSelector = new PositionalViewSelector(VirtualView);
 
-		adapter = new RvAdapter(Context, this, positionalViewSelector);
+		adapter = new RvAdapter(Context, this, PositionalViewSelector);
 		
 		recyclerView.AddOnScrollListener(new RvScrollListener((rv, dx, dy) =>
 		{
@@ -56,7 +62,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Swip
 			ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
 	}
 
-	protected override void DisconnectHandler(SwipeRefreshLayout nativeView)
+	protected override void DisconnectHandler(FrameLayout nativeView)
 	{
 		recyclerView.ClearOnScrollListeners();
 		recyclerView.SetAdapter(null);
@@ -68,7 +74,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Swip
 
 	public void InvalidateData()
 	{
-		positionalViewSelector.Reset();
+		PositionalViewSelector.Reset();
+		UpdateEmptyViewVisibility();
 		adapter?.Reset();
 		adapter?.NotifyDataSetChanged();
 	}
@@ -104,7 +111,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Swip
 	{
 		foreach (var itemPosition in itemPositions)
 		{
-			var position = handler.positionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
+			var position = handler.PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
 
 			var vh = handler.recyclerView.FindViewHolderForAdapterPosition(position);
 
@@ -129,32 +136,37 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Swip
 		handler.adapter.NotifyDataSetChanged();
 	}
 
-	class RvScrollListener : RecyclerView.OnScrollListener
+	public static void MapRefreshAccentColor(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		public RvScrollListener(Action<RecyclerView, int, int> scrollHandler)
-		{
-			ScrollHandler = scrollHandler;
-		}
-
-		Action<RecyclerView, int, int> ScrollHandler { get; }
-
-		public override void OnScrolled(RecyclerView recyclerView, int dx, int dy)
-		{
-			base.OnScrolled(recyclerView, dx, dy);
-
-			ScrollHandler?.Invoke(recyclerView, dx, dy);
-		}
+		if (virtualListView.RefreshAccentColor is not null)
+			handler.swipeRefreshLayout.SetColorSchemeColors(virtualListView.RefreshAccentColor.ToPlatform());
 	}
 
-	class SrlRefreshListener : Java.Lang.Object, SwipeRefreshLayout.IOnRefreshListener
+	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		public SrlRefreshListener(Action refreshHandler)
-		{
-			RefreshHandler = refreshHandler;
-		}
-		Action RefreshHandler { get; }
+		handler?.UpdateEmptyView();
+	}
 
-		public void OnRefresh()
-			=> RefreshHandler?.Invoke();
+	void UpdateEmptyViewVisibility()
+	{
+		if (emptyView is not null)
+			emptyView.Visibility = ShouldShowEmptyView ? ViewStates.Visible : ViewStates.Gone;
+	}
+
+	void UpdateEmptyView()
+	{
+		if (emptyView is not null)
+		{
+			emptyView.RemoveFromParent();
+			emptyView.Dispose();
+		}
+
+		emptyView = VirtualView?.EmptyView?.ToPlatform(MauiContext);
+
+		if (emptyView is not null)
+		{
+			this.rootLayout.AddView(emptyView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
+			UpdateEmptyViewVisibility();
+		}
 	}
 }

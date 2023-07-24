@@ -138,6 +138,15 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty RefreshCommandProperty =
 		BindableProperty.Create(nameof(RefreshCommandProperty), typeof(ICommand), typeof(VirtualListView), default);
 
+	public Color RefreshAccentColor
+	{
+		get => (Color)GetValue(RefreshAccentColorProperty);
+		set => SetValue(RefreshAccentColorProperty, value);
+	}
+
+	public static readonly BindableProperty RefreshAccentColorProperty =
+		BindableProperty.Create(nameof(RefreshAccentColor), typeof(Color), typeof(VirtualListView), null);
+
 
 	public ListOrientation Orientation
 	{
@@ -149,6 +158,16 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		BindableProperty.Create(nameof(Orientation), typeof(ListOrientation), typeof(VirtualListView), ListOrientation.Vertical);
 
 
+	public View EmptyView
+	{
+		get => (View)GetValue(EmptyViewProperty);
+		set => SetValue(EmptyViewProperty, value);
+	}
+
+	public static readonly BindableProperty EmptyViewProperty =
+		BindableProperty.Create(nameof(EmptyView), typeof(View), typeof(VirtualListView), null);
+
+	IView IVirtualListView.EmptyView => EmptyView;
 
 	public IVirtualListViewSelector ViewSelector => this;
 

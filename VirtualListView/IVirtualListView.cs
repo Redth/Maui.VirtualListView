@@ -17,6 +17,8 @@ public interface IVirtualListView : IView
 
 	event EventHandler DataInvalidated;
 
+	Color RefreshAccentColor { get; }
+
 	void Refresh();
 	
 	void Scrolled(ScrolledEventArgs args);
@@ -26,6 +28,8 @@ public interface IVirtualListView : IView
 	IReadOnlyList<ItemPosition> SelectedItems { get; }
 
 	ListOrientation Orientation { get; }
+
+	IView EmptyView { get; }
 
 	bool IsItemSelected(int sectionIndex, int itemIndex);
 

@@ -1,6 +1,7 @@
 ﻿using CoreGraphics;
 using Foundation;
 using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Platform;
 using UIKit;
 
 namespace Microsoft.Maui;
@@ -12,8 +13,6 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	CvDelegate cvdelegate;
 	UICollectionView collectionView;
 	UIRefreshControl refreshControl;
-
-	internal PositionalViewSelector PositionalViewSelector { get; private set; }
 
 	protected override UICollectionView CreatePlatformView()
 	{
@@ -170,16 +169,55 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		handler?.InvalidateData();
 	}
 
+	public static void MapRefreshAccentColor(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		if (virtualListView.RefreshAccentColor is not null)
+			handler.refreshControl.TintColor = virtualListView.RefreshAccentColor.ToPlatform();
+	}
+
+	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		handler?.UpdateEmptyView();
+	}
+
+	void UpdateEmptyViewVisibility()
+	{
+		if (collectionView is not null && collectionView.BackgroundView is not null)
+		{
+			var visibility = ShouldShowEmptyView ? Visibility.Visible : Visibility.Collapsed;
+
+			collectionView.BackgroundView?.UpdateVisibility(visibility);
+		}
+	}
+
+	void UpdateEmptyView()
+	{
+		if (collectionView is not null)
+		{
+			if (collectionView.BackgroundView is not null)
+			{
+				collectionView.BackgroundView.RemoveFromSuperview();
+				collectionView.BackgroundView.Dispose();
+			}
+
+			collectionView.BackgroundView = VirtualView?.EmptyView?.ToPlatform(MauiContext);
+
+			UpdateEmptyViewVisibility();
+		}
+	}
+
 	public void InvalidateData()
 	{
 		this.PlatformView.InvokeOnMainThread(() => {
 			dataSource?.Reset(collectionView);
 			PositionalViewSelector?.Reset();
+
 			layout?.InvalidateLayout();
+
+			UpdateEmptyViewVisibility();
+
 			collectionView?.SetNeedsLayout();
-
 			collectionView?.ReloadData();
-
 			collectionView?.LayoutIfNeeded();
 		});
 		

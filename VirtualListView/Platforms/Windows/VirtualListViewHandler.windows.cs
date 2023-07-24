@@ -79,6 +79,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Item
 	public void InvalidateData()
 	{
 		irSource?.Reset();
+		UpdateEmptyViewVisibility();
 	}
 
 	public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
@@ -134,5 +135,24 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Item
 	{
 		handler.layout.Orientation = handler.NativeOrientation;
 		handler.InvalidateData();
+	}
+
+	public static void MapRefreshAccentColor(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+	}
+
+	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		handler?.UpdateEmptyView();
+	}
+
+	void UpdateEmptyViewVisibility()
+	{
+		// TODO: Manage empty view visibility
+	}
+
+	void UpdateEmptyView()
+	{
+		// TODO: Manage empty view changing
 	}
 }

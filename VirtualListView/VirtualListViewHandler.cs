@@ -12,6 +12,8 @@ public partial class VirtualListViewHandler
 		[nameof(IVirtualListView.ViewSelector)] = MapViewSelector,
 		[nameof(IVirtualListView.SelectionMode)] = MapSelectionMode,
 		[nameof(IVirtualListView.Orientation)] = MapOrientation,
+		[nameof(IVirtualListView.RefreshAccentColor)] = MapRefreshAccentColor,
+		[nameof(IVirtualListView.EmptyView)] = MapEmptyView,
 	};
 
 	public static CommandMapper<IVirtualListView, VirtualListViewHandler> VirtualListViewCommandMapper = new(VirtualListViewHandler.ViewCommandMapper)
@@ -29,6 +31,12 @@ public partial class VirtualListViewHandler
 	{
 
 	}
+
+	internal PositionalViewSelector PositionalViewSelector { get; private set; }
+
+	bool ShouldShowEmptyView => (PositionalViewSelector?.Adapter?.Sections ?? 0) <= 1
+					&& (PositionalViewSelector?.Adapter?.ItemsForSection(0) ?? 0) <= 0;
+
 
 	public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
