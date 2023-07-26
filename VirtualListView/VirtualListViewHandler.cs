@@ -35,9 +35,18 @@ public partial class VirtualListViewHandler
 
 	internal PositionalViewSelector PositionalViewSelector { get; private set; }
 
-	bool ShouldShowEmptyView => (PositionalViewSelector?.Adapter?.GetNumberOfSections() ?? 0) <= 1
-					&& (PositionalViewSelector?.Adapter?.GetNumberOfItemsInSection(0) ?? 0) <= 0;
+	bool ShouldShowEmptyView
+	{
+		get
+		{
+			var sections = PositionalViewSelector?.Adapter?.GetNumberOfSections() ?? 0;
 
+			if (sections <= 0)
+				return true;
+
+			return (PositionalViewSelector?.Adapter?.GetNumberOfItemsInSection(0) ?? 0) <= 0;
+		}
+	}
 
 	public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
