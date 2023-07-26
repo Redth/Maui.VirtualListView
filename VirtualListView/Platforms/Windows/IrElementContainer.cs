@@ -80,6 +80,10 @@ internal class IrElementContainer : ContentControl
 	{
 		base.OnTapped(e);
 
+		// Don't select non-item positions
+		if ((PositionInfo?.Kind ?? PositionKind.Header) != PositionKind.Item)
+			return;
+
 		if (PositionInfo != null)
 			PositionInfo.IsSelected = !PositionInfo.IsSelected;
 
