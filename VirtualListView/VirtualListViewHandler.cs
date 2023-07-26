@@ -185,10 +185,12 @@ public partial class VirtualListViewHandler
 
 		lock (selectedItemsLocker)
 		{
-			var toRemove = new List<ItemPosition>(selectedItems);
+			var toRemove = selectedItems.ToArray();
 			selectedItems.Clear();
 
-			Invoke(nameof(ClearSelection), toRemove.ToArray());
+			UpdateSelection(this, toRemove, false);
+
+			Invoke(nameof(ClearSelection), toRemove);
 		}
 
 		// Raise event

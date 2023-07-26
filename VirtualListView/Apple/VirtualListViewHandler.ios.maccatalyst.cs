@@ -121,7 +121,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	{
 		if (parameter is ItemPosition[] items)
 		{
-			UpdateSelected(handler, items, true);
+			UpdateSelection(handler, items, true);
 		}
 	}
 
@@ -129,11 +129,11 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	{
 		if (parameter is ItemPosition[] items)
 		{
-			UpdateSelected(handler, items, false);
+			UpdateSelection(handler, items, false);
 		}
 	}
 
-	static void UpdateSelected(VirtualListViewHandler handler, ItemPosition[] itemPositions, bool selected)
+	static void UpdateSelection(VirtualListViewHandler handler, ItemPosition[] itemPositions, bool selected)
 	{
 		foreach (var itemPosition in itemPositions)
 		{
