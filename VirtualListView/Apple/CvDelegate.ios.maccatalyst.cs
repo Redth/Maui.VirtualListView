@@ -26,7 +26,7 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 
 	void HandleSelection(UICollectionView collectionView, NSIndexPath indexPath, bool selected)
 	{
-		UIView.AnimationsEnabled = false;
+		//UIView.AnimationsEnabled = false;
 		var selectedCell = collectionView.CellForItem(indexPath) as CvCell;
 
 		if ((selectedCell?.PositionInfo?.Kind ?? PositionKind.Header) == PositionKind.Item)
@@ -55,7 +55,7 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 
 	bool IsRealItem(NSIndexPath indexPath)
 	{
-		var info = Handler?.PositionalViewSelector?.GetInfo(indexPath.Section, (int)indexPath.Item);
+		var info = Handler?.PositionalViewSelector?.GetInfo(indexPath.Item.ToInt32());
 		return (info?.Kind ?? PositionKind.Header) == PositionKind.Item;
 	}
 }

@@ -15,7 +15,6 @@ internal class PositionalViewSelector
 		VirtualListView = virtualListView;
 	}
 
-	//int? cachedTotalCount;
 	public int TotalCount
 		=> GetTotalCount();
 
@@ -45,114 +44,6 @@ internal class PositionalViewSelector
 
 		return sum;
 	}
-
-#if IOS || MACCATALYST
-
-	internal int GetNumberOfSections()
-	{
-		var sections = Math.Max(Adapter.GetNumberOfSections(), 0);
-		if (HasGlobalHeader)
-			sections++;
-		if (HasGlobalFooter)
-			sections++;
-
-		return sections;
-	}
-
-	internal int GetNumberOfItemsForSection(int sectionIndex)
-	{
-		var realSection = sectionIndex;
-
-		if (HasGlobalHeader)
-		{
-			if (sectionIndex == 0)
-				return 1;
-
-			realSection--;
-		}
-
-		if (HasGlobalFooter)
-		{
-			if (sectionIndex >= GetNumberOfSections() - 1)
-				return 1;
-		}
-
-		var itemsCount = Adapter?.GetNumberOfItemsInSection((int)realSection) ?? 0;
-
-		if (ViewSelector?.SectionHasHeader((int)realSection) ?? false)
-			itemsCount++;
-
-		if (ViewSelector?.SectionHasFooter((int)realSection) ?? false)
-			itemsCount++;
-
-		return itemsCount;
-	}
-
-	public PositionInfo GetInfo(int sectionIndex, int itemIndex)
-	{
-		var realSectionIndex = sectionIndex;
-
-		if (HasGlobalHeader)
-		{
-			if (sectionIndex == 0)
-				return PositionInfo.ForHeader(0);
-
-			// Global header takes up a section, real adapter is 1 less
-			realSectionIndex--;
-		}
-
-		var realNumberOfSections = Adapter?.GetNumberOfSections() ?? 0;
-
-		if (HasGlobalFooter)
-		{
-			if (realSectionIndex >= realNumberOfSections)
-				return PositionInfo.ForFooter(-1);
-		}
-
-
-		var realItemsInSection = Adapter?.GetNumberOfItemsInSection(realSectionIndex) ?? 0;
-
-		var realItemIndex = itemIndex;
-
-		var itemsAdded = 0;
-
-		if (ViewSelector?.SectionHasHeader(realSectionIndex) ?? false)
-		{
-			itemsAdded++;
-			realItemIndex--;
-
-			if (itemIndex == 0)
-				return PositionInfo.ForSectionHeader(-1, realSectionIndex, realItemsInSection);
-		}
-
-		if (ViewSelector.SectionHasFooter(realSectionIndex))
-		{
-			itemsAdded++;
-
-			if (itemIndex >= realItemsInSection + itemsAdded - 1)
-				return PositionInfo.ForSectionFooter(-1, realSectionIndex, realItemsInSection);
-		}
-
-		return PositionInfo.ForItem(-1, realSectionIndex, realItemIndex, Adapter.GetNumberOfItemsInSection(realSectionIndex), realNumberOfSections);
-	}
-
-	public Foundation.NSIndexPath GetIndexPath(int positionSectionIndex, int positionItemIndex)
-	{
-		var realSectionIndex = positionSectionIndex;
-		var realItemIndex = positionItemIndex;
-
-		// Global header takes up one section
-		if (HasGlobalHeader)
-			realSectionIndex++;
-
-		// If the section has a header, the real item index is +1
-		if (ViewSelector?.SectionHasHeader(positionSectionIndex) ?? false)
-			realItemIndex++;
-
-		return Foundation.NSIndexPath.FromItemSection(realItemIndex, realSectionIndex);
-	}
-
-#else
 
 	public int GetPosition(int sectionIndex, int itemIndex)
 	{
@@ -246,6 +137,5 @@ internal class PositionalViewSelector
 			Kind = PositionKind.Footer
 		};
 	}
-#endif
 
 }

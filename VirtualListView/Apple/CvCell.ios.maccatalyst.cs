@@ -18,12 +18,14 @@ internal class CvCell : UICollectionViewCell
 	[Export("initWithFrame:")]
 	public CvCell(CGRect frame) : base(frame)
 	{
-		this.ContentView.AddGestureRecognizer(new UITapGestureRecognizer(() => this.TapHandler?.Invoke(this)));
+		this.ContentView.AddGestureRecognizer(new UITapGestureRecognizer(() => InvokeTap()));
 	}
 
 	public Action<CvCell> TapHandler { get; set; }
 
-	public override UIKeyCommand[] KeyCommands => new[]
+	UIKeyCommand[] keyCommands;
+
+	public override UIKeyCommand[] KeyCommands => keyCommands ??= new[]
 	{
 		UIKeyCommand.Create(new NSString("\r"), 0, new ObjCRuntime.Selector("keyCommandSelect")),
 		UIKeyCommand.Create(new NSString(" "), 0, new ObjCRuntime.Selector("keyCommandSelect")),
@@ -32,7 +34,13 @@ internal class CvCell : UICollectionViewCell
 	[Export("keyCommandSelect")]
 	public void KeyCommandSelect()
 	{
-		this.TapHandler?.Invoke(this);
+		InvokeTap();
+	}
+
+	void InvokeTap()
+	{
+		if (PositionInfo.Kind == PositionKind.Item)
+			TapHandler?.Invoke(this);
 	}
 
 	public override UICollectionViewLayoutAttributes PreferredLayoutAttributesFittingAttributes(UICollectionViewLayoutAttributes layoutAttributes)

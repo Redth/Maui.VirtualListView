@@ -137,9 +137,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	{
 		foreach (var itemPosition in itemPositions)
 		{
-			var realIndex = handler.PositionalViewSelector.GetIndexPath(itemPosition.SectionIndex, itemPosition.ItemIndex);
+			var realIndex = handler.PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
 
-			var cell = handler.collectionView.CellForItem(realIndex);
+			var cell = handler.collectionView.CellForItem(NSIndexPath.FromItemSection(realIndex, 0));
 
 			if (cell is CvCell cvcell)
 			{

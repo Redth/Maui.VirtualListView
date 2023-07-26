@@ -21,14 +21,11 @@ internal class CvDataSource : UICollectionViewDataSource
 	readonly ReusableIdManager sectionFooterIdManager = new ReusableIdManager("SectionFooter", new NSString("SectionFooter"));
 
 	public override nint NumberOfSections(UICollectionView collectionView)
-		=> Handler?.PositionalViewSelector?.GetNumberOfSections() ?? 0;
+		=> 1;
 
 	public override UICollectionViewCell GetCell(UICollectionView collectionView, NSIndexPath indexPath)
 	{
-		var section = indexPath.Section;
-		var itemIndex = (int)indexPath.Item;
-
-		var info = Handler?.PositionalViewSelector?.GetInfo((int)indexPath.Section, (int)indexPath.Item);
+		var info = Handler?.PositionalViewSelector?.GetInfo(indexPath.Item.ToInt32());
 
 		var data = Handler?.PositionalViewSelector?.Adapter?.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
 
@@ -89,6 +86,6 @@ internal class CvDataSource : UICollectionViewDataSource
 
 	public override nint GetItemsCount(UICollectionView collectionView, nint section)
 	{
-		return Handler?.PositionalViewSelector?.GetNumberOfItemsForSection(section.ToInt32()) ?? 0;
+		return Handler?.PositionalViewSelector?.TotalCount ?? 0;
 	}
 }
