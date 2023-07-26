@@ -38,6 +38,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		refreshControl = new UIRefreshControl();
 		refreshControl.AddTarget(new EventHandler((s, a) =>
 		{
+			refreshControl.BeginRefreshing();
 			VirtualView?.Refresh();
 			refreshControl.EndRefreshing();
 
