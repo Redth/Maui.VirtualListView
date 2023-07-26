@@ -23,7 +23,6 @@ class IrSource : IReadOnlyList<IrDataWrapper>, INotifyCollectionChanged
 
 	public void Reset()
 	{
-		PositionalViewSelector.Reset();
 		CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
 	}
 
