@@ -43,15 +43,14 @@ public class MusicDataAdapter : VirtualListViewAdapterBase<AlbumInfo, TrackInfo>
 	LiteDatabase database;
 	readonly List<AlbumInfo> albums;
 	readonly ILiteCollection<TrackInfo> tracks;
-	
-	public override int Sections
-		=> albums.Count();
 
-	public override TrackInfo Item(int sectionIndex, int itemIndex)
+	public override int GetNumberOfSections()
+		=> albums.Count;
+
+	public override TrackInfo GetItem(int sectionIndex, int itemIndex)
 	{
-		var section = Section(sectionIndex) as AlbumInfo;
-
-		var t = tracks.Query().Where(t => t.AlbumId == section.AlbumId).OrderBy(t => t.TrackId).Skip(itemIndex).Limit(1).First();
+		var album = GetSection(sectionIndex);
+		var t = tracks.Query().Where(t => t.AlbumId == album.AlbumId).OrderBy(t => t.TrackId).Skip(itemIndex).Limit(1).First();
 
 		t.SectionIndex = sectionIndex;
 		t.ItemIndex = itemIndex;
@@ -59,29 +58,30 @@ public class MusicDataAdapter : VirtualListViewAdapterBase<AlbumInfo, TrackInfo>
 		return t;
 	}
 
-	public override int ItemsForSection(int sectionIndex)
-		=> (Section(sectionIndex) as AlbumInfo).TrackCount;
+	Dictionary<int, int> cachedSectionCounts = new();
 
-	public override AlbumInfo Section(int sectionIndex)
+	public override int GetNumberOfItemsInSection(int sectionIndex)
 	{
-		var section = albums[sectionIndex] as AlbumInfo;
-		if (section.TrackCount <= 0)
-			section.TrackCount = tracks.Count(t => t.AlbumId == section.AlbumId);
+		if (cachedSectionCounts.TryGetValue(sectionIndex, out var count))
+			return count;
 
-		return section;
+		var albumId = GetSection(sectionIndex).AlbumId;
+
+		count = tracks.Count(t => t.AlbumId == albumId);
+
+		cachedSectionCounts.TryAdd(sectionIndex, count);
+		return count;
+	}
+
+	public override AlbumInfo GetSection(int sectionIndex)
+		=> albums[sectionIndex];
+
+	public override void InvalidateData()
+	{
+		cachedSectionCounts.Clear();
+		base.InvalidateData();
 	}
 }
 
-
-public class AlbumSection : ObservableCollection<TrackInfo>
-{
-	public AlbumSection(AlbumInfo album, IEnumerable<TrackInfo> tracks)
-		: base(tracks)
-	{
-		Album = album;
-	}
-
-	public AlbumInfo Album { get; private set; }
-}
 
 
