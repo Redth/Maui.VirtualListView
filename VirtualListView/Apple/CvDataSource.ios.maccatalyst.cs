@@ -20,24 +20,8 @@ internal class CvDataSource : UICollectionViewDataSource
 	readonly ReusableIdManager sectionHeaderIdManager = new ReusableIdManager("SectionHeader", new NSString("SectionHeader"));
 	readonly ReusableIdManager sectionFooterIdManager = new ReusableIdManager("SectionFooter", new NSString("SectionFooter"));
 
-	int? cachedNumberOfSections;
-	internal int CachedNumberOfSections
-	{
-		get
-		{
-			if (!cachedNumberOfSections.HasValue)
-			{
-				var n = Handler?.PositionalViewSelector?.Adapter?.Sections ?? -1;
-				if (n >= 0)
-					cachedNumberOfSections = n;
-			}
-
-			return cachedNumberOfSections ?? 0;
-		}
-	}
-
 	public override nint NumberOfSections(UICollectionView collectionView)
-		=> CachedNumberOfSections;
+		=> Handler?.PositionalViewSelector?.GetNumberOfSections() ?? 0;
 
 	public override UICollectionViewCell GetCell(UICollectionView collectionView, NSIndexPath indexPath)
 	{
@@ -105,39 +89,6 @@ internal class CvDataSource : UICollectionViewDataSource
 
 	public override nint GetItemsCount(UICollectionView collectionView, nint section)
 	{
-		var realSection = section;
-
-		if (Handler?.PositionalViewSelector?.HasGlobalHeader ?? false)
-		{
-			if (section == 0)
-				return 1;
-
-			realSection--;
-		}
-
-		if (Handler?.PositionalViewSelector?.HasGlobalFooter ?? false)
-		{
-			if (section >= CachedNumberOfSections - 1)
-				return 1;
-		}
-
-		var itemsCount = Handler?.PositionalViewSelector?.Adapter?.ItemsForSection((int)realSection) ?? 0;
-
-		if (Handler?.PositionalViewSelector?.ViewSelector?.SectionHasHeader((int)realSection) ?? false)
-			itemsCount++;
-
-		if (Handler?.PositionalViewSelector?.ViewSelector?.SectionHasFooter((int)realSection) ?? false)
-			itemsCount++;
-
-		return (nint)itemsCount;
-	}
-
-	public void Reset(UICollectionView collectionView)
-	{
-		//itemIdManager.ResetTemplates(collectionView);
-		//sectionHeaderIdManager.ResetTemplates(collectionView);
-		//sectionFooterIdManager.ResetTemplates(collectionView);
-
-		cachedNumberOfSections = null;
+		return Handler?.PositionalViewSelector?.GetNumberOfItemsForSection(section.ToInt32()) ?? 0;
 	}
 }

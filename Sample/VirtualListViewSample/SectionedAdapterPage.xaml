@@ -13,6 +13,9 @@
 			x:Name="vlv"
 			SelectedItemsChanged="vlv_SelectedItemsChanged"
 			SelectionMode="Single">
+			<vlv:VirtualListView.EmptyView>
+				<Label Text="Empty!" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+			</vlv:VirtualListView.EmptyView>
 			<vlv:VirtualListView.SectionHeaderTemplate>
 				<DataTemplate>
 					<Border

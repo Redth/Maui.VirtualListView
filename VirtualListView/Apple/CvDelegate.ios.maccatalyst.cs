@@ -42,14 +42,6 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 			else
 				Handler?.VirtualView?.DeselectItems(itemPos);
 		}
-
-		//var updatedVisibleRect = collectionView.ConvertRectToView(collectionView.Bounds, selectedCell);
-
-		//var contentOffset = collectionView.ContentOffset;
-		//contentOffset.X = contentOffset.X + (visibleRect.X - updatedVisibleRect.X);
-		//collectionView.ContentOffset = contentOffset;
-
-		//UIView.AnimationsEnabled = true;
 	}
 
 	public override void Scrolled(UIScrollView scrollView)
