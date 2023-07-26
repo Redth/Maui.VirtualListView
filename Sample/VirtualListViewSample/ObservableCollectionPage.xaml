@@ -18,6 +18,10 @@
 					<Label HorizontalOptions="Center" VerticalOptions="Center" Text="EMPTY!!!" />
 				</Grid>
 			</vlv:VirtualListView.EmptyView>
+			<vlv:VirtualListView.GlobalHeader>
+				<Label Text="HEADER"/>
+
+			</vlv:VirtualListView.GlobalHeader>
 			<vlv:VirtualListView.ItemTemplate>
 				<DataTemplate>
 					<vlv:VirtualViewCell>
