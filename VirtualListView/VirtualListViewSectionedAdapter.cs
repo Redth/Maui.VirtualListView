@@ -13,15 +13,15 @@ public class VirtualListViewSectionedAdapter<TSection, TItem> : VirtualListViewA
 
 	readonly IList<TSection> sections;
 
-	public override int Sections
+	public override int GetNumberOfSections()
 		=> sections.Count;
 
-	public override TSection Section(int sectionIndex)
+	public override TSection GetSection(int sectionIndex)
 		=> sections[sectionIndex];
 
-	public override TItem Item(int sectionIndex, int itemIndex)
+	public override TItem GetItem(int sectionIndex, int itemIndex)
 		=> sections[sectionIndex][itemIndex];
 
-	public override int ItemsForSection(int sectionIndex)
+	public override int GetNumberOfItemsInSection(int sectionIndex)
 		=> sections[sectionIndex].Count;
 }

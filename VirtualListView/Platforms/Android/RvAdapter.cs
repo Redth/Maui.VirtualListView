@@ -63,11 +63,11 @@ internal partial class RvAdapter : RecyclerView.Adapter
 		{
 			var data = info.Kind switch {
 				PositionKind.Item =>
-					positionalViewSelector?.Adapter?.Item(info.SectionIndex, info.ItemIndex),
+					positionalViewSelector?.Adapter?.GetItem(info.SectionIndex, info.ItemIndex),
 				PositionKind.SectionHeader =>
-					positionalViewSelector?.Adapter?.Section(info.SectionIndex),
+					positionalViewSelector?.Adapter?.GetSection(info.SectionIndex),
 				PositionKind.SectionFooter =>
-					positionalViewSelector?.Adapter?.Section(info.SectionIndex),
+					positionalViewSelector?.Adapter?.GetSection(info.SectionIndex),
 				_ => null
 			};
 
@@ -89,11 +89,11 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 		var data = info.Kind switch {
 			PositionKind.Item =>
-				positionalViewSelector?.Adapter?.Item(info.SectionIndex, info.ItemIndex),
+				positionalViewSelector?.Adapter?.GetItem(info.SectionIndex, info.ItemIndex),
 			PositionKind.SectionHeader =>
-				positionalViewSelector?.Adapter?.Section(info.SectionIndex),
+				positionalViewSelector?.Adapter?.GetSection(info.SectionIndex),
 			PositionKind.SectionFooter =>
-				positionalViewSelector?.Adapter?.Section(info.SectionIndex),
+				positionalViewSelector?.Adapter?.GetSection(info.SectionIndex),
 			_ => null
 		};
 
@@ -149,7 +149,6 @@ internal partial class RvAdapter : RecyclerView.Adapter
 		lock (lockObj)
 		{
 			cachedReuseIds.Clear();
-			positionalViewSelector.Reset();
 		}
 	}
 }

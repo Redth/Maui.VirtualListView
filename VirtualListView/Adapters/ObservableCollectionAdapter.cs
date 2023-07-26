@@ -16,12 +16,12 @@ public class ObservableCollectionAdapter<TItem> : VirtualListViewAdapterBase<obj
 	bool disposedValue;
 
 	void CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-		=> InvalidateData();
+		=> ((IVirtualListViewAdapter)this).InvalidateData();
 
-	public override TItem Item(int sectionIndex, int itemIndex)
+	public override TItem GetItem(int sectionIndex, int itemIndex)
 		=> Items[itemIndex];
 
-	public override int ItemsForSection(int sectionIndex)
+	public override int GetNumberOfItemsInSection(int sectionIndex)
 		=> Items.Count;
 
 	protected virtual void Dispose(bool disposing)

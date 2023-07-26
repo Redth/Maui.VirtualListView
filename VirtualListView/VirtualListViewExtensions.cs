@@ -7,9 +7,9 @@ internal static class VirtualListViewExtensions
 	public static object DataFor(this IVirtualListViewAdapter vlva, PositionKind kind, int sectionIndex, int itemIndex)
 		=> kind switch
 		{
-			PositionKind.Item => vlva.Item(sectionIndex, itemIndex),
-			PositionKind.SectionHeader => vlva.Section(sectionIndex),
-			PositionKind.SectionFooter => vlva.Section(sectionIndex),
+			PositionKind.Item => vlva.GetItem(sectionIndex, itemIndex),
+			PositionKind.SectionHeader => vlva.GetSection(sectionIndex),
+			PositionKind.SectionFooter => vlva.GetSection(sectionIndex),
 			_ => default
 		};
 }

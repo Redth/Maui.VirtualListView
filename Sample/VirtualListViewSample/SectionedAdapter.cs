@@ -11,16 +11,16 @@ public class SectionedAdapter : VirtualListViewAdapterBase<Section, string>
 
 	public readonly IList<Section> Items;
 
-	public override Section Section(int sectionIndex)
+	public override Section GetSection(int sectionIndex)
 		=> Items[sectionIndex];
 
-	public override int Sections
+	public override int GetNumberOfSections()
 		=> Items.Count;
 
-	public override int ItemsForSection(int sectionIndex)
+	public override int GetNumberOfItemsInSection(int sectionIndex)
 		=> Items[sectionIndex].Count;
 
-	public override string Item(int sectionIndex, int itemIndex)
+	public override string GetItem(int sectionIndex, int itemIndex)
 		=> Items[sectionIndex][itemIndex];
 
 	public void AddItem(string sectionTitle, string itemName)

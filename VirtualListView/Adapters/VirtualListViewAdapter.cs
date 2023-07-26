@@ -10,9 +10,9 @@ public class VirtualListViewAdapter<TItem> : VirtualListViewAdapterBase<object, 
 
 	readonly IList<TItem> items;
 
-	public override TItem Item(int sectionIndex, int itemIndex)
+	public override TItem GetItem(int sectionIndex, int itemIndex)
 		=> items[itemIndex];
 
-	public override int ItemsForSection(int sectionIndex)
+	public override int GetNumberOfItemsInSection(int sectionIndex)
 		=> items.Count;
 }

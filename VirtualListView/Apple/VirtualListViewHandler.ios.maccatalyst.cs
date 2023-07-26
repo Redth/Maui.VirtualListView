@@ -134,7 +134,6 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 	static void UpdateSelected(VirtualListViewHandler handler, ItemPosition[] itemPositions, bool selected)
 	{
-		
 		foreach (var itemPosition in itemPositions)
 		{
 			var realIndex = handler.PositionalViewSelector.GetIndexPath(itemPosition.SectionIndex, itemPosition.ItemIndex);
@@ -215,9 +214,6 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	public void InvalidateData()
 	{
 		this.PlatformView.InvokeOnMainThread(() => {
-			dataSource?.Reset(collectionView);
-			PositionalViewSelector?.Reset();
-
 			layout?.InvalidateLayout();
 
 			UpdateEmptyViewVisibility();

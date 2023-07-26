@@ -74,7 +74,6 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 	public void InvalidateData()
 	{
-		PositionalViewSelector.Reset();
 		UpdateEmptyViewVisibility();
 		adapter?.Reset();
 		adapter?.NotifyDataSetChanged();

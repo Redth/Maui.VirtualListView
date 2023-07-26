@@ -9,7 +9,17 @@ internal class LRUCache<TKey, TValue>
 {
 	OrderedDictionary items = new OrderedDictionary();
 
-	public int Capacity { get; set; } = 1000;
+	public int Capacity { get; set; }
+
+	public LRUCache()
+	{
+		Capacity = 1000;
+	}
+
+	public LRUCache(int capacity)
+	{
+		Capacity = capacity;
+	}
 
 	public void AddReplace(TKey key, TValue value)
 	{

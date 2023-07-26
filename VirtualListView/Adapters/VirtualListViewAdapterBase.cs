@@ -2,23 +2,28 @@
 
 public abstract class VirtualListViewAdapterBase<TSection, TItem> : IVirtualListViewAdapter
 {
-	public virtual int Sections { get; } = 1;
+	public virtual int GetNumberOfSections() => 1;
 
 	public event EventHandler OnDataInvalidated;
 
 	public virtual void InvalidateData()
-		=> OnDataInvalidated?.Invoke(this, EventArgs.Empty);
+	{
+		OnDataInvalidated?.Invoke(this, EventArgs.Empty);
+	}
 
-	public abstract TItem Item(int sectionIndex, int itemIndex);
+	public abstract TItem GetItem(int sectionIndex, int itemIndex);
 
-	public abstract int ItemsForSection(int sectionIndex);
+	public abstract int GetNumberOfItemsInSection(int sectionIndex);
 
-	public virtual TSection Section(int sectionIndex)
+	public virtual TSection GetSection(int sectionIndex)
 		=> default;
 
-	object IVirtualListViewAdapter.Item(int sectionIndex, int itemIndex)
-		=> Item(sectionIndex, itemIndex);
+	object IVirtualListViewAdapter.GetItem(int sectionIndex, int itemIndex)
+		=> GetItem(sectionIndex, itemIndex);
 
-	object IVirtualListViewAdapter.Section(int sectionIndex)
-		=> Section(sectionIndex);
+	object IVirtualListViewAdapter.GetSection(int sectionIndex)
+		=> GetSection(sectionIndex);
+
+	void IVirtualListViewAdapter.InvalidateData()
+		=> InvalidateData();
 }

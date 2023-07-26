@@ -2,13 +2,13 @@
 
 public interface IVirtualListViewAdapter
 {
-	int Sections { get; }
+	int GetNumberOfSections();
 
-	object Section(int sectionIndex);
+	object GetSection(int sectionIndex);
 
-	int ItemsForSection(int sectionIndex);
+	int GetNumberOfItemsInSection(int sectionIndex);
 
-	object Item(int sectionIndex, int itemIndex);
+	object GetItem(int sectionIndex, int itemIndex);
 
 	event EventHandler OnDataInvalidated;
 
