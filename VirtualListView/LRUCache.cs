@@ -7,48 +7,70 @@ namespace Microsoft.Maui;
 /// </summary>
 internal class LRUCache<TKey, TValue>
 {
-	OrderedDictionary items = new OrderedDictionary();
+	private readonly int _capacity;
+	private readonly Dictionary<TKey, LinkedListNode<KeyValuePair<TKey, TValue>>> _cache;
+	private readonly LinkedList<KeyValuePair<TKey, TValue>> _list;
 
 	public int Capacity { get; set; }
 
-	public LRUCache()
-	{
-		Capacity = 1000;
-	}
-
+	public LRUCache() : this(1000)
+	{}
+	
 	public LRUCache(int capacity)
 	{
-		Capacity = capacity;
+		_capacity = capacity;
+		_cache = new Dictionary<TKey, LinkedListNode<KeyValuePair<TKey, TValue>>>();
+		_list = new LinkedList<KeyValuePair<TKey, TValue>>();
 	}
 
 	public void AddReplace(TKey key, TValue value)
 	{
-		items[key] = value;
+		if (_cache.TryGetValue(key, out var node))
+		{
+			_list.Remove(node);
+			_cache.Remove(key);
+		}
 
-		if (items.Count >= Capacity)
-			items.RemoveAt(0);
+		if (_cache.Count >= _capacity)
+		{
+			var last = _list.Last;
+			_list.RemoveLast();
+			_cache.Remove(last.Value.Key);
+		}
+
+		node = _list.AddFirst(new KeyValuePair<TKey, TValue>(key, value));
+		_cache.Add(key, node);
 	}
 
 	public TValue Get(TKey key)
 	{
-		var v = items?[key];
-		if (v != null && v is TValue tv)
-			return tv;
+		if (_cache.TryGetValue(key, out var node))
+		{
+			_list.Remove(node);
+			_list.AddFirst(node);
+			return node.Value.Value;
+		}
+
 		return default;
 	}
 
 	public bool TryGet(TKey key, out TValue value)
 	{
-		var v = items?[key];
-		if (v != null && v is TValue tv)
+		if (_cache.TryGetValue(key, out var node))
 		{
-			value = tv;
+			_list.Remove(node);
+			_list.AddFirst(node);
+			value = node.Value.Value;
 			return true;
 		}
+
 		value = default;
 		return false;
 	}
 
 	public void Clear()
-		=> items.Clear();
+	{
+		_cache.Clear();
+		_list.Clear();
+	}
 }
