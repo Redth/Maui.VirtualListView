@@ -38,13 +38,13 @@ public partial class SectionedAdapterPage : ContentPage
 
 	private void vlv_SelectedItemsChanged(object sender, SelectedItemsChangedEventArgs e)
 	{
-		var item = e.NewSelection?.FirstOrDefault();
-
-		if (item != null)
+		if (e.NewSelection.Any())
 		{
-			Adapter.RemoveItem(item.Value.SectionIndex, item.Value.ItemIndex);
-		}
+			var item = e.NewSelection.First();
 
-		(sender as VirtualListView).SelectedItems = null;
+			Adapter.RemoveItem(item.SectionIndex, item.ItemIndex);
+			vlv.ClearSelectedItems();
+		}
+	
 	}
 }

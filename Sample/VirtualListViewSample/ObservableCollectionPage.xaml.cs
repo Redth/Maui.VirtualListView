@@ -17,14 +17,10 @@ public partial class ObservableCollectionPage : ContentPage
 		}
 
 		vlv.Adapter = Adapter;
-
-		//vlv.SetBinding(VirtualListView.SelectedItemsProperty, new Binding("SelectedItems", BindingMode.TwoWay, source: this));
 	}
 
 	public ObservableCollectionAdapter<string> Adapter { get; set; }
 	public ObservableCollection<string> Items = new();
-
-	//public ItemPosition[] SelectedItems = Array.Empty<ItemPosition>();
 
 	protected override void OnAppearing()
 	{
@@ -61,6 +57,5 @@ public partial class ObservableCollectionPage : ContentPage
 
 			Items.Remove(item);
 		}
-		
 	}
 }
