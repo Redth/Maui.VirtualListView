@@ -45,6 +45,6 @@ public partial class SectionedAdapterPage : ContentPage
 			Adapter.RemoveItem(item.Value.SectionIndex, item.Value.ItemIndex);
 		}
 
-		(sender as IVirtualListView)?.ClearSelection();
+		(sender as VirtualListView).SelectedItems = null;
 	}
 }

@@ -79,9 +79,9 @@ internal class CvDataSource : UICollectionViewDataSource
 		cell.PositionInfo.IsSelected = !cell.PositionInfo.IsSelected;
 
 		if (cell.PositionInfo.IsSelected)
-			Handler.VirtualView?.SelectItems(p);
+			Handler?.VirtualView?.SelectItem(p);
 		else
-			Handler.VirtualView?.DeselectItems(p);
+			Handler?.VirtualView?.DeselectItem(p);
 	}
 
 	public override nint GetItemsCount(UICollectionView collectionView, nint section)

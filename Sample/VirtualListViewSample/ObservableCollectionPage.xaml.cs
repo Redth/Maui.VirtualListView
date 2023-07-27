@@ -17,10 +17,14 @@ public partial class ObservableCollectionPage : ContentPage
 		}
 
 		vlv.Adapter = Adapter;
+
+		//vlv.SetBinding(VirtualListView.SelectedItemsProperty, new Binding("SelectedItems", BindingMode.TwoWay, source: this));
 	}
 
 	public ObservableCollectionAdapter<string> Adapter { get; set; }
 	public ObservableCollection<string> Items = new();
+
+	//public ItemPosition[] SelectedItems = Array.Empty<ItemPosition>();
 
 	protected override void OnAppearing()
 	{
@@ -47,13 +51,16 @@ public partial class ObservableCollectionPage : ContentPage
 
 	private void vlv_SelectedItemsChanged(object sender, SelectedItemsChangedEventArgs e)
 	{
-		var item = e.NewSelection?.FirstOrDefault();
-
-		if (item != null)
+		if (e.NewSelection.Any())
 		{
-			Items.RemoveAt(item.Value.ItemIndex);
-		}
+			var toDelete = e.NewSelection.First();
 
-		(sender as IVirtualListView).ClearSelection();
+			var item = Adapter.GetItem(toDelete.SectionIndex, toDelete.ItemIndex);
+
+			vlv.ClearSelectedItems();
+
+			Items.Remove(item);
+		}
+		
 	}
 }

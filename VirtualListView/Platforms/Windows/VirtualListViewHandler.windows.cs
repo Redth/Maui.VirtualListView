@@ -105,7 +105,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	{
 		if (parameter is ItemPosition[] items && items != null && items.Length > 0)
 		{
-			UpdateSelection(handler, items, true);
+			PlatformUpdateSelection(handler, items, true);
 		}
 	}
 
@@ -113,11 +113,11 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	{
 		if (parameter is ItemPosition[] items && items != null && items.Length > 0)
 		{
-			UpdateSelection(handler, items, false);
+			PlatformUpdateSelection(handler, items, false);
 		}
 	}
 
-	static void UpdateSelection(VirtualListViewHandler handler, ItemPosition[] itemPositions, bool selected)
+	static void PlatformUpdateSelection(VirtualListViewHandler handler, ItemPosition[] itemPositions, bool selected)
 	{
 		foreach (var itemPosition in itemPositions)
 		{

@@ -231,16 +231,53 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		OnScrolled?.Invoke(this, args);
 	}
 
+	public static readonly BindableProperty ScrolledCommandProperty =
+		BindableProperty.Create(nameof(ScrolledCommandProperty), typeof(ICommand), typeof(VirtualListView), default);
+
 	public ICommand ScrolledCommand
 	{
 		get => (ICommand)GetValue(ScrolledCommandProperty);
 		set => SetValue(ScrolledCommandProperty, value);
 	}
 
-	public IReadOnlyList<ItemPosition> SelectedItems => throw new NotImplementedException();
+	public static readonly BindableProperty SelectedItemsProperty =
+		BindableProperty.Create(nameof(SelectedItemsProperty), typeof(IList<ItemPosition>), typeof(VirtualListView), Array.Empty<ItemPosition>(),
+			propertyChanged: (bobj, ov, nv) =>
+			{
+				if (bobj is VirtualListView vlv)
+				{
+					Console.WriteLine($"SelectedItems: " + string.Join(", ", nv));
+				}
+			});
 
-	public static readonly BindableProperty ScrolledCommandProperty =
-		BindableProperty.Create(nameof(ScrolledCommandProperty), typeof(ICommand), typeof(VirtualListView), default);
+	public IList<ItemPosition> SelectedItems
+	{
+		get => (IList<ItemPosition>)GetValue(SelectedItemsProperty);
+		set => SetValue(SelectedItemsProperty, value ?? Array.Empty<ItemPosition>());
+	}
+
+	public void DeselectItem(ItemPosition itemPosition)
+	{
+		var current = SelectedItems.ToList();
+		if (current.Contains(itemPosition))
+		{
+			current.Remove(itemPosition);
+			SelectedItems = current.ToArray();
+			
+		}
+	}
+
+	public void SelectItem(ItemPosition itemPosition)
+	{
+		var current = SelectedItems;
+		if (!current.Contains(itemPosition))
+			SelectedItems = current.Append(itemPosition).ToArray();
+	}
+
+	public void ClearSelectedItems()
+	{
+		SelectedItems = Array.Empty<ItemPosition>();
+	}
 
 	public void InvalidateData()
 	{
@@ -309,18 +346,18 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public void ViewAttached(PositionInfo position, IView view)
 		=> this.AddLogicalChild(view);
 
-	public bool IsItemSelected(int sectionIndex, int itemIndex)
-		=> (Handler as VirtualListViewHandler).IsItemSelected(sectionIndex, itemIndex);
+	//public bool IsItemSelected(int sectionIndex, int itemIndex)
+	//	=> (Handler as VirtualListViewHandler).IsItemSelected(sectionIndex, itemIndex);
 
-	public void OnSelectedItemsChanged(SelectedItemsChangedEventArgs args)
-		=> this.SelectedItemsChanged?.Invoke(this, args);
+	public void RaiseSelectedItemsChanged(ItemPosition[] previousSelection, ItemPosition[] newSelection)
+		=> this.SelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(previousSelection, newSelection));
 
-	public void SelectItems(params ItemPosition[] paths)
-		=> (Handler as VirtualListViewHandler).SelectItems(paths);
+	//public void SelectItems(params ItemPosition[] paths)
+	//	=> (Handler as VirtualListViewHandler).SelectItems(paths);
 
-	public void DeselectItems(params ItemPosition[] paths)
-		=> (Handler as VirtualListViewHandler).DeselectItems(paths);
+	//public void DeselectItems(params ItemPosition[] paths)
+	//	=> (Handler as VirtualListViewHandler).DeselectItems(paths);
 
-	public void ClearSelection()
-		=> (Handler as VirtualListViewHandler).ClearSelection();
+	//public void ClearSelectedItems()
+	//	=> (Handler as VirtualListViewHandler).ClearSelectedItems();
 }
