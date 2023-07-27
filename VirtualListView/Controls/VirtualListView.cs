@@ -3,7 +3,7 @@ using Microsoft.Maui.Adapters;
 
 namespace Microsoft.Maui.Controls;
 
-public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector, IVisualTreeElement
+public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector
 {
 	public static readonly BindableProperty PositionInfoProperty = BindableProperty.CreateAttached(
 		nameof(PositionInfo),
@@ -232,7 +232,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	}
 
 	public static readonly BindableProperty ScrolledCommandProperty =
-		BindableProperty.Create(nameof(ScrolledCommandProperty), typeof(ICommand), typeof(VirtualListView), default);
+		BindableProperty.Create(nameof(ScrolledCommand), typeof(ICommand), typeof(VirtualListView), default);
 
 	public ICommand ScrolledCommand
 	{
@@ -241,7 +241,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	}
 
 	public static readonly BindableProperty SelectedItemsProperty =
-		BindableProperty.Create(nameof(SelectedItemsProperty), typeof(IList<ItemPosition>), typeof(VirtualListView), Array.Empty<ItemPosition>(),
+		BindableProperty.Create(nameof(SelectedItems), typeof(IList<ItemPosition>), typeof(VirtualListView), Array.Empty<ItemPosition>(),
 			propertyChanged: (bobj, ov, nv) =>
 			{
 				if (bobj is VirtualListView vlv)
