@@ -12,11 +12,15 @@ public interface IVirtualListView : IView
 
 	IView Footer { get; }
 
-	event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
+	event EventHandler<ScrolledEventArgs> OnScrolled;
 
-	void RaiseSelectedItemsChanged(ItemPosition[] previousSelection, ItemPosition[] newSelection);
+	void Scrolled(double x, double y);
 
-	event EventHandler DataInvalidated;
+	SelectionMode SelectionMode { get; }
+
+	IList<ItemPosition> SelectedItems { get; set; }
+
+	event EventHandler<SelectedItemsChangedEventArgs> OnSelectedItemsChanged;
 
 	Color RefreshAccentColor { get; }
 
@@ -24,17 +28,9 @@ public interface IVirtualListView : IView
 
 	bool IsRefreshEnabled { get; }
 	
-	void Scrolled(ScrolledEventArgs args);
-
-	SelectionMode SelectionMode { get; }
-
 	ListOrientation Orientation { get; }
 
 	IView EmptyView { get; }
-
-	IList<ItemPosition> SelectedItems { get; set; }
-
-	//bool IsItemSelected(int sectionIndex, int itemIndex);
 
 	void SelectItem(ItemPosition path);
 

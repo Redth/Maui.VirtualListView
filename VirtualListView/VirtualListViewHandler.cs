@@ -99,7 +99,5 @@ public partial class VirtualListViewHandler
 
 		// Keep track of the new state for next time it changes
 		handler.previousSelections = newSelections.ToArray();
-
-		handler.VirtualView.RaiseSelectedItemsChanged(prev, newSelections.ToArray());
 	}
 }

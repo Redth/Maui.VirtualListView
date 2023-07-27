@@ -67,7 +67,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 		cvdelegate = new CvDelegate(this, collectionView);
 		cvdelegate.ScrollHandler = (x, y) =>
-			VirtualView?.Scrolled(new ScrolledEventArgs(x, y));
+			VirtualView?.Scrolled(x, y);
 
 		collectionView.DataSource = dataSource;
 		collectionView.Delegate = cvdelegate;

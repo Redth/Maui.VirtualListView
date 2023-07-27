@@ -53,7 +53,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 			var x = Context.FromPixels(dx);
 			var y = Context.FromPixels(dy);
 			
-			VirtualView?.Scrolled(new ScrolledEventArgs(x, y));
+			VirtualView?.Scrolled(x, y);
 		}));
 
 		recyclerView.SetLayoutManager(layoutManager);

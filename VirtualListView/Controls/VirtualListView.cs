@@ -109,7 +109,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty SelectionModeProperty =
 		BindableProperty.Create(nameof(SelectionMode), typeof(Maui.SelectionMode), typeof(VirtualListView), Maui.SelectionMode.None);
 
-	public event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
+	public event EventHandler<SelectedItemsChangedEventArgs> OnSelectedItemsChanged;
 
 	public event EventHandler<EventArgs> OnRefresh;
 
@@ -183,50 +183,19 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	IView IVirtualListView.EmptyView => EmptyView;
 
 
-
-	//public View RefreshView
-	//{
-	//	get => (View)GetValue(RefreshViewProperty);
-	//	set => SetValue(RefreshViewProperty, value);
-	//}
-
-	//public static readonly BindableProperty RefreshViewProperty =
-	//	BindableProperty.Create(nameof(EmptyView), typeof(View), typeof(VirtualListView), null,
-	//		propertyChanged: (bobj, oldValue, newValue) =>
-	//		{
-	//			if (bobj is VirtualListView virtualListView)
-	//			{
-	//				if (oldValue is IView oldView)
-	//					virtualListView.RemoveLogicalChild(oldView);
-
-	//				if (newValue is IView newView)
-	//					virtualListView.AddLogicalChild(newView);
-	//			}
-	//		});
-
-	//IView IVirtualListView.RefreshView => RefreshView;
-
-
-
-
 	public IVirtualListViewSelector ViewSelector => this;
 
 	public IView Header => GlobalHeader;
 	public IView Footer => GlobalFooter;
 
-	
-
-	public event EventHandler DataInvalidated;
-
-
 	public event EventHandler<ScrolledEventArgs> OnScrolled;
 
-	void IVirtualListView.Scrolled(ScrolledEventArgs args)
+	public void Scrolled(double x, double y)
 	{
+		var args = new ScrolledEventArgs(x, y);
+
 		if (ScrolledCommand != null && ScrolledCommand.CanExecute(args))
-		{
 			ScrolledCommand.Execute(args);
-		}
 
 		OnScrolled?.Invoke(this, args);
 	}
@@ -242,11 +211,13 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 
 	public static readonly BindableProperty SelectedItemsProperty =
 		BindableProperty.Create(nameof(SelectedItems), typeof(IList<ItemPosition>), typeof(VirtualListView), Array.Empty<ItemPosition>(),
-			propertyChanged: (bobj, ov, nv) =>
+			propertyChanged: (bindableObj, oldValue, newValue) =>
 			{
-				if (bobj is VirtualListView vlv)
+				if (bindableObj is VirtualListView vlv
+					&& oldValue is IList<ItemPosition> oldSelection
+					&& newValue is IList<ItemPosition> newSelection)
 				{
-					Console.WriteLine($"SelectedItems: " + string.Join(", ", nv));
+					vlv.RaiseSelectedItemsChanged(oldSelection.ToArray(), newSelection.ToArray());
 				}
 			});
 
@@ -263,7 +234,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		{
 			current.Remove(itemPosition);
 			SelectedItems = current.ToArray();
-			
+
 		}
 	}
 
@@ -279,13 +250,6 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		SelectedItems = Array.Empty<ItemPosition>();
 	}
 
-	public void InvalidateData()
-	{
-		(Handler as VirtualListViewHandler)?.InvalidateData();
-
-		DataInvalidated?.Invoke(this, new EventArgs());
-	}
-
 	public bool SectionHasHeader(int sectionIndex)
 		=> SectionHeaderTemplateSelector != null || SectionHeaderTemplate != null;
 
@@ -293,8 +257,9 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		=> SectionFooterTemplateSelector != null || SectionFooterTemplate != null;
 
 	public IView CreateView(PositionInfo position, object data)
-		=> position.Kind switch {
-			PositionKind.Item => 
+		=> position.Kind switch
+		{
+			PositionKind.Item =>
 				ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)?.CreateContent() as View
 					?? ItemTemplate?.CreateContent() as View,
 			PositionKind.SectionHeader =>
@@ -346,18 +311,6 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public void ViewAttached(PositionInfo position, IView view)
 		=> this.AddLogicalChild(view);
 
-	//public bool IsItemSelected(int sectionIndex, int itemIndex)
-	//	=> (Handler as VirtualListViewHandler).IsItemSelected(sectionIndex, itemIndex);
-
-	public void RaiseSelectedItemsChanged(ItemPosition[] previousSelection, ItemPosition[] newSelection)
-		=> this.SelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(previousSelection, newSelection));
-
-	//public void SelectItems(params ItemPosition[] paths)
-	//	=> (Handler as VirtualListViewHandler).SelectItems(paths);
-
-	//public void DeselectItems(params ItemPosition[] paths)
-	//	=> (Handler as VirtualListViewHandler).DeselectItems(paths);
-
-	//public void ClearSelectedItems()
-	//	=> (Handler as VirtualListViewHandler).ClearSelectedItems();
+	void RaiseSelectedItemsChanged(ItemPosition[] previousSelection, ItemPosition[] newSelection)
+		=> this.OnSelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(previousSelection, newSelection));
 }
