@@ -313,4 +313,5 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 
 	void RaiseSelectedItemsChanged(ItemPosition[] previousSelection, ItemPosition[] newSelection)
 		=> this.OnSelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(previousSelection, newSelection));
+
 }

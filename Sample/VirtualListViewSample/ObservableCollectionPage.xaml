@@ -11,7 +11,7 @@
 			Grid.Row="0"
 			Grid.Column="0" Grid.ColumnSpan="2"
 			x:Name="vlv"
-			SelectedItemsChanged="vlv_SelectedItemsChanged"
+			OnSelectedItemsChanged="vlv_SelectedItemsChanged"
 			SelectionMode="Multiple">
 			<vlv:VirtualListView.EmptyView>
 				<Grid>
