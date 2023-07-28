@@ -13,16 +13,18 @@ namespace Microsoft.Maui;
 
 internal class IrElementFactory : IElementFactory, IDisposable
 {
-	public IrElementFactory(IMauiContext context, PositionalViewSelector positionalViewSelector)
+	public IrElementFactory(IMauiContext context, PositionalViewSelector positionalViewSelector, VirtualListViewHandler handler)
 	{
 		MauiContext = context;
 		PositionalViewSelector = positionalViewSelector;
+		Handler = handler;
 	}
 
 	readonly object lockObj = new object();
 	protected readonly IMauiContext MauiContext;
 
 	protected readonly PositionalViewSelector PositionalViewSelector;
+	protected readonly VirtualListViewHandler Handler;
 
 	internal record IrRecycledElement(string reuseId, UIElement element);
 
@@ -77,9 +79,17 @@ internal class IrElementFactory : IElementFactory, IDisposable
 			var container = GetRecycledElement(reuseId)
 				?? new IrElementContainer(MauiContext, reuseId, PositionalViewSelector);
 
+			// The template selector doesn't infer selected properly
+			// so we need to ask the listview which tracks selections about the state
+			info.IsSelected = info.Kind == PositionKind.Item
+				&& (Handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false);
+
+
 			var view = container.VirtualView ?? PositionalViewSelector.ViewSelector?.CreateView(info, data);
 
 			container.Update(info, view);
+
+
 
 			container.IsRecycled = false;
 			PositionalViewSelector.ViewSelector?.RecycleView(info, data, view);

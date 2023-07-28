@@ -13,8 +13,6 @@ internal class CvDataSource : UICollectionViewDataSource
 
 	VirtualListViewHandler Handler { get; }
 
-	public Func<int, int, bool> IsSelectedHandler { get; set; }
-
 	readonly ReusableIdManager itemIdManager = new ReusableIdManager("Item");
 	readonly ReusableIdManager globalIdManager = new ReusableIdManager("Global");
 	readonly ReusableIdManager sectionHeaderIdManager = new ReusableIdManager("SectionHeader", new NSString("SectionHeader"));
@@ -52,7 +50,7 @@ internal class CvDataSource : UICollectionViewDataSource
 		if (info.SectionIndex < 0 || info.ItemIndex < 0)
 			info.IsSelected = false;
 		else
-			info.IsSelected = IsSelectedHandler?.Invoke(info.SectionIndex, info.ItemIndex) ?? false;
+			info.IsSelected = Handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false;
 
 		if (cell.NeedsView)
 		{

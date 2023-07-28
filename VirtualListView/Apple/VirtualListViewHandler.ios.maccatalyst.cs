@@ -62,9 +62,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		PositionalViewSelector = new PositionalViewSelector(VirtualView);
 
 		dataSource = new CvDataSource(this);
-		dataSource.IsSelectedHandler = (realSection, realIndex) =>
-			IsItemSelected(realSection, realIndex);
-
+		
 		cvdelegate = new CvDelegate(this, collectionView);
 		cvdelegate.ScrollHandler = (x, y) =>
 			VirtualView?.Scrolled(x, y);
