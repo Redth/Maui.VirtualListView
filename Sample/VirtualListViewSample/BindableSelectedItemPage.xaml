@@ -22,6 +22,7 @@
 						<Border
 							Margin="10,0,0,0"
 							Padding="4"
+							Background="Transparent"
 							StrokeShape="{RoundRectangle CornerRadius=10}">
 							<Label Margin="10,6,10,6" Text="{Binding .}" />
 						</Border>
