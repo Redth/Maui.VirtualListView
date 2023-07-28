@@ -232,8 +232,8 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 			{
 				if (bindableObj is VirtualListView vlv)
 				{
-					if (newValue is null)
-						vlv.SelectedItems = Array.Empty<ItemPosition>();
+					if (newValue is null || newValue is not ItemPosition)
+						vlv.SelectedItems = null;
 					else if (newValue is ItemPosition p)
 						vlv.SelectedItems = new[] { p };
 				}
@@ -287,7 +287,10 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 
 	public void ClearSelectedItems()
 	{
-		SelectedItem = null;
+		if (SelectionMode == Maui.SelectionMode.Multiple)
+			SelectedItems = null;
+		else
+			SelectedItem = null;
 	}
 
 	public bool SectionHasHeader(int sectionIndex)
