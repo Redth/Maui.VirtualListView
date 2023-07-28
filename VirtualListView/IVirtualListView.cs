@@ -20,6 +20,8 @@ public interface IVirtualListView : IView
 
 	IList<ItemPosition> SelectedItems { get; set; }
 
+	ItemPosition? SelectedItem { get; set; }
+
 	event EventHandler<SelectedItemsChangedEventArgs> OnSelectedItemsChanged;
 
 	Color RefreshAccentColor { get; }

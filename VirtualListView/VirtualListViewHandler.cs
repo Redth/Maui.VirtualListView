@@ -81,6 +81,11 @@ public partial class VirtualListViewHandler
 
 		var newSelections = virtualListView?.SelectedItems ?? Array.Empty<ItemPosition>();
 
+		if (virtualListView.SelectionMode == SelectionMode.None)
+			newSelections = Array.Empty<ItemPosition>();
+		else if (virtualListView.SelectionMode == SelectionMode.Single && newSelections.Count > 1)
+			newSelections = newSelections.Take(1).ToArray();
+
 		// First deselect any previously selected items that aren't in the new set
 		foreach (var itemPosition in handler.previousSelections)
 		{
@@ -94,8 +99,6 @@ public partial class VirtualListViewHandler
 			if (!handler.previousSelections.Contains(itemPosition))
 				handler.PlatformUpdateItemSelection(itemPosition, true);
 		}
-
-		var prev = handler.previousSelections.ToArray();
 
 		// Keep track of the new state for next time it changes
 		handler.previousSelections = newSelections.ToArray();

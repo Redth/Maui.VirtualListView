@@ -220,34 +220,74 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 					vlv.RaiseSelectedItemsChanged(oldSelection.ToArray(), newSelection.ToArray());
 				}
 			});
-
 	public IList<ItemPosition> SelectedItems
 	{
 		get => (IList<ItemPosition>)GetValue(SelectedItemsProperty);
 		set => SetValue(SelectedItemsProperty, value ?? Array.Empty<ItemPosition>());
 	}
 
+	public static readonly BindableProperty SelectedItemProperty =
+		BindableProperty.Create(nameof(SelectedItem), typeof(ItemPosition?), typeof(VirtualListView), default,
+			propertyChanged: (bindableObj, oldValue, newValue) =>
+			{
+				if (bindableObj is VirtualListView vlv)
+				{
+					if (newValue is null)
+						vlv.SelectedItems = Array.Empty<ItemPosition>();
+					else if (newValue is ItemPosition p)
+						vlv.SelectedItems = new[] { p };
+				}
+			});
+
+	public ItemPosition? SelectedItem
+	{
+		get => (ItemPosition?)GetValue(SelectedItemProperty);
+		set => SetValue(SelectedItemProperty, value);
+	}
+
+
 	public void DeselectItem(ItemPosition itemPosition)
 	{
-		var current = SelectedItems.ToList();
-		if (current.Contains(itemPosition))
+		if (SelectionMode == Maui.SelectionMode.Single)
 		{
-			current.Remove(itemPosition);
-			SelectedItems = current.ToArray();
-
+			if (SelectedItem.HasValue && SelectedItem.Value.Equals(itemPosition))
+			{
+				SelectedItem = null;
+			}
+		}
+		else if (SelectionMode == Maui.SelectionMode.Multiple)
+		{
+			var current = SelectedItems.ToList();
+			if (current.Contains(itemPosition))
+			{
+				current.Remove(itemPosition);
+				SelectedItems = current.ToArray();
+			}
 		}
 	}
 
 	public void SelectItem(ItemPosition itemPosition)
 	{
-		var current = SelectedItems;
-		if (!current.Contains(itemPosition))
-			SelectedItems = current.Append(itemPosition).ToArray();
+		if (SelectionMode == Maui.SelectionMode.Single)
+		{
+			if (!SelectedItem.HasValue || !SelectedItem.Value.Equals(itemPosition))
+			{
+				SelectedItem = itemPosition;
+			}
+		}
+		else if (SelectionMode == Maui.SelectionMode.Multiple)
+		{
+			var current = SelectedItems;
+			if (!current.Contains(itemPosition))
+			{
+				SelectedItems = current.Append(itemPosition).ToArray();
+			}
+		}
 	}
 
 	public void ClearSelectedItems()
 	{
-		SelectedItems = Array.Empty<ItemPosition>();
+		SelectedItem = null;
 	}
 
 	public bool SectionHasHeader(int sectionIndex)
