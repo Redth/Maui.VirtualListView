@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+	xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+	x:Class="VirtualListViewSample.ComplexScrollingPage"
+	xmlns:local="clr-namespace:VirtualListViewSample"
+	xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
+	Title="ComplexScrollingPage">
+	
+		<VerticalStackLayout>
+		<vlv:VirtualListView
+			Grid.Row="0"
+			Background="Blue"
+			x:Name="vlv"
+			SelectionMode="Multiple">
+			<vlv:VirtualListView.ItemTemplate>
+				<DataTemplate>
+					<vlv:VirtualViewCell>
+						<Border
+							Margin="10,0,0,0"
+							Padding="4"
+							Background="LightBlue"
+							StrokeShape="{RoundRectangle CornerRadius=10}">
+							<Label Margin="10,6,10,6" Text="{Binding .}" />
+						</Border>
+					</vlv:VirtualViewCell>
+				</DataTemplate>
+			</vlv:VirtualListView.ItemTemplate>
+
+		</vlv:VirtualListView>
+		</VerticalStackLayout>
+	
+</ContentPage>

@@ -15,6 +15,8 @@
 
 			<Button Text="Sectioned Adapter Demo" Clicked="Button_Clicked_2" />
 
+			<Button Text="Complex Scrolling Demo" Clicked="Button_Clicked_3" />
+
 			<Button Text="Bindable Selected Item Demo" Clicked="Button_Clicked_4" />
 		</VerticalStackLayout>
 	</ScrollView>

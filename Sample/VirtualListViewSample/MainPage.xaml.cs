@@ -23,6 +23,11 @@ public partial class MainPage : ContentPage, ISafeAreaView
 	{
 		Navigation.PushAsync(new SectionedAdapterPage());
 	}
+	
+	private void Button_Clicked_3(object sender, EventArgs e)
+	{
+		Navigation.PushAsync(new ComplexScrollingPage());
+	}
 
 	private void Button_Clicked_4(object sender, EventArgs e)
 	{
