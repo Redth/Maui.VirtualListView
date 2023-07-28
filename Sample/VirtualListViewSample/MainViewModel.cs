@@ -1,27 +1,23 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using System.ComponentModel;
 
 namespace VirtualListViewSample;
 
-public partial class MainViewModel : INotifyPropertyChanged
+public partial class MainViewModel : ObservableObject
 {
 	public MainViewModel()
 	{
 		Adapter = new MusicDataAdapter();
 	}
 
-	public MusicDataAdapter Adapter { get; set; }
-
-	public void NotifyPropertyChanged(string propertyName)
-		=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
-	public event PropertyChangedEventHandler PropertyChanged;
+	[ObservableProperty]
+	MusicDataAdapter adapter;
 
 	[RelayCommand]
 	async Task Refresh()
 	{
 		await Task.Delay(3000);
-		NotifyPropertyChanged(nameof(Adapter));
 	}
 
 	[RelayCommand]

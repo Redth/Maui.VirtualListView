@@ -14,6 +14,8 @@
 			<Button Text="Observable Collection Demo" Clicked="Button_Clicked_1" />
 
 			<Button Text="Sectioned Adapter Demo" Clicked="Button_Clicked_2" />
+
+			<Button Text="Bindable Selcted Item Demo" Clicked="Button_Clicked_4" />
 		</VerticalStackLayout>
 	</ScrollView>
 </ContentPage>
