@@ -1,4 +1,5 @@
-﻿using CoreGraphics;
+﻿using System.Runtime.InteropServices;
+using CoreGraphics;
 using Foundation;
 using Microsoft.Maui.Handlers;
 using Microsoft.Maui.Platform;
@@ -6,13 +7,31 @@ using UIKit;
 
 namespace Microsoft.Maui;
 
+public class CvCollectionView : UICollectionView
+{
+	public CvCollectionView(CGRect frame, UICollectionViewLayout layout) : base(frame, layout)
+	{
+		
+	}
+
+	public override CGSize SizeThatFits(CGSize size)
+	{
+		var baseSize = base.SizeThatFits(size);
+		if (NFloat.IsInfinity(size.Height))
+			baseSize.Height = this.CollectionViewLayout.CollectionViewContentSize.Height;
+
+		return baseSize;
+	}
+}
+
 public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICollectionView>
 {
 	CvDataSource dataSource;
 	CvLayout layout;
 	CvDelegate cvdelegate;
-	UICollectionView collectionView;
+	CvCollectionView collectionView;
 	UIRefreshControl refreshControl;
+	NSLayoutConstraint heightConstraint;
 
 	protected override UICollectionView CreatePlatformView()
 	{
@@ -29,11 +48,15 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		layout.MinimumInteritemSpacing = 0f;
 		layout.MinimumLineSpacing = 0f;
 
-		collectionView = new UICollectionView(CGRect.Empty, layout);
+		collectionView = new CvCollectionView(CGRect.Empty, layout);
 		//collectionView.ContentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentBehavior.Never;
 		collectionView.AllowsMultipleSelection = false;
 		collectionView.AllowsSelection = false;
 
+		heightConstraint = NSLayoutConstraint.Create(collectionView, NSLayoutAttribute.Height, NSLayoutRelation.Equal);
+		heightConstraint.Priority = 999f;
+		heightConstraint.Active = false;
+		collectionView.AddConstraint(heightConstraint);
 
 		refreshControl = new UIRefreshControl();
 		refreshControl.AddTarget(new EventHandler((s, a) =>
@@ -69,8 +92,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 		collectionView.DataSource = dataSource;
 		collectionView.Delegate = cvdelegate;
-		
-		collectionView.ReloadData();
+
+
+		InvalidateData();
 	}
 
 	protected override void DisconnectHandler(UICollectionView nativeView)
@@ -200,7 +224,12 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 			UpdateEmptyViewVisibility();
 
-			collectionView?.SetNeedsLayout();
+			var height = layout.CollectionViewContentSize.Height;
+
+			heightConstraint.Constant = height;
+			heightConstraint.Active = true;
+
+			//collectionView?.SetNeedsLayout();
 			collectionView?.ReloadData();
 			collectionView?.LayoutIfNeeded();
 		});
