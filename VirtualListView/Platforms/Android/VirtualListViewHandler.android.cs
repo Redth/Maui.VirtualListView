@@ -53,7 +53,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 			var x = Context.FromPixels(dx);
 			var y = Context.FromPixels(dy);
 			
-			VirtualView?.Scrolled(new ScrolledEventArgs(x, y));
+			VirtualView?.Scrolled(x, y);
 		}));
 
 		recyclerView.SetLayoutManager(layoutManager);
@@ -94,33 +94,18 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
 		=> handler.InvalidateData();
 
-	public static void MapSelectItems(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
 	{
-		if (parameter is ItemPosition[] itemPositions)
-			UpdateSelection(handler, itemPositions, true);
-	}
+		var position = PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
 
-	public static void MapDeselectItems(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
-	{
-		if (parameter is ItemPosition[] itemPositions)
-			UpdateSelection(handler, itemPositions, false);
-	}
+		var vh = recyclerView.FindViewHolderForAdapterPosition(position);
 
-	static void UpdateSelection(VirtualListViewHandler handler, ItemPosition[] itemPositions, bool selected)
-	{
-		foreach (var itemPosition in itemPositions)
+		if (vh is RvItemHolder rvh)
 		{
-			var position = handler.PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
+			rvh.PositionInfo.IsSelected = selected;
 
-			var vh = handler.recyclerView.FindViewHolderForAdapterPosition(position);
-
-			if (vh is RvItemHolder rvh)
-			{
-				rvh.PositionInfo.IsSelected = selected;
-
-				if (rvh.ViewContainer?.VirtualView is IPositionInfo viewPositionInfo)
-					viewPositionInfo.IsSelected = selected;
-			}
+			if (rvh.ViewContainer?.VirtualView is IPositionInfo viewPositionInfo)
+				viewPositionInfo.IsSelected = selected;
 		}
 	}
 

@@ -11,7 +11,7 @@
 			Grid.Row="0"
 			Grid.Column="0" Grid.ColumnSpan="3"
 			x:Name="vlv"
-			SelectedItemsChanged="vlv_SelectedItemsChanged"
+			OnSelectedItemsChanged="vlv_SelectedItemsChanged"
 			SelectionMode="Single">
 			<vlv:VirtualListView.EmptyView>
 				<Label Text="Empty!" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />

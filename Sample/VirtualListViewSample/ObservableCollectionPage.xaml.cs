@@ -47,13 +47,18 @@ public partial class ObservableCollectionPage : ContentPage
 
 	private void vlv_SelectedItemsChanged(object sender, SelectedItemsChangedEventArgs e)
 	{
-		var item = e.NewSelection?.FirstOrDefault();
+		var selection = string.Join(", ", e.NewSelection.Select(i => i.ItemIndex));
+		System.Diagnostics.Debug.WriteLine($"SelectedItemsChanged: {selection}");
 
-		if (item != null)
+		if (e.NewSelection.Any())
 		{
-			Items.RemoveAt(item.Value.ItemIndex);
-		}
+			var toDelete = e.NewSelection.First();
 
-		(sender as IVirtualListView).ClearSelection();
+			vlv.ClearSelectedItems();
+
+			var item = Adapter.GetItem(toDelete.SectionIndex, toDelete.ItemIndex);
+
+			Items.Remove(item);
+		}
 	}
 }

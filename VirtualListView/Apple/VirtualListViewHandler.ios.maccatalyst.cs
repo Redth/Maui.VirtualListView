@@ -62,12 +62,10 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		PositionalViewSelector = new PositionalViewSelector(VirtualView);
 
 		dataSource = new CvDataSource(this);
-		dataSource.IsSelectedHandler = (realSection, realIndex) =>
-			VirtualView?.IsItemSelected(realSection, realIndex) ?? false;
-
+		
 		cvdelegate = new CvDelegate(this, collectionView);
 		cvdelegate.ScrollHandler = (x, y) =>
-			VirtualView?.Scrolled(new ScrolledEventArgs(x, y));
+			VirtualView?.Scrolled(x, y);
 
 		collectionView.DataSource = dataSource;
 		collectionView.Delegate = cvdelegate;
@@ -117,44 +115,27 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
 		=> handler?.InvalidateData();
 
-	public static void MapSelectItems(VirtualListViewHandler handler, IVirtualListView virtualListView, object parameter)
+	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
 	{
-		if (parameter is ItemPosition[] items)
+		var realIndex = PositionalViewSelector?.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex) ?? -1;
+
+		if (realIndex < 0)
+			return;
+
+		var cell = collectionView.CellForItem(NSIndexPath.FromItemSection(realIndex, 0));
+
+		if (cell is CvCell cvcell)
 		{
-			UpdateSelection(handler, items, true);
-		}
-	}
+			cvcell.PositionInfo.IsSelected = selected;
 
-	public static void MapDeselectItems(VirtualListViewHandler handler, IVirtualListView virtualListView, object parameter)
-	{
-		if (parameter is ItemPosition[] items)
-		{
-			UpdateSelection(handler, items, false);
-		}
-	}
-
-	static void UpdateSelection(VirtualListViewHandler handler, ItemPosition[] itemPositions, bool selected)
-	{
-		foreach (var itemPosition in itemPositions)
-		{
-			var realIndex = handler.PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
-
-			var cell = handler.collectionView.CellForItem(NSIndexPath.FromItemSection(realIndex, 0));
-
-			if (cell is CvCell cvcell)
+			if (cvcell.VirtualView is IPositionInfo positionInfo)
 			{
-				cvcell.PositionInfo.IsSelected = selected;
-
-				if (cvcell.VirtualView is IPositionInfo positionInfo)
-				{	
-					handler.collectionView.InvokeOnMainThread(() =>
-					{
-						positionInfo.IsSelected = selected;
-					});
-				}
+				collectionView.InvokeOnMainThread(() =>
+				{
+					positionInfo.IsSelected = selected;
+				});
 			}
 		}
-		
 	}
 
 	public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)
