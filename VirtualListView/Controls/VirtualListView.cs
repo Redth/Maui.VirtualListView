@@ -322,7 +322,12 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	{
 		if (view is View controlsView)
 		{
-			controlsView.SetValue(View.BindingContextProperty, data);
+			// Use the listview's binding context if
+			// there's no data
+			// this may happen for global header/footer for instance
+			controlsView.SetValue(
+				View.BindingContextProperty,
+				data ?? this.BindingContext);
 		}
 	}
 
