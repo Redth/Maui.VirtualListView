@@ -52,7 +52,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		itemsRepeaterScrollHost.Loaded -= ItemsRepeaterScrollHost_Loaded;
 
 		scrollViewer?.RegisterPropertyChangedCallback(ScrollViewer.VerticalOffsetProperty, (o, dp) =>
-			VirtualView.Scrolled(new ScrolledEventArgs(scrollViewer.HorizontalOffset, scrollViewer.VerticalOffset)));
+			VirtualView.Scrolled(scrollViewer.HorizontalOffset, scrollViewer.VerticalOffset));
 	}
 
 	protected override void ConnectHandler(WGrid nativeView)
@@ -60,7 +60,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		base.ConnectHandler(nativeView);
 
 		PositionalViewSelector = new PositionalViewSelector(VirtualView);
-		elementFactory = new IrElementFactory(MauiContext, PositionalViewSelector);
+		elementFactory = new IrElementFactory(MauiContext, PositionalViewSelector, this);
 		itemsRepeater.ItemTemplate = elementFactory;
 
 		irSource = new IrSource(MauiContext, PositionalViewSelector, VirtualView);
@@ -98,40 +98,18 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{ }
 
-	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
-		=> handler?.InvalidateData();
-
-	public static void MapSelectItems(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
 	{
-		if (parameter is ItemPosition[] items && items != null && items.Length > 0)
+		var position = PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
+
+		var elem = itemsRepeater.TryGetElement(position);
+
+		if (elem is IrElementContainer contentControl)
 		{
-			UpdateSelection(handler, items, true);
-		}
-	}
+			contentControl.PositionInfo.IsSelected = selected;
 
-	public static void MapDeselectItems(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
-	{
-		if (parameter is ItemPosition[] items && items != null && items.Length > 0)
-		{
-			UpdateSelection(handler, items, false);
-		}
-	}
-
-	static void UpdateSelection(VirtualListViewHandler handler, ItemPosition[] itemPositions, bool selected)
-	{
-		foreach (var itemPosition in itemPositions)
-		{
-			var position = handler.PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
-
-			var elem = handler.itemsRepeater.TryGetElement(position);
-			
-			if (elem is IrElementContainer contentControl)
-			{
-				contentControl.PositionInfo.IsSelected = selected;
-
-				if (contentControl?.VirtualView is IPositionInfo viewPositionInfo)
-					viewPositionInfo.IsSelected = selected;
-			}
+			if (contentControl?.VirtualView is IPositionInfo viewPositionInfo)
+				viewPositionInfo.IsSelected = selected;
 		}
 	}
 

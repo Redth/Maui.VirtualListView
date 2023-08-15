@@ -23,7 +23,7 @@
 		RefreshCommand="{Binding RefreshCommand}"
 		Adapter="{Binding Adapter}"
 		SelectionMode="Multiple"
-		SelectedItemsChanged="VirtualListView_SelectedItemsChanged"
+		OnSelectedItemsChanged="VirtualListView_SelectedItemsChanged"
 		ItemTemplateSelector="{StaticResource itemTemplateSelector}">
 
 		<vlv:VirtualListView.SectionHeaderTemplate>

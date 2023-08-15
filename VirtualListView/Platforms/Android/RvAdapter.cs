@@ -59,7 +59,7 @@ internal partial class RvAdapter : RecyclerView.Adapter
 		// The template selector doesn't infer selected properly
 		// so we need to ask the listview which tracks selections about the state
 		info.IsSelected = info.Kind == PositionKind.Item
-			&& (handler?.VirtualView?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false);
+			&& (handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false);
 
 		if (holder is RvItemHolder itemHolder)
 		{
@@ -138,9 +138,9 @@ internal partial class RvAdapter : RecyclerView.Adapter
 				positionInfo.IsSelected = rvh.PositionInfo.IsSelected;
 
 			if (rvh.PositionInfo.IsSelected)
-				handler.VirtualView?.SelectItems(p);
+				handler?.VirtualView?.SelectItem(p);
 			else
-				handler.VirtualView?.DeselectItems(p);
+				handler?.VirtualView?.DeselectItem(p);
 		});
 
 		viewHolder.ItemView.SetOnClickListener(clickListener);

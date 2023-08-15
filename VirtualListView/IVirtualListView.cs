@@ -12,10 +12,17 @@ public interface IVirtualListView : IView
 
 	IView Footer { get; }
 
-	event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
-	void OnSelectedItemsChanged(SelectedItemsChangedEventArgs eventArgs);
+	event EventHandler<ScrolledEventArgs> OnScrolled;
 
-	event EventHandler DataInvalidated;
+	void Scrolled(double x, double y);
+
+	SelectionMode SelectionMode { get; }
+
+	IList<ItemPosition> SelectedItems { get; set; }
+
+	ItemPosition? SelectedItem { get; set; }
+
+	event EventHandler<SelectedItemsChangedEventArgs> OnSelectedItemsChanged;
 
 	Color RefreshAccentColor { get; }
 
@@ -23,27 +30,15 @@ public interface IVirtualListView : IView
 
 	bool IsRefreshEnabled { get; }
 	
-	void Scrolled(ScrolledEventArgs args);
-
-	SelectionMode SelectionMode { get; }
-
-	IReadOnlyList<ItemPosition> SelectedItems { get; }
-
 	ListOrientation Orientation { get; }
 
 	IView EmptyView { get; }
 
-	// IView RefreshView { get; }
+	void SelectItem(ItemPosition path);
 
-	bool IsItemSelected(int sectionIndex, int itemIndex);
+	void DeselectItem(ItemPosition path);
 
-	void SelectItems(params ItemPosition[] paths);
-
-	void DeselectItems(params ItemPosition[] paths);
-
-	void ClearSelection();
-
-	//void InvalidateData();
+	void ClearSelectedItems();
 }
 
 public enum ListOrientation

@@ -1,34 +1,28 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage
 	xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-	x:Class="VirtualListViewSample.ObservableCollectionPage"
+	x:Class="VirtualListViewSample.BindableSelectedItemPage"
 	xmlns:local="clr-namespace:VirtualListViewSample"
 	xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
-	Title="ObservableCollectionPage">
+	x:DataType="local:BindableSelectedItemViewModel"
+	Title="BindableSelectedItemPage">
 	<Grid RowDefinitions="*,Auto" ColumnDefinitions="*,Auto" Padding="20">
 		<vlv:VirtualListView
 			Grid.Row="0"
 			Grid.Column="0" Grid.ColumnSpan="2"
 			x:Name="vlv"
+			Adapter="{Binding Adapter}"
+			SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
 			OnSelectedItemsChanged="vlv_SelectedItemsChanged"
-			SelectionMode="Multiple">
-			<vlv:VirtualListView.EmptyView>
-				<Grid>
-					<Label HorizontalOptions="Center" VerticalOptions="Center" Text="EMPTY!!!" />
-				</Grid>
-			</vlv:VirtualListView.EmptyView>
-			<vlv:VirtualListView.GlobalHeader>
-				<Label Text="HEADER"/>
-
-			</vlv:VirtualListView.GlobalHeader>
+			SelectionMode="Single">
 			<vlv:VirtualListView.ItemTemplate>
 				<DataTemplate>
-					<vlv:VirtualViewCell>
+					<vlv:VirtualViewCell SelectedBackground="DarkBlue" UnselectedBackground="LightBlue">
 						<Border
 							Margin="10,0,0,0"
 							Padding="4"
-							Background="LightBlue"
+							Background="Transparent"
 							StrokeShape="{RoundRectangle CornerRadius=10}">
 							<Label Margin="10,6,10,6" Text="{Binding .}" />
 						</Border>
@@ -38,6 +32,6 @@
 		</vlv:VirtualListView>
 
 		<Entry x:Name="entryItem" Grid.Row="1" Grid.Column="0" Placeholder="Item" />
-		<Button Grid.Row="1" Grid.Column="1" Text="Add" Clicked="Button_Clicked" />
+		<Button Grid.Row="1" Grid.Column="1" Text="Select/Deselect" Clicked="Button_Clicked" />
 	</Grid>
 </ContentPage>

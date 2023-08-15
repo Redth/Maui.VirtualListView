@@ -3,7 +3,7 @@ using Microsoft.Maui.Adapters;
 
 namespace Microsoft.Maui.Controls;
 
-public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector, IVisualTreeElement
+public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector
 {
 	public static readonly BindableProperty PositionInfoProperty = BindableProperty.CreateAttached(
 		nameof(PositionInfo),
@@ -109,7 +109,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty SelectionModeProperty =
 		BindableProperty.Create(nameof(SelectionMode), typeof(Maui.SelectionMode), typeof(VirtualListView), Maui.SelectionMode.None);
 
-	public event EventHandler<SelectedItemsChangedEventArgs> SelectedItemsChanged;
+	public event EventHandler<SelectedItemsChangedEventArgs> OnSelectedItemsChanged;
 
 	public event EventHandler<EventArgs> OnRefresh;
 
@@ -183,53 +183,25 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	IView IVirtualListView.EmptyView => EmptyView;
 
 
-
-	//public View RefreshView
-	//{
-	//	get => (View)GetValue(RefreshViewProperty);
-	//	set => SetValue(RefreshViewProperty, value);
-	//}
-
-	//public static readonly BindableProperty RefreshViewProperty =
-	//	BindableProperty.Create(nameof(EmptyView), typeof(View), typeof(VirtualListView), null,
-	//		propertyChanged: (bobj, oldValue, newValue) =>
-	//		{
-	//			if (bobj is VirtualListView virtualListView)
-	//			{
-	//				if (oldValue is IView oldView)
-	//					virtualListView.RemoveLogicalChild(oldView);
-
-	//				if (newValue is IView newView)
-	//					virtualListView.AddLogicalChild(newView);
-	//			}
-	//		});
-
-	//IView IVirtualListView.RefreshView => RefreshView;
-
-
-
-
 	public IVirtualListViewSelector ViewSelector => this;
 
 	public IView Header => GlobalHeader;
 	public IView Footer => GlobalFooter;
 
-	
-
-	public event EventHandler DataInvalidated;
-
-
 	public event EventHandler<ScrolledEventArgs> OnScrolled;
 
-	void IVirtualListView.Scrolled(ScrolledEventArgs args)
+	public void Scrolled(double x, double y)
 	{
+		var args = new ScrolledEventArgs(x, y);
+
 		if (ScrolledCommand != null && ScrolledCommand.CanExecute(args))
-		{
 			ScrolledCommand.Execute(args);
-		}
 
 		OnScrolled?.Invoke(this, args);
 	}
+
+	public static readonly BindableProperty ScrolledCommandProperty =
+		BindableProperty.Create(nameof(ScrolledCommand), typeof(ICommand), typeof(VirtualListView), default);
 
 	public ICommand ScrolledCommand
 	{
@@ -237,16 +209,88 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		set => SetValue(ScrolledCommandProperty, value);
 	}
 
-	public IReadOnlyList<ItemPosition> SelectedItems => throw new NotImplementedException();
-
-	public static readonly BindableProperty ScrolledCommandProperty =
-		BindableProperty.Create(nameof(ScrolledCommandProperty), typeof(ICommand), typeof(VirtualListView), default);
-
-	public void InvalidateData()
+	public static readonly BindableProperty SelectedItemsProperty =
+		BindableProperty.Create(nameof(SelectedItems), typeof(IList<ItemPosition>), typeof(VirtualListView), Array.Empty<ItemPosition>(),
+			propertyChanged: (bindableObj, oldValue, newValue) =>
+			{
+				if (bindableObj is VirtualListView vlv
+					&& oldValue is IList<ItemPosition> oldSelection
+					&& newValue is IList<ItemPosition> newSelection)
+				{
+					vlv.RaiseSelectedItemsChanged(oldSelection.ToArray(), newSelection.ToArray());
+				}
+			});
+	public IList<ItemPosition> SelectedItems
 	{
-		(Handler as VirtualListViewHandler)?.InvalidateData();
+		get => (IList<ItemPosition>)GetValue(SelectedItemsProperty);
+		set => SetValue(SelectedItemsProperty, value ?? Array.Empty<ItemPosition>());
+	}
 
-		DataInvalidated?.Invoke(this, new EventArgs());
+	public static readonly BindableProperty SelectedItemProperty =
+		BindableProperty.Create(nameof(SelectedItem), typeof(ItemPosition?), typeof(VirtualListView), default,
+			propertyChanged: (bindableObj, oldValue, newValue) =>
+			{
+				if (bindableObj is VirtualListView vlv)
+				{
+					if (newValue is null || newValue is not ItemPosition)
+						vlv.SelectedItems = null;
+					else if (newValue is ItemPosition p)
+						vlv.SelectedItems = new[] { p };
+				}
+			});
+
+	public ItemPosition? SelectedItem
+	{
+		get => (ItemPosition?)GetValue(SelectedItemProperty);
+		set => SetValue(SelectedItemProperty, value);
+	}
+
+
+	public void DeselectItem(ItemPosition itemPosition)
+	{
+		if (SelectionMode == Maui.SelectionMode.Single)
+		{
+			if (SelectedItem.HasValue && SelectedItem.Value.Equals(itemPosition))
+			{
+				SelectedItem = null;
+			}
+		}
+		else if (SelectionMode == Maui.SelectionMode.Multiple)
+		{
+			var current = SelectedItems.ToList();
+			if (current.Contains(itemPosition))
+			{
+				current.Remove(itemPosition);
+				SelectedItems = current.ToArray();
+			}
+		}
+	}
+
+	public void SelectItem(ItemPosition itemPosition)
+	{
+		if (SelectionMode == Maui.SelectionMode.Single)
+		{
+			if (!SelectedItem.HasValue || !SelectedItem.Value.Equals(itemPosition))
+			{
+				SelectedItem = itemPosition;
+			}
+		}
+		else if (SelectionMode == Maui.SelectionMode.Multiple)
+		{
+			var current = SelectedItems;
+			if (!current.Contains(itemPosition))
+			{
+				SelectedItems = current.Append(itemPosition).ToArray();
+			}
+		}
+	}
+
+	public void ClearSelectedItems()
+	{
+		if (SelectionMode == Maui.SelectionMode.Multiple)
+			SelectedItems = null;
+		else
+			SelectedItem = null;
 	}
 
 	public bool SectionHasHeader(int sectionIndex)
@@ -256,8 +300,9 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		=> SectionFooterTemplateSelector != null || SectionFooterTemplate != null;
 
 	public IView CreateView(PositionInfo position, object data)
-		=> position.Kind switch {
-			PositionKind.Item => 
+		=> position.Kind switch
+		{
+			PositionKind.Item =>
 				ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)?.CreateContent() as View
 					?? ItemTemplate?.CreateContent() as View,
 			PositionKind.SectionHeader =>
@@ -277,7 +322,12 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	{
 		if (view is View controlsView)
 		{
-			controlsView.SetValue(View.BindingContextProperty, data);
+			// Use the listview's binding context if
+			// there's no data
+			// this may happen for global header/footer for instance
+			controlsView.SetValue(
+				View.BindingContextProperty,
+				data ?? this.BindingContext);
 		}
 	}
 
@@ -309,18 +359,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public void ViewAttached(PositionInfo position, IView view)
 		=> this.AddLogicalChild(view);
 
-	public bool IsItemSelected(int sectionIndex, int itemIndex)
-		=> (Handler as VirtualListViewHandler).IsItemSelected(sectionIndex, itemIndex);
+	void RaiseSelectedItemsChanged(ItemPosition[] previousSelection, ItemPosition[] newSelection)
+		=> this.OnSelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(previousSelection, newSelection));
 
-	public void OnSelectedItemsChanged(SelectedItemsChangedEventArgs args)
-		=> this.SelectedItemsChanged?.Invoke(this, args);
-
-	public void SelectItems(params ItemPosition[] paths)
-		=> (Handler as VirtualListViewHandler).SelectItems(paths);
-
-	public void DeselectItems(params ItemPosition[] paths)
-		=> (Handler as VirtualListViewHandler).DeselectItems(paths);
-
-	public void ClearSelection()
-		=> (Handler as VirtualListViewHandler).ClearSelection();
 }

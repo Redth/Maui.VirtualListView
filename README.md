@@ -54,13 +54,13 @@ To create an adapter for the VirtualListView, you need to implement the followin
 ```csharp
 public interface IVirtualListViewAdapter
 {
-	int Sections { get; }
+	int GetNumberOfSections();
 
-	object Section(int sectionIndex);
+	object GetSection(int sectionIndex);
 
-	int ItemsForSection(int sectionIndex);
+	int GetNumberOfItemsInSection(int sectionIndex);
 
-	object Item(int sectionIndex, int itemIndex);
+	object GetItem(int sectionIndex, int itemIndex);
 
 	event EventHandler OnDataInvalidated;
 
@@ -120,10 +120,10 @@ public class SQLiteAdapter : VirtualListViewAdapterBase<object, ItemInfo>
 	int? cachedItemCount = null;
 
 	// No sections/grouping, so disregard the sectionIndex
-	public override int ItemsForSection(int sectionIndex)
+	public override int GetNumberOfItemsInSection(int sectionIndex)
 		=> cachedItemCount ??= Db.ExecuteScalar<int>("SELECT COUNT(Id) FROM Items");
 
-	public override string Item(int sectionIndex, int itemIndex)
+	public override string GetItem(int sectionIndex, int itemIndex)
 		=> Db.FindWithQuery<ItemInfo>("SELECT * FROM Items ORDER BY Id LIMIT 1 OFFSET ?", itemIndex);
 
 	public override void InvalidateData()
@@ -152,14 +152,14 @@ public class SQLiteSectionedAdapter : VirtualListViewAdapterBase<GroupInfo, Item
 
 	int? cachedNumberOfSections = null;
 
-	public int Sections
+	public int GetNumberOfSections()
 		=> cachedNumberOfSections ??= Db.ExecuteScalar<int>("SELECT DISTINCT COUNT(GroupId) FROM Items");
 
 	// No sections/grouping, so disregard the sectionIndex
-	public override int ItemsForSection(int sectionIndex)
+	public override int GetNumberOfItemsInSection(int sectionIndex)
 		=> cachedItemCount ??= Db.ExecuteScalar<int>("SELECT COUNT(Id) FROM Items");
 
-	public GroupInfo Section(int sectionIndex)
+	public GroupInfo GetSection(int sectionIndex)
 	{
 		if (cachedSectionSummaries.ContainsKey(sectionIndex))
 			return cachedSectionSummaries[sectionIndex];
@@ -181,7 +181,7 @@ public class SQLiteSectionedAdapter : VirtualListViewAdapterBase<GroupInfo, Item
 		return groupInfo;
 	}
 
-	public override string Item(int sectionIndex, int itemIndex)
+	public override string GetItem(int sectionIndex, int itemIndex)
 		=> Db.FindWithQuery<ItemInfo>("SELECT * FROM Items WHERE GroupId=? ORDER BY Id LIMIT 1 OFFSET ?", sectionIndex, itemIndex);
 
 	public override void InvalidateData()
@@ -226,7 +226,7 @@ public class MyItemTemplateSelector
 
 	public override DataTemplate SelectItemTemplate(IVirtualListViewAdapter adapter, int sectionIndex, int itemIndex)
 	{
-		var item = adapter.Item(sectionIndex, itemIndex);
+		var item = adapter.GetItem(sectionIndex, itemIndex);
 
 		if (item is Person)
 			return personTemplate;
@@ -269,7 +269,7 @@ You can access these properties from your templates.  Here's an example of displ
 	xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
 	x:Class="VirtualListViewSample.GenericViewCell">
   <xct:VirtualViewCell>
-		<StackLayout
+		<VerticalStackLayout
 			Spacing="0"
 			BackgroundColor="{Binding Source={x:Reference self}, Path=IsSelected, Converter={StaticResource selectedColorConverter}}">
 
@@ -284,7 +284,7 @@ You can access these properties from your templates.  Here's an example of displ
 				<Label Text="{Binding TrackName}" />
 			</Border>
 
-		</StackLayout>
+		</VerticalStackLayout>
 	</xct:VirtualViewCell>
 </xct:VirtualViewCell>
 ```
@@ -293,12 +293,10 @@ Notice the `IsVisible="{DynamicResource IsNotFirstItemInSection}"` references a 
 
 ## Selection
 
-There are 3 selection modes: None, Single, and Multiple.  Currently there is no bindable properties for selected items, but there is a `SelectedItemsChanged` event.
+There are 3 selection modes: `None`, `Single`, and `Multiple`.  Only `Item` types are selectable.
 
-Only `Item` types are selectable.
-
-In the future there will be bindable properties and maybe a way to cancel a selection event.
-
+There are `SelectedItem` and `SelectedItems` bindable properties.
+There's an `OnSelectedItemsChanged` event fired whenever these change.
 
 ## Refreshing
 
@@ -330,7 +328,7 @@ Scrolled notifications can be observed with `ScrolledCommand` which will pass a 
 Looking ahead, there are a few goals:
 
 1. Even Rows - by default every cell is assumed uneven and measured every time the context changes or the cell is recycled.  Adding an option to assume each template type is the same size will make performance even better, but will be an explicit opt-in
-2. Bindable properties for item selection
+2. Supporting "size of content" constraints
 
 Some current non-goals but considerations for even later:
 - Grid / Column support
