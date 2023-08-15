@@ -15,9 +15,11 @@ public partial class MainViewModel : ObservableObject
 	MusicDataAdapter adapter;
 
 	[RelayCommand]
-	async Task Refresh()
+	async Task Refresh(Action completion)
 	{
 		await Task.Delay(3000);
+		System.Diagnostics.Debug.WriteLine("Refresh Complete");
+		completion?.Invoke();
 	}
 
 	[RelayCommand]

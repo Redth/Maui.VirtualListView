@@ -39,9 +39,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		refreshControl.AddTarget(new EventHandler((s, a) =>
 		{
 			refreshControl.BeginRefreshing();
-			VirtualView?.Refresh();
-			refreshControl.EndRefreshing();
-
+			VirtualView?.Refresh(() => refreshControl.EndRefreshing());
 		}), UIControlEvent.ValueChanged);
 
 		collectionView.AddSubview(refreshControl);
