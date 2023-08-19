@@ -7,8 +7,8 @@ internal class PositionalViewSelector
 	public readonly IVirtualListView VirtualListView;
 	public IVirtualListViewAdapter Adapter => VirtualListView?.Adapter;
 	public IVirtualListViewSelector ViewSelector => VirtualListView?.ViewSelector;
-	public bool HasGlobalHeader => VirtualListView?.Header != null;
-	public bool HasGlobalFooter => VirtualListView?.Footer != null;
+	public bool HasGlobalHeader => (VirtualListView?.Header?.Visibility ?? Visibility.Collapsed) == Visibility.Visible;
+	public bool HasGlobalFooter => (VirtualListView?.Footer?.Visibility ?? Visibility.Collapsed) == Visibility.Visible;
 
 	public PositionalViewSelector(IVirtualListView virtualListView)
 	{
