@@ -24,6 +24,8 @@ internal partial class RvAdapter : RecyclerView.Adapter
 	internal RvAdapter(Context context, VirtualListViewHandler handler, PositionalViewSelector positionalViewSelector)
 	{
 		Context = context;
+		HasStableIds = false;
+
 		this.handler = handler;
 		this.positionalViewSelector = positionalViewSelector;
 	}
@@ -79,7 +81,8 @@ internal partial class RvAdapter : RecyclerView.Adapter
 		}
 	}
 
-	List<string> cachedReuseIds = new List<string>();
+	Dictionary<string, int> cachedReuseIds = new ();
+	int reuseIdCount = 100;
 
 	public override int GetItemViewType(int position)
 	{
@@ -103,19 +106,20 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 		lock (lockObj)
 		{
-			vt = cachedReuseIds.IndexOf(reuseId) + 1;
-			if (vt <= 0)
+			if (!cachedReuseIds.TryGetValue(reuseId, out var reuseIdNumber))
 			{
-				cachedReuseIds.Add(reuseId);
-				vt = cachedReuseIds.Count;
+				reuseIdNumber = ++reuseIdCount;
+				cachedReuseIds.Add(reuseId, reuseIdNumber);
 			}
+
+			vt = reuseIdNumber;
 		}
 
 		return vt;
 	}
 
 	public override long GetItemId(int position)
-		=> position;
+		=> RecyclerView.NoId;
 
 	public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)
 	{
@@ -146,9 +150,9 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 	public void Reset()
 	{
-		lock (lockObj)
-		{
-			cachedReuseIds.Clear();
-		}
+		//lock (lockObj)
+		//{
+		//	cachedReuseIds.Clear();
+		//}
 	}
 }

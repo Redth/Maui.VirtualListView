@@ -37,8 +37,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	{
 		swipeRefreshLayout.SetOnRefreshListener(new SrlRefreshListener(() =>
 		{
-			VirtualView?.Refresh();
-			swipeRefreshLayout.Refreshing = false;
+			VirtualView?.Refresh(() => swipeRefreshLayout.Refreshing = false);
 		}));
 
 		layoutManager = new LinearLayoutManager(Context);

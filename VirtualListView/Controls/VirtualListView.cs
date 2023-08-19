@@ -111,16 +111,16 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 
 	public event EventHandler<SelectedItemsChangedEventArgs> OnSelectedItemsChanged;
 
-	public event EventHandler<EventArgs> OnRefresh;
+	public event EventHandler<RefreshEventArgs> OnRefresh;
 
-	void IVirtualListView.Refresh()
+	void IVirtualListView.Refresh(Action completionCallback)
 	{
 		if (RefreshCommand != null && RefreshCommand.CanExecute(null))
 		{
-			RefreshCommand.Execute(null);
+			RefreshCommand.Execute(completionCallback);
 		}
 
-		OnRefresh?.Invoke(this, EventArgs.Empty);
+		OnRefresh?.Invoke(this, new RefreshEventArgs(completionCallback));
 	}
 
 	public ICommand RefreshCommand

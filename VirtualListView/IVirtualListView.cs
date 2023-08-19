@@ -26,7 +26,7 @@ public interface IVirtualListView : IView
 
 	Color RefreshAccentColor { get; }
 
-	void Refresh();
+	void Refresh(Action completionCallback);
 
 	bool IsRefreshEnabled { get; }
 	
