@@ -30,6 +30,15 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty GlobalHeaderProperty =
 		BindableProperty.Create(nameof(GlobalHeader), typeof(IView), typeof(VirtualListView), default);
 
+	public bool IsHeaderVisible
+	{
+		get => (bool)GetValue(IsHeaderVisibleProperty);
+		set => SetValue(IsHeaderVisibleProperty, value);
+	}
+
+	public static readonly BindableProperty IsHeaderVisibleProperty =
+		BindableProperty.Create(nameof(IsHeaderVisible), typeof(bool), typeof(VirtualListView), true);
+
 	public IView GlobalFooter
 	{
 		get => (IView)GetValue(GlobalFooterProperty);
@@ -39,6 +48,15 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty GlobalFooterProperty =
 		BindableProperty.Create(nameof(GlobalFooter), typeof(IView), typeof(VirtualListView), default);
 
+
+	public bool IsFooterVisible
+	{
+		get => (bool)GetValue(IsFooterVisibleProperty);
+		set => SetValue(IsFooterVisibleProperty, value);
+	}
+
+	public static readonly BindableProperty IsFooterVisibleProperty =
+		BindableProperty.Create(nameof(IsFooterVisible), typeof(bool), typeof(VirtualListView), true);
 
 
 	public DataTemplate ItemTemplate

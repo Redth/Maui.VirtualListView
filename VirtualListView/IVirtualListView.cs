@@ -10,7 +10,11 @@ public interface IVirtualListView : IView
 
 	IView Header { get; }
 
+	bool IsHeaderVisible { get; }
+
 	IView Footer { get; }
+
+	bool IsFooterVisible { get; }
 
 	event EventHandler<ScrolledEventArgs> OnScrolled;
 

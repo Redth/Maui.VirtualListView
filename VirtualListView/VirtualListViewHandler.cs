@@ -8,7 +8,9 @@ public partial class VirtualListViewHandler
 	{
 		[nameof(IVirtualListView.Adapter)] = MapAdapter,
 		[nameof(IVirtualListView.Header)] = MapHeader,
+		[nameof(IVirtualListView.IsHeaderVisible)] = MapIsHeaderVisible,
 		[nameof(IVirtualListView.Footer)] = MapFooter,
+		[nameof(IVirtualListView.IsFooterVisible)] = MapIsFooterVisible,
 		[nameof(IVirtualListView.ViewSelector)] = MapViewSelector,
 		[nameof(IVirtualListView.SelectionMode)] = MapSelectionMode,
 		[nameof(IVirtualListView.Orientation)] = MapOrientation,
@@ -103,4 +105,15 @@ public partial class VirtualListViewHandler
 		// Keep track of the new state for next time it changes
 		handler.previousSelections = newSelections.ToArray();
 	}
+
+	public static void MapIsHeaderVisible(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		handler?.InvalidateData();
+	}
+
+	public static void MapIsFooterVisible(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		handler?.InvalidateData();
+	}
+
 }
