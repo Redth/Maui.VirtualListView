@@ -22,7 +22,7 @@ internal class CvCell : UICollectionViewCell
 		this.ContentView.AddGestureRecognizer(new UITapGestureRecognizer(() => InvokeTap()));
 	}
 
-	public TapHandlerProxy TapHandler { get; set; }
+	public WeakReference<Action<CvCell>> TapHandler { get; set; }
 
 	WeakReference<UIKeyCommand[]> keyCommands;
 
@@ -55,7 +55,10 @@ internal class CvCell : UICollectionViewCell
 	void InvokeTap()
 	{
 		if (PositionInfo.Kind == PositionKind.Item)
-			TapHandler?.Invoke(this);
+		{
+			if (TapHandler?.TryGetTarget(out var handler) ?? false)
+				handler?.Invoke(this);
+		}
 	}
 
 	public void UpdateSelected(bool selected)
@@ -132,19 +135,5 @@ internal class CvCell : UICollectionViewCell
 			handler.SetVirtualView(newView);
 			VirtualView.SetTarget(newView);
 		}
-    }
-
-	public class TapHandlerProxy
-	{
-        public TapHandlerProxy(Action<CvCell> tapHandler)
-		{
-            TapHandler = tapHandler;
-        }
-
-        public Action<CvCell> TapHandler { get; set; }
-
-		public void Invoke(CvCell cell)	
-			=> TapHandler?.Invoke(cell);
-
     }
 }
