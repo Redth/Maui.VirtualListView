@@ -10,13 +10,13 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 		: base()
 	{
 		Handler = handler;
-		NativeCollectionView = collectionView;
+		NativeCollectionView = new WeakReference<UICollectionView>(collectionView);
 	}
 
-	internal readonly UICollectionView NativeCollectionView;
+	internal readonly WeakReference<UICollectionView> NativeCollectionView;
 	internal readonly VirtualListViewHandler Handler;
 
-	public Action<NFloat, NFloat> ScrollHandler { get; set; }
+	public WeakReference<Action<NFloat, NFloat>> ScrollHandler { get; set; }
 
 	public override void ItemSelected(UICollectionView collectionView, NSIndexPath indexPath)
 		=> HandleSelection(collectionView, indexPath, true);
@@ -31,7 +31,7 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 
 		if ((selectedCell?.PositionInfo?.Kind ?? PositionKind.Header) == PositionKind.Item)
 		{
-			selectedCell.PositionInfo.IsSelected = selected;
+			selectedCell.UpdateSelected(selected);
 
 			var itemPos = new ItemPosition(
 				selectedCell.PositionInfo.SectionIndex,
@@ -45,7 +45,10 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 	}
 
 	public override void Scrolled(UIScrollView scrollView)
-		=> ScrollHandler?.Invoke(scrollView.ContentOffset.X, scrollView.ContentOffset.Y);
+	{
+		if (ScrollHandler?.TryGetTarget(out var handler) ?? false)
+			handler?.Invoke(scrollView.ContentOffset.X, scrollView.ContentOffset.Y);
+	}
 
 	public override bool ShouldSelectItem(UICollectionView collectionView, NSIndexPath indexPath)
 		=> IsRealItem(indexPath);

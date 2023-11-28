@@ -40,12 +40,15 @@ internal class CvDataSource : UICollectionViewDataSource
 		};
 
 		var cell = collectionView.DequeueReusableCell(nativeReuseId, indexPath) as CvCell;
-		cell.TapHandler = TapCellHandler;
+		cell.TapHandler = new CvCell.TapHandlerProxy(TapCellHandler);
 		cell.Handler = Handler;
-		cell.IndexPath = indexPath;
-		
-		cell.ReuseCallback = rv =>
-			Handler.VirtualView.ViewSelector.ViewDetached(info, cell.VirtualView);
+		cell.IndexPath = new WeakReference<NSIndexPath>(indexPath);
+
+		cell.ReuseCallback = new WeakReference<Action<IView>>((rv) =>
+		{
+			if (cell?.VirtualView?.TryGetTarget(out var cellVirtualView) ?? false)
+				Handler.VirtualView.ViewSelector.ViewDetached(info, cellVirtualView);
+		});
 
 		if (info.SectionIndex < 0 || info.ItemIndex < 0)
 			info.IsSelected = false;
@@ -60,12 +63,15 @@ internal class CvDataSource : UICollectionViewDataSource
 
 		cell.PositionInfo = info;
 
-		if (cell.VirtualView is IPositionInfo viewPositionInfo)
-			viewPositionInfo.IsSelected = info.IsSelected;
+		if (cell.VirtualView.TryGetTarget(out var cellVirtualView))
+		{
+			if (cellVirtualView is IPositionInfo viewPositionInfo)
+				viewPositionInfo.IsSelected = info.IsSelected;
 
-		Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info, data, cell.VirtualView);
+			Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info, data, cellVirtualView);
 
-		Handler.VirtualView.ViewSelector.ViewAttached(info, cell.VirtualView);
+			Handler.VirtualView.ViewSelector.ViewAttached(info, cellVirtualView);
+		}
 
 		return cell;
 	}
