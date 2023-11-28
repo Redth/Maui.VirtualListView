@@ -18,8 +18,10 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 	public object BindingContext { get; set; }
 
+	int? cachedItemCount = null;
+
 	public override int ItemCount
-		=> positionalViewSelector?.TotalCount ?? 0;
+		=> (cachedItemCount ??= positionalViewSelector?.TotalCount ?? 0);
 
 	internal RvAdapter(Context context, VirtualListViewHandler handler, PositionalViewSelector positionalViewSelector)
 	{
@@ -150,6 +152,7 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 	public void Reset()
 	{
+		cachedItemCount = null;
 		//lock (lockObj)
 		//{
 		//	cachedReuseIds.Clear();

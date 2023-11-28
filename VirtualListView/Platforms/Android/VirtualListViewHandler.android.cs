@@ -116,7 +116,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 			ListOrientation.Horizontal => LinearLayoutManager.Horizontal,
 			_ => LinearLayoutManager.Vertical
 		};
-		handler.adapter.NotifyDataSetChanged();
+		handler.InvalidateData();
 	}
 
 	public static void MapRefreshAccentColor(VirtualListViewHandler handler, IVirtualListView virtualListView)
