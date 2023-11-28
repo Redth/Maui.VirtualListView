@@ -90,7 +90,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{ }
 
-	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object parameter)
 		=> handler.InvalidateData();
 
 	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)

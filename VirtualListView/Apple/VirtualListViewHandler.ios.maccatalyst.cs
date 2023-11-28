@@ -1,4 +1,5 @@
-﻿using CoreGraphics;
+﻿#nullable enable
+using CoreGraphics;
 using Foundation;
 using Microsoft.Maui.Handlers;
 using Microsoft.Maui.Platform;
@@ -8,11 +9,10 @@ namespace Microsoft.Maui;
 
 public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICollectionView>
 {
-	CvDataSource dataSource;
-	CvLayout layout;
-	CvDelegate cvdelegate;
-	UICollectionView collectionView;
-	UIRefreshControl refreshControl;
+	CvDataSource? dataSource;
+	CvLayout? layout;
+	CvDelegate? cvdelegate;
+	UIRefreshControl? refreshControl;
 
 	protected override UICollectionView CreatePlatformView()
 	{
@@ -29,7 +29,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		layout.MinimumInteritemSpacing = 0f;
 		layout.MinimumLineSpacing = 0f;
 
-		collectionView = new UICollectionView(CGRect.Empty, layout);
+		var collectionView = new UICollectionView(CGRect.Empty, layout);
 		//collectionView.ContentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentBehavior.Never;
 		collectionView.AllowsMultipleSelection = false;
 		collectionView.AllowsSelection = false;
@@ -61,41 +61,51 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 		dataSource = new CvDataSource(this);
 		
-		cvdelegate = new CvDelegate(this, collectionView);
-		cvdelegate.ScrollHandler = (x, y) =>
-			VirtualView?.Scrolled(x, y);
+		cvdelegate = new CvDelegate(this, nativeView);
+		cvdelegate.ScrollHandler = new WeakReference<Action<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>>((x, y) =>
+			VirtualView?.Scrolled(x, y));
 
-		collectionView.DataSource = dataSource;
-		collectionView.Delegate = cvdelegate;
+		nativeView.DataSource = dataSource;
+        nativeView.Delegate = cvdelegate;
 		
-		collectionView.ReloadData();
+		nativeView.ReloadData();
 	}
 
 	protected override void DisconnectHandler(UICollectionView nativeView)
 	{
-		collectionView.DataSource = null;
-		dataSource.Dispose();
-		dataSource = null;
+		if (dataSource is not null)
+		{
+			dataSource.Dispose();
+			dataSource = null;
+		}
 
-		collectionView.Delegate = null;
-		cvdelegate.Dispose();
-		cvdelegate = null;
+		if (cvdelegate is not null)
+		{
+			cvdelegate.Dispose();
+			cvdelegate = null;
+		}
 
-		refreshControl.RemoveFromSuperview();
-		refreshControl.Dispose();
-		refreshControl = null;
+		if (refreshControl is not null)
+		{
+			refreshControl.RemoveFromSuperview();
+			refreshControl.Dispose();
+			refreshControl = null;
+		}
 
-		collectionView.Dispose();
-		collectionView = null;
-		
-		layout.Dispose();
-		layout = null;
+
+		nativeView.Dispose();
+
+		if (layout is not null)
+		{
+			layout.Dispose();
+			layout = null;
+		}
 
 		base.DisconnectHandler(nativeView);
 	}
 
-	internal CvCell GetCell(NSIndexPath indexPath)
-		=> dataSource?.GetCell(collectionView, indexPath) as CvCell;
+	internal CvCell? GetCell(NSIndexPath indexPath)
+		=> dataSource?.GetCell(PlatformView, indexPath) as CvCell;
 
 	public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		=> handler?.InvalidateData();
@@ -120,43 +130,42 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		if (realIndex < 0)
 			return;
 
-		var cell = collectionView.CellForItem(NSIndexPath.FromItemSection(realIndex, 0));
+		var cell = PlatformView.CellForItem(NSIndexPath.FromItemSection(realIndex, 0));
 
 		if (cell is CvCell cvcell)
 		{
-			cvcell.PositionInfo.IsSelected = selected;
-
-			if (cvcell.VirtualView is IPositionInfo positionInfo)
+            PlatformView.InvokeOnMainThread(() =>
 			{
-				collectionView.InvokeOnMainThread(() =>
-				{
-					positionInfo.IsSelected = selected;
-				});
-			}
+				cvcell.UpdateSelected(selected);
+			});
 		}
 	}
 
 	public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		handler.layout.ScrollDirection = virtualListView.Orientation switch
+		if (handler.layout is not null)
 		{
-			ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
-			ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
-			_ => UICollectionViewScrollDirection.Vertical
-		};
+			handler.layout.ScrollDirection = virtualListView.Orientation switch
+			{
+				ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
+				ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
+				_ => UICollectionViewScrollDirection.Vertical
+			};
+		}
 
-		handler?.InvalidateData();
+		handler.InvalidateData();
 	}
 
 	public static void MapRefreshAccentColor(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		if (virtualListView.RefreshAccentColor is not null)
+		if (virtualListView.RefreshAccentColor is not null && handler.refreshControl is not null)
 			handler.refreshControl.TintColor = virtualListView.RefreshAccentColor.ToPlatform();
 	}
 
 	public static void MapIsRefreshEnabled(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		handler.refreshControl.Enabled = virtualListView.IsRefreshEnabled;
+		if (handler.refreshControl is not null)
+			handler.refreshControl.Enabled = virtualListView.IsRefreshEnabled;
 	}
 
 
@@ -167,25 +176,26 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 	void UpdateEmptyViewVisibility()
 	{
-		if (collectionView is not null && collectionView.BackgroundView is not null)
+		if (PlatformView is not null && PlatformView.BackgroundView is not null)
 		{
 			var visibility = ShouldShowEmptyView ? Visibility.Visible : Visibility.Collapsed;
 
-			collectionView.BackgroundView?.UpdateVisibility(visibility);
+			PlatformView.BackgroundView?.UpdateVisibility(visibility);
 		}
 	}
 
 	void UpdateEmptyView()
 	{
-		if (collectionView is not null)
+		if (PlatformView is not null)
 		{
-			if (collectionView.BackgroundView is not null)
+			if (PlatformView.BackgroundView is not null)
 			{
-				collectionView.BackgroundView.RemoveFromSuperview();
-				collectionView.BackgroundView.Dispose();
+				PlatformView.BackgroundView.RemoveFromSuperview();
+				PlatformView.BackgroundView.Dispose();
 			}
 
-			collectionView.BackgroundView = VirtualView?.EmptyView?.ToPlatform(MauiContext);
+			if (MauiContext is not null)
+				PlatformView.BackgroundView = VirtualView?.EmptyView?.ToPlatform(MauiContext);
 
 			UpdateEmptyViewVisibility();
 		}
@@ -198,9 +208,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 			UpdateEmptyViewVisibility();
 
-			collectionView?.SetNeedsLayout();
-			collectionView?.ReloadData();
-			collectionView?.LayoutIfNeeded();
+			PlatformView?.SetNeedsLayout();
+			PlatformView?.ReloadData();
+			PlatformView?.LayoutIfNeeded();
 		});
 		
 	}
