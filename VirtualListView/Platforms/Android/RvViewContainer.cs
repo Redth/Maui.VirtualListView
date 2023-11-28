@@ -18,6 +18,8 @@ sealed class RvViewContainer : Android.Widget.FrameLayout
 
 	public AView NativeView { get; private set; }
 
+	public bool NeedsView => VirtualView is null || VirtualView.Handler is null || NativeView is null;
+
 	public void UpdatePosition(IPositionInfo positionInfo)
 	{
         if (VirtualView is IPositionInfo viewWithPositionInfo)

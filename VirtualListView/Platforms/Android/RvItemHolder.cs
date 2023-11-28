@@ -23,6 +23,8 @@ internal class RvItemHolder : RecyclerView.ViewHolder
 	public IView VirtualView
 		=> ViewContainer?.VirtualView;
 
+	public bool NeedsView
+        => ViewContainer?.NeedsView ?? true;
 
 	public void SetupView(IView view)
 	{

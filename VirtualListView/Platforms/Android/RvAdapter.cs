@@ -75,7 +75,7 @@ internal partial class RvAdapter : RecyclerView.Adapter
 				_ => null
 			};
 
-			if (itemHolder?.VirtualView is null)
+			if (itemHolder.NeedsView)
 			{
 				var newView = positionalViewSelector?.ViewSelector?.CreateView(info, data);
 				itemHolder.SetupView(newView);
