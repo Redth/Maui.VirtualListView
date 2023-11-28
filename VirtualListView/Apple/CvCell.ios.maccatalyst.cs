@@ -1,6 +1,7 @@
 ﻿using CoreGraphics;
 using Foundation;
 using Microsoft.Maui.Platform;
+using Microsoft.VisualBasic;
 using System.Diagnostics.CodeAnalysis;
 using UIKit;
 
@@ -12,7 +13,7 @@ internal class CvCell : UICollectionViewCell
 
 	public WeakReference<NSIndexPath> IndexPath { get; set; }
 
-	public PositionInfo PositionInfo { get; set; }
+	public PositionInfo PositionInfo { get; private set; }
 
 	public WeakReference<Action<IView>> ReuseCallback { get; set; }
 
@@ -109,31 +110,32 @@ internal class CvCell : UICollectionViewCell
 		}
 	}
 
-	public void SwapView(IView newView)
+	public void SetupView(IView view)
 	{
         // Create a new platform native view if we don't have one yet
         if (!(NativeView?.TryGetTarget(out var nativeView) ?? false))
         {
-            nativeView = newView.ToPlatform(this.Handler.MauiContext);
+            nativeView = view.ToPlatform(this.Handler.MauiContext);
             nativeView.Frame = this.ContentView.Frame;
             nativeView.AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth;
             this.ContentView.AddSubview(nativeView);
             NativeView = new WeakReference<UIView>(nativeView);
         }
 
-		// Create a new virtual view if we don't have one yet
-		if (!(VirtualView?.TryGetTarget(out var virtualView) ?? false) || (virtualView?.Handler is null))
+        if (!(VirtualView?.TryGetTarget(out var virtualView) ?? false) || (virtualView?.Handler is null))
+        {
+            virtualView = view;
+            VirtualView = new WeakReference<IView>(virtualView);
+        }
+    }
+
+	public void UpdatePosition(PositionInfo positionInfo)
+	{
+        PositionInfo = positionInfo;
+        if (VirtualView?.TryGetTarget(out var virtualView) ?? false)
 		{
-			virtualView = newView;
-			VirtualView = new WeakReference<IView>(virtualView);
-		}
-		else
-		{
-			var handler = virtualView.Handler;
-			virtualView.Handler = null;
-			newView.Handler = handler;
-			handler.SetVirtualView(newView);
-			VirtualView.SetTarget(newView);
-		}
+            if (virtualView is IPositionInfo viewPositionInfo)
+                viewPositionInfo.Update(positionInfo);
+        }
     }
 }

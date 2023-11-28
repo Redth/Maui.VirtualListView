@@ -58,16 +58,13 @@ internal class CvDataSource : UICollectionViewDataSource
 		if (cell.NeedsView)
 		{
 			var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info, data);
-			cell.SwapView(view);
+			cell.SetupView(view);
 		}
 
-		cell.PositionInfo = info;
+		cell.UpdatePosition(info);
 
 		if (cell.VirtualView.TryGetTarget(out var cellVirtualView))
 		{
-			if (cellVirtualView is IPositionInfo viewPositionInfo)
-				viewPositionInfo.IsSelected = info.IsSelected;
-
 			Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info, data, cellVirtualView);
 
 			Handler.VirtualView.ViewSelector.ViewAttached(info, cellVirtualView);
