@@ -92,7 +92,10 @@ internal class CvCell : UICollectionViewCell
 	}
 
 	public bool NeedsView
-		=> NativeView == null || !NativeView.TryGetTarget(out var _);
+		=> NativeView == null 
+			|| VirtualView is null
+			|| !NativeView.TryGetTarget(out var _) 
+			|| !VirtualView.TryGetTarget(out var _);
 
 	public WeakReference<IView> VirtualView { get; set; }
 
@@ -113,19 +116,20 @@ internal class CvCell : UICollectionViewCell
 	public void SetupView(IView view)
 	{
         // Create a new platform native view if we don't have one yet
-        if (!(NativeView?.TryGetTarget(out var nativeView) ?? false))
+        if (!(NativeView?.TryGetTarget(out var _) ?? false))
         {
-            nativeView = view.ToPlatform(this.Handler.MauiContext);
+			var nativeView = view.ToPlatform(this.Handler.MauiContext);
             nativeView.Frame = this.ContentView.Frame;
             nativeView.AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth;
-            this.ContentView.AddSubview(nativeView);
-            NativeView = new WeakReference<UIView>(nativeView);
+            
+			this.ContentView.AddSubview(nativeView);
+            
+			NativeView = new WeakReference<UIView>(nativeView);
         }
 
         if (!(VirtualView?.TryGetTarget(out var virtualView) ?? false) || (virtualView?.Handler is null))
         {
-            virtualView = view;
-            VirtualView = new WeakReference<IView>(virtualView);
+            VirtualView = new WeakReference<IView>(view);
         }
     }
 
