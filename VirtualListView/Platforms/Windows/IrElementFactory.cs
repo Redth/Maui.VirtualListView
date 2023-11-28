@@ -85,16 +85,17 @@ internal class IrElementFactory : IElementFactory, IDisposable
 				&& (Handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false);
 
 
-			var view = container.VirtualView ?? PositionalViewSelector.ViewSelector?.CreateView(info, data);
+			if (container.NeedsView)
+			{
+				var virtualView = PositionalViewSelector.ViewSelector?.CreateView(info, data);
+				container.SetupView(virtualView);
+			}
 
-			container.Update(info, view);
-
-
-
+			container.UpdatePosition(info);
 			container.IsRecycled = false;
-			PositionalViewSelector.ViewSelector?.RecycleView(info, data, view);
 
-			PositionalViewSelector.ViewSelector?.ViewAttached(info, view);
+			PositionalViewSelector.ViewSelector?.RecycleView(info, data, container.VirtualView);
+			PositionalViewSelector.ViewSelector?.ViewAttached(info, container.VirtualView);
 
 			return container;
 		}

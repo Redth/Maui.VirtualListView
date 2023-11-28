@@ -1,5 +1,6 @@
 ﻿using Android.Views;
 using AndroidX.RecyclerView.Widget;
+using Microsoft.Maui.Controls;
 
 namespace Microsoft.Maui;
 
@@ -22,18 +23,27 @@ internal class RvItemHolder : RecyclerView.ViewHolder
 	public IView VirtualView
 		=> ViewContainer?.VirtualView;
 
-	public void Update(PositionInfo positionInfo, IView newView)
+	public bool NeedsView
+        => ViewContainer?.NeedsView ?? true;
+
+	public void SetupView(IView view)
+	{
+		ViewContainer.SetupView(view);
+	}
+
+	public void UpdatePosition(PositionInfo positionInfo)
 	{
 		PositionInfo = positionInfo;
-
-		if (newView is IPositionInfo viewWithPositionInfo)
-			viewWithPositionInfo.Update(PositionInfo);
-
-		SwapView(newView);
+		ViewContainer.UpdatePosition(positionInfo);
 	}
 
-	void SwapView(IView view)
-	{
-		ViewContainer.SwapView(view);
-	}
+	//public void Update(PositionInfo positionInfo, IView newView)
+	//{
+	//	PositionInfo = positionInfo;
+
+	//	if (newView is IPositionInfo viewWithPositionInfo)
+	//		viewWithPositionInfo.Update(PositionInfo);
+
+ //       ViewContainer.SwapView(newView);
+ //   }
 }
