@@ -18,20 +18,21 @@ sealed class RvViewContainer : Android.Widget.FrameLayout
 
 	public AView NativeView { get; private set; }
 
-	public void SwapView(IView newView)
+	public void UpdatePosition(IPositionInfo positionInfo)
 	{
-		if (VirtualView == null || VirtualView.Handler == null || NativeView == null)
+        if (VirtualView is IPositionInfo viewWithPositionInfo)
+			viewWithPositionInfo.Update(positionInfo);
+    }
+
+    public void SetupView(IView view)
+	{
+		if (NativeView is null)
+			NativeView = view.ToPlatform(MauiContext);
+
+		if (VirtualView is null)
 		{
-			NativeView = newView.ToPlatform(MauiContext);
-			VirtualView = newView;
+			VirtualView = view;
 			AddView(NativeView);
 		}
-		else
-		{
-			var handler = VirtualView.Handler;
-			newView.Handler = handler;
-			handler.SetVirtualView(newView);
-			VirtualView = newView;
-		}
-	}
+    }
 }
