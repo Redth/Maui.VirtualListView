@@ -48,33 +48,27 @@ internal class IrElementContainer : ContentControl
 		}
 	}
 
+	public bool NeedsView
+		=> VirtualView is null || VirtualView.Handler is null;
+
 	public IView VirtualView { get; private set; }
 
-	public void Update(PositionInfo positionInfo, IView newView)
+	public void SetupView(IView view)
 	{
-		PositionInfo = positionInfo;
-
-		if (newView is IPositionInfo viewWithPositionInfo)
-			viewWithPositionInfo.Update(PositionInfo);
-
-		SwapView(newView);
+		if (VirtualView is null || VirtualView.Handler is null)
+		{
+            Content = view.ToPlatform(MauiContext);
+            VirtualView = view;
+        }
 	}
 
-	void SwapView(IView newView)
+	public void UpdatePosition(PositionInfo positionInfo)
 	{
-		if (VirtualView == null || VirtualView.Handler == null || Content == null)
-		{
-			Content = newView.ToPlatform(MauiContext);
-			VirtualView = newView;
-		}
-		else
-		{
-			var handler = VirtualView.Handler;
-			newView.Handler = handler;
-			handler.SetVirtualView(newView);
-			VirtualView = newView;
-		}
-	}
+        PositionInfo = positionInfo;
+
+        if (VirtualView is IPositionInfo viewWithPositionInfo)
+            viewWithPositionInfo.Update(PositionInfo);
+    }
 
 	protected override void OnTapped(TappedRoutedEventArgs e)
 	{
