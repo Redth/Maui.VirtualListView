@@ -43,6 +43,8 @@ public interface IVirtualListView : IView
 	void DeselectItem(ItemPosition path);
 
 	void ClearSelectedItems();
+
+	void ScrollToItem(ItemPosition path, bool animated);
 }
 
 public enum ListOrientation

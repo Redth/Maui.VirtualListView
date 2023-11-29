@@ -22,7 +22,27 @@ public partial class VirtualListViewHandler
 
 	public static CommandMapper<IVirtualListView, VirtualListViewHandler> CommandMapper = new(ViewCommandMapper)
 	{
+		[nameof(IVirtualListView.ScrollToItem)] = MapScrollToItem,
 	};
+
+	public static void MapScrollToItem(VirtualListViewHandler handler, IVirtualListView view, object parameter)
+	{
+		if (parameter is ItemPosition itemPosition)
+		{
+			handler.PlatformScrollToItem(itemPosition, true);
+		}
+		else if (parameter is object[] parameters)
+		{
+			if (parameters?[0] is ItemPosition p)
+			{
+				var animated = true;
+				if (parameters?[1] is bool a)
+					animated = a;
+
+				handler.PlatformScrollToItem(p, animated);
+			}
+		}
+	}
 
 	public VirtualListViewHandler() : base(ViewMapper, CommandMapper)
 	{
