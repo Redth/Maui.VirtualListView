@@ -66,7 +66,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 			VirtualView?.Scrolled(x, y));
 
 		nativeView.DataSource = dataSource;
-        nativeView.Delegate = cvdelegate;
+		nativeView.Delegate = cvdelegate;
 		
 		nativeView.ReloadData();
 	}
@@ -123,6 +123,18 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
 		=> handler?.InvalidateData();
 
+	void PlatformScrollToItem(ItemPosition itemPosition, bool animated)
+	{
+		var realIndex = PositionalViewSelector?.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex) ?? -1;
+
+		if (realIndex < 0)
+			return;
+
+		var indexPath = NSIndexPath.FromItemSection(realIndex, 0);
+
+		PlatformView.ScrollToItem(indexPath, UICollectionViewScrollPosition.Top, animated);
+	}
+
 	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
 	{
 		var realIndex = PositionalViewSelector?.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex) ?? -1;
@@ -134,7 +146,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 		if (cell is CvCell cvcell)
 		{
-            PlatformView.InvokeOnMainThread(() =>
+			PlatformView.InvokeOnMainThread(() =>
 			{
 				cvcell.UpdateSelected(selected);
 			});

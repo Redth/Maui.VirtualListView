@@ -78,6 +78,13 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		adapter?.NotifyDataSetChanged();
 	}
 
+	void PlatformScrollToItem(ItemPosition itemPosition, bool animated)
+	{
+		var position = PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
+
+		recyclerView.ScrollToPosition(position);
+	}
+
 	public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
 		=> handler.InvalidateData();
 

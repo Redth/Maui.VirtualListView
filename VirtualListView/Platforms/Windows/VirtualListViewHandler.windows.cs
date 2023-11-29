@@ -5,6 +5,7 @@ using WGrid = Microsoft.UI.Xaml.Controls.Grid;
 using WVisibility = Microsoft.UI.Xaml.Visibility;
 using WFrameworkElement = Microsoft.UI.Xaml.FrameworkElement;
 using Microsoft.Maui.Platform;
+using Microsoft.UI.Xaml;
 
 namespace Microsoft.Maui;
 
@@ -84,6 +85,15 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	{
 		irSource?.Reset();
 		UpdateEmptyViewVisibility();
+	}
+
+	void PlatformScrollToItem(ItemPosition itemPosition, bool animated)
+	{
+		var position = PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
+
+		var elem = itemsRepeater.GetOrCreateElement(position);
+
+		elem.StartBringIntoView(new BringIntoViewOptions() { AnimationDesired = animated });
 	}
 
 	public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)

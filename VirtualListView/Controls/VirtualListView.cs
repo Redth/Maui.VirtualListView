@@ -311,6 +311,9 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 			SelectedItem = null;
 	}
 
+	public void ScrollToItem(ItemPosition itemPosition, bool animated)
+		=> Handler?.Invoke(nameof(ScrollToItem), new object[] { itemPosition, animated });
+
 	public bool SectionHasHeader(int sectionIndex)
 		=> SectionHeaderTemplateSelector != null || SectionHeaderTemplate != null;
 
