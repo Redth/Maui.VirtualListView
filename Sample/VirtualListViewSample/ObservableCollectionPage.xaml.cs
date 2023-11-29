@@ -11,7 +11,7 @@ public partial class ObservableCollectionPage : ContentPage
 
 		Adapter = new ObservableCollectionAdapter<string>(Items);
 
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 100; i++)
 		{
 			Items.Add($"Item: {i}");
 		}
@@ -59,6 +59,18 @@ public partial class ObservableCollectionPage : ContentPage
 			var item = Adapter.GetItem(toDelete.SectionIndex, toDelete.ItemIndex);
 
 			Items.Remove(item);
+		}
+	}
+
+	private void ScrollTo_Clicked(object sender, EventArgs e)
+	{
+		if (!string.IsNullOrEmpty(entryItem.Text))
+		{
+			var item = Items.FirstOrDefault(i => i.Equals(entryItem.Text, StringComparison.InvariantCultureIgnoreCase));
+
+			var itemIndex = Items.IndexOf(item);
+
+			vlv.ScrollToItem(new ItemPosition(0, itemIndex), true);
 		}
 	}
 }

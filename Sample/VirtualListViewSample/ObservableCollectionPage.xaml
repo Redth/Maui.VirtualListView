@@ -6,10 +6,10 @@
 	xmlns:local="clr-namespace:VirtualListViewSample"
 	xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
 	Title="ObservableCollectionPage">
-	<Grid RowDefinitions="*,Auto" ColumnDefinitions="*,Auto" Padding="20">
+	<Grid RowDefinitions="*,Auto" ColumnDefinitions="*,Auto,Auto" Padding="20">
 		<vlv:VirtualListView
 			Grid.Row="0"
-			Grid.Column="0" Grid.ColumnSpan="2"
+			Grid.Column="0" Grid.ColumnSpan="3"
 			x:Name="vlv"
 			OnSelectedItemsChanged="vlv_SelectedItemsChanged"
 			SelectionMode="Multiple">
@@ -39,5 +39,6 @@
 
 		<Entry x:Name="entryItem" Grid.Row="1" Grid.Column="0" Placeholder="Item" />
 		<Button Grid.Row="1" Grid.Column="1" Text="Add" Clicked="Button_Clicked" />
+        <Button Grid.Row="1" Grid.Column="2" Text="Scroll To" Clicked="ScrollTo_Clicked" />
 	</Grid>
 </ContentPage>
