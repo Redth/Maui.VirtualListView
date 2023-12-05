@@ -39,8 +39,8 @@ internal class CvDataSource : UICollectionViewDataSource
 			_ => "UNKNOWN",
 		};
 
-		var cell = collectionView.DequeueReusableCell(nativeReuseId, indexPath) as CvCell;
-		cell.TapHandler = new WeakReference<Action<CvCell>>(TapCellHandler);
+		var cell = (collectionView.DequeueReusableCell(nativeReuseId, indexPath) as CvCell)!;
+		cell.SetTapHandlerCallback(TapCellHandler);
 		cell.Handler = Handler;
 		cell.IndexPath = new WeakReference<NSIndexPath>(indexPath);
 
