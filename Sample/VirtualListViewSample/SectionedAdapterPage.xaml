@@ -28,7 +28,8 @@
 			</vlv:VirtualListView.SectionHeaderTemplate>
 			<vlv:VirtualListView.ItemTemplate>
 				<DataTemplate>
-					<Border
+                    <Grid>
+                        <Border
 					Margin="10,0,0,0"
 					Padding="4"
 					Background="LightBlue"
@@ -41,6 +42,7 @@
                             </Border>
                         </VerticalStackLayout>
 					</Border>
+                    </Grid>
 				</DataTemplate>
 			</vlv:VirtualListView.ItemTemplate>
 		</vlv:VirtualListView>
