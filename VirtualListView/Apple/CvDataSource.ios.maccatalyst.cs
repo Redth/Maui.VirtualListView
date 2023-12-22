@@ -87,6 +87,9 @@ internal class CvDataSource : UICollectionViewDataSource
 
 	public override nint GetItemsCount(UICollectionView collectionView, nint section)
 	{
-		return Handler?.PositionalViewSelector?.TotalCount ?? 0;
+		var c = Handler?.PositionalViewSelector?.TotalCount ?? 0;
+		
+		Console.WriteLine($"GetItemsCount: section={section}, count={c}");
+		return c;
 	}
 }

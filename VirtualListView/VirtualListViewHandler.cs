@@ -23,7 +23,44 @@ public partial class VirtualListViewHandler
 	public static CommandMapper<IVirtualListView, VirtualListViewHandler> CommandMapper = new(ViewCommandMapper)
 	{
 		[nameof(IVirtualListView.ScrollToItem)] = MapScrollToItem,
+		[nameof(IVirtualListView.DeleteItems)] = MapDeleteItems,
+		[nameof(IVirtualListView.DeleteSection)] = MapDeleteSection,
+		[nameof(IVirtualListView.InsertItems)] = MapInsertItems,
+		[nameof(IVirtualListView.InsertSection)] = MapInsertSection,
+		[nameof(IVirtualListView.InvalidateData)] = MapInvalidateData
 	};
+	
+	public static void MapDeleteItems(VirtualListViewHandler handler, IVirtualListView view, object parameter)
+	{
+		if (parameter is ItemPosition[] itemPositions)
+		{
+			handler.PlatformDeleteItems(itemPositions);
+		}
+	}
+	
+	public static void MapDeleteSection(VirtualListViewHandler handler, IVirtualListView view, object parameter)
+	{
+		if (parameter is int sectionIndex)
+		{
+			handler.PlatformDeleteSection(sectionIndex);
+		}
+	}
+	
+	public static void MapInsertItems(VirtualListViewHandler handler, IVirtualListView view, object parameter)
+	{
+		if (parameter is ItemPosition[] itemPositions)
+		{
+			handler.PlatformInsertItems(itemPositions);
+		}
+	}
+	
+	public static void MapInsertSection(VirtualListViewHandler handler, IVirtualListView view, object parameter)
+	{
+		if (parameter is int sectionIndex)
+		{
+			handler.PlatformInsertSection(sectionIndex);
+		}
+	}
 
 	public static void MapScrollToItem(VirtualListViewHandler handler, IVirtualListView view, object parameter)
 	{
@@ -43,58 +80,12 @@ public partial class VirtualListViewHandler
 			}
 		}
 	}
-
-	public VirtualListViewHandler() : base(ViewMapper, CommandMapper)
-	{
-
-	}
-
-	internal PositionalViewSelector PositionalViewSelector { get; private set; }
-
-	bool ShouldShowEmptyView
-	{
-		get
-		{
-			var sections = PositionalViewSelector?.Adapter?.GetNumberOfSections() ?? 0;
-
-			if (sections <= 0)
-				return true;
-
-			return (PositionalViewSelector?.Adapter?.GetNumberOfItemsInSection(0) ?? 0) <= 0;
-		}
-	}
-
+	
 	public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		if (handler.currentAdapter != null)
-			handler.currentAdapter.OnDataInvalidated -= handler.Adapter_OnDataInvalidated;
-
-		if (virtualListView?.Adapter != null)
-			virtualListView.Adapter.OnDataInvalidated += handler.Adapter_OnDataInvalidated;
-
 		handler.currentAdapter = virtualListView.Adapter;
-		handler?.InvalidateData();
+		handler.PlatformInvalidateData();
 	}
-
-	IVirtualListViewAdapter currentAdapter = default;
-
-	void Adapter_OnDataInvalidated(object sender, EventArgs e)
-	{
-		InvalidateData();
-	}
-
-	public bool IsItemSelected(int sectionIndex, int itemIndex)
-	{
-		if (VirtualView is null)
-			return false;
-
-		if (VirtualView.SelectionMode == SelectionMode.None)
-			return false;
-
-		return previousSelections.Contains(new ItemPosition(sectionIndex, itemIndex));
-	}
-
-	ItemPosition[] previousSelections = Array.Empty<ItemPosition>();
 
 	public static void MapSelectedItems(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
@@ -127,13 +118,61 @@ public partial class VirtualListViewHandler
 	}
 
 	public static void MapIsHeaderVisible(VirtualListViewHandler handler, IVirtualListView virtualListView)
-	{
-		handler?.InvalidateData();
-	}
+		=> handler?.PlatformInvalidateData();
 
 	public static void MapIsFooterVisible(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		=> handler?.PlatformInvalidateData();
+	
+	public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		=> handler?.PlatformInvalidateData();
+
+	public static void MapFooter(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		=> handler?.PlatformInvalidateData();
+
+	public static void MapViewSelector(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		=> handler?.PlatformInvalidateData();
+
+	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		handler?.InvalidateData();
 	}
 
+	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
+	{
+		handler?.currentAdapter?.InvalidateData();
+		handler?.PlatformInvalidateData();	
+	}
+	
+	public VirtualListViewHandler() : base(ViewMapper, CommandMapper)
+	{
+
+	}
+
+	public PositionalViewSelector PositionalViewSelector { get; private set; }
+
+	bool ShouldShowEmptyView
+	{
+		get
+		{
+			var sections = PositionalViewSelector?.Adapter?.GetNumberOfSections() ?? 0;
+
+			if (sections <= 0)
+				return true;
+
+			return (PositionalViewSelector?.Adapter?.GetNumberOfItemsInSection(0) ?? 0) <= 0;
+		}
+	}
+
+	IVirtualListViewAdapter currentAdapter = default;
+	ItemPosition[] previousSelections = Array.Empty<ItemPosition>();
+	
+	public bool IsItemSelected(int sectionIndex, int itemIndex)
+	{
+		if (VirtualView is null)
+			return false;
+
+		if (VirtualView.SelectionMode == SelectionMode.None)
+			return false;
+
+		return previousSelections.Contains(new ItemPosition(sectionIndex, itemIndex));
+	}
 }

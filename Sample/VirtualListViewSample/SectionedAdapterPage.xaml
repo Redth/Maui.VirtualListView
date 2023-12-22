@@ -6,7 +6,7 @@
 	xmlns:local="clr-namespace:VirtualListViewSample"
 	xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
 	Title="SectionedAdapterPage">
-	<Grid RowDefinitions="*,Auto" ColumnDefinitions="*,*,Auto" Padding="20">
+	<Grid RowDefinitions="*,Auto,Auto" ColumnDefinitions="*,*,Auto" Padding="20">
 		<vlv:VirtualListView
 			Grid.Row="0"
 			Grid.Column="0" Grid.ColumnSpan="3"
@@ -32,8 +32,9 @@
 					Margin="10,0,0,0"
 					Padding="4"
 					Background="LightBlue"
+					HeightRequest="{Binding Height}"
 					StrokeShape="{RoundRectangle CornerRadius=10}">
-						<Label Margin="10,6,10,6" Text="{Binding .}" />
+						<Label Margin="10,6,10,6" Text="{Binding Text}" />
 					</Border>
 				</DataTemplate>
 			</vlv:VirtualListView.ItemTemplate>
@@ -41,6 +42,7 @@
 
 		<Entry x:Name="entrySection" Grid.Row="1" Grid.Column="0" Placeholder="Section" />
 		<Entry x:Name="entryItem" Grid.Row="1" Grid.Column="1" Placeholder="Item" />
-		<Button Grid.Row="1" Grid.Column="3" Text="Add" Clicked="Button_Clicked" />
+		<Entry x:Name="entryItemSize" Grid.Row="2" Grid.Column="0" Placeholder="Item Size" />
+		<Button Grid.Row="1" Grid.RowSpan="2" Grid.Column="3" Text="Add" Clicked="Button_Clicked" />
 	</Grid>
 </ContentPage>

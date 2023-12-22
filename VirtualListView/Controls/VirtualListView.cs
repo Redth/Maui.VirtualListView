@@ -141,6 +141,10 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		OnRefresh?.Invoke(this, new RefreshEventArgs(completionCallback));
 	}
 
+	void IVirtualListView.InvalidateData()
+		=> Handler?.Invoke(nameof(IVirtualListView.InvalidateData), null);
+	
+
 	public ICommand RefreshCommand
 	{
 		get => (ICommand)GetValue(RefreshCommandProperty);
@@ -314,6 +318,19 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public void ScrollToItem(ItemPosition itemPosition, bool animated)
 		=> Handler?.Invoke(nameof(ScrollToItem), new object[] { itemPosition, animated });
 
+
+	public void DeleteItems(ItemPosition[] itemPositions)
+		=> Handler?.Invoke(nameof(DeleteItems), itemPositions);
+
+	public void DeleteSection(int sectionIndex)
+		=> Handler?.Invoke(nameof(DeleteSection), sectionIndex);
+
+	public void InsertItems(ItemPosition[] itemPositions)
+		=> Handler?.Invoke(nameof(InsertItems), itemPositions); 
+
+	public void InsertSection(int sectionIndex)
+		=> Handler?.Invoke(nameof(InsertSection), sectionIndex);
+	
 	public bool SectionHasHeader(int sectionIndex)
 		=> SectionHeaderTemplateSelector != null || SectionHeaderTemplate != null;
 

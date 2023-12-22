@@ -4,11 +4,8 @@ public abstract class VirtualListViewAdapterBase<TSection, TItem> : IVirtualList
 {
 	public virtual int GetNumberOfSections() => 1;
 
-	public event EventHandler OnDataInvalidated;
-
 	public virtual void InvalidateData()
 	{
-		OnDataInvalidated?.Invoke(this, EventArgs.Empty);
 	}
 
 	public abstract TItem GetItem(int sectionIndex, int itemIndex);

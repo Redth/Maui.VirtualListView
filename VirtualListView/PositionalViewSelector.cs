@@ -2,7 +2,7 @@
 
 namespace Microsoft.Maui;
 
-internal class PositionalViewSelector
+public class PositionalViewSelector
 {
 	public readonly IVirtualListView VirtualListView;
 	public IVirtualListViewAdapter Adapter => VirtualListView?.Adapter;

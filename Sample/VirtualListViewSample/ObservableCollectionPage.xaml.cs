@@ -57,8 +57,8 @@ public partial class ObservableCollectionPage : ContentPage
 			vlv.ClearSelectedItems();
 
 			var item = Adapter.GetItem(toDelete.SectionIndex, toDelete.ItemIndex);
-
 			Items.Remove(item);
+			this.vlv.DeleteItems(new []{ new ItemPosition(toDelete.SectionIndex, toDelete.ItemIndex)});
 		}
 	}
 

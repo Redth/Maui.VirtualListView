@@ -107,22 +107,6 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	internal CvCell? GetCell(NSIndexPath indexPath)
 		=> dataSource?.GetCell(PlatformView, indexPath) as CvCell;
 
-	public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler?.InvalidateData();
-
-	public static void MapFooter(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler?.InvalidateData();
-
-	public static void MapViewSelector(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler?.InvalidateData();
-
-	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
-	{
-	}
-
-	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
-		=> handler?.InvalidateData();
-
 	void PlatformScrollToItem(ItemPosition itemPosition, bool animated)
 	{
 		var realIndex = PositionalViewSelector?.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex) ?? -1;
@@ -133,6 +117,64 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		var indexPath = NSIndexPath.FromItemSection(realIndex, 0);
 
 		PlatformView.ScrollToItem(indexPath, UICollectionViewScrollPosition.Top, animated);
+	}
+	
+	public void PlatformDeleteItems(ItemPosition[] itemPositions)
+	{
+		var realIndexes = itemPositions.Select(p => PositionalViewSelector.GetPosition(p.SectionIndex, p.ItemIndex));
+
+		PlatformView.InvokeOnMainThread(() =>
+		{
+			try
+			{
+				var ristr = string.Join(", ", realIndexes);
+				
+				Console.WriteLine("ReloadData");
+				PlatformView.ReloadData();
+
+				var nsindexes = realIndexes.Select(r => NSIndexPath.FromItemSection(new nint(r), new nint(0))).ToArray();
+				
+				Console.WriteLine($"DeleteItems: {ristr}");
+				PlatformView.DeleteItems(nsindexes);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("ERROR: " + ex);
+			}
+		});
+	}
+	
+	public void PlatformDeleteSection(int sectionIndex)
+	{
+	}
+	
+	public void PlatformInsertItems(ItemPosition[] itemPositions)
+	{
+		var realIndexes = itemPositions.Select(p => PositionalViewSelector.GetPosition(p.SectionIndex, p.ItemIndex));
+
+		PlatformView.InvokeOnMainThread(() =>
+		{
+			try
+			{
+				var ristr = string.Join(", ", realIndexes);
+				
+				Console.WriteLine("ReloadData");
+				PlatformView.ReloadData();
+
+				var nsindexes = realIndexes.Select(r => NSIndexPath.FromItemSection(new nint(r), new nint(0))).ToArray();
+				
+				Console.WriteLine($"InsertItems: {ristr}");
+				PlatformView.InsertItems(nsindexes);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("ERROR: " + ex);
+			}
+		});
+	}
+	
+	public void PlatformInsertSection(int sectionIndex)
+	{
 	}
 
 	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
@@ -165,7 +207,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 			};
 		}
 
-		handler.InvalidateData();
+		handler.PlatformInvalidateData();
 	}
 
 	public static void MapRefreshAccentColor(VirtualListViewHandler handler, IVirtualListView virtualListView)
@@ -213,9 +255,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		}
 	}
 
-	public void InvalidateData()
+	void PlatformInvalidateData()
 	{
-		this.PlatformView.InvokeOnMainThread(() => {
+		this.PlatformView.InvokeOnMainThread(() => { 
 			layout?.InvalidateLayout();
 
 			UpdateEmptyViewVisibility();

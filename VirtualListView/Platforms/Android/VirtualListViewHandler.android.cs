@@ -71,7 +71,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		layoutManager = null;
 	}
 
-	public void InvalidateData()
+	void PlatformInvalidateData()
 	{
 		UpdateEmptyViewVisibility();
 		adapter?.Reset();
@@ -84,21 +84,24 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 		recyclerView.ScrollToPosition(position);
 	}
+	
+	public void PlatformDeleteItems(ItemPosition[] itemPositions)
+	{
+		var realIndexes = itemPositions.Select(p => PositionalViewSelector.GetPosition(p.SectionIndex, p.ItemIndex));
 
-	public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler.InvalidateData();
-
-	public static void MapFooter(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler.InvalidateData();
-
-	public static void MapViewSelector(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler.InvalidateData();
-
-	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
-	{ }
-
-	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object parameter)
-		=> handler.InvalidateData();
+	}
+	
+	public void PlatformDeleteSection(int sectionIndex)
+	{
+	}
+	
+	public void PlatformInsertItems(ItemPosition[] itemPositions)
+	{
+	}
+	
+	public void PlatformInsertSection(int sectionIndex)
+	{
+	}
 
 	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
 	{
@@ -123,7 +126,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 			ListOrientation.Horizontal => LinearLayoutManager.Horizontal,
 			_ => LinearLayoutManager.Vertical
 		};
-		handler.InvalidateData();
+		handler.PlatformInvalidateData();
 	}
 
 	public static void MapRefreshAccentColor(VirtualListViewHandler handler, IVirtualListView virtualListView)

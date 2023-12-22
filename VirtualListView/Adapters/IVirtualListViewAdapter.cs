@@ -10,7 +10,5 @@ public interface IVirtualListViewAdapter
 
 	object GetItem(int sectionIndex, int itemIndex);
 
-	event EventHandler OnDataInvalidated;
-
 	void InvalidateData();
 }

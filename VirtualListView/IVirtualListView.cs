@@ -38,6 +38,8 @@ public interface IVirtualListView : IView
 
 	IView EmptyView { get; }
 
+	void InvalidateData();
+	
 	void SelectItem(ItemPosition path);
 
 	void DeselectItem(ItemPosition path);
@@ -45,6 +47,14 @@ public interface IVirtualListView : IView
 	void ClearSelectedItems();
 
 	void ScrollToItem(ItemPosition path, bool animated);
+
+	void DeleteItems(ItemPosition[] itemPositions);
+
+	void DeleteSection(int sectionIndex);
+
+	void InsertItems(ItemPosition[] itemPositions);
+
+	void InsertSection(int sectionIndex);
 }
 
 public enum ListOrientation

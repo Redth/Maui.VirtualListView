@@ -31,8 +31,23 @@ public partial class SectionedAdapterPage : ContentPage
 	{
 		if (!string.IsNullOrEmpty(entrySection.Text) && !string.IsNullOrEmpty(entryItem.Text))
 		{
-			Adapter.AddItem(entrySection.Text, entryItem.Text);
-			entryItem.Text = string.Empty;
+#if IOS || MACCATALYST
+			if (vlv.Handler.PlatformView is UIKit.UICollectionView cv && vlv.Handler is VirtualListViewHandler vlvHandler)
+			{
+				var h = 40;
+				if (int.TryParse(entryItemSize.Text, out var p))
+					h = p;
+				
+				var itemPosition = Adapter.AddItem(entrySection.Text, entryItem.Text, h);
+				Adapter.InvalidateData();
+				
+				var indexPath = Foundation.NSIndexPath.FromItemSection(vlvHandler.PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex), 0);
+
+				cv.InsertItems(new []{ indexPath });
+				
+				entryItem.Text = string.Empty;
+			}
+			#endif
 		}
 	}
 
@@ -42,7 +57,17 @@ public partial class SectionedAdapterPage : ContentPage
 		{
 			var item = e.NewSelection.First();
 
-			Adapter.RemoveItem(item.SectionIndex, item.ItemIndex);
+			#if IOS || MACCATALYST
+			if (vlv.Handler.PlatformView is UIKit.UICollectionView cv && vlv.Handler is VirtualListViewHandler vlvHandler)
+			{
+				var indexPath = Foundation.NSIndexPath.FromItemSection(vlvHandler.PositionalViewSelector.GetPosition(item.SectionIndex, item.ItemIndex), 0);
+				Adapter.RemoveItem(item.SectionIndex, item.ItemIndex);
+				Adapter.InvalidateData();
+				
+				cv.DeleteItems(new []{ indexPath });
+			}
+			#endif
+			//vlv.DeleteItems(new [] { new ItemPosition(item.SectionIndex, item.ItemIndex)});
 			vlv.ClearSelectedItems();
 		}
 	
