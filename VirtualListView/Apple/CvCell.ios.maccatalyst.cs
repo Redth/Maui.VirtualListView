@@ -1,8 +1,6 @@
 ﻿using CoreGraphics;
 using Foundation;
 using Microsoft.Maui.Platform;
-using Microsoft.VisualBasic;
-using System.Diagnostics.CodeAnalysis;
 using UIKit;
 
 namespace Microsoft.Maui;
@@ -37,7 +35,7 @@ internal class CvCell : UICollectionViewCell
 		get
 		{
 			if (keyCommands?.TryGetTarget(out var commands) ?? false)
-                return commands;
+				return commands;
 
 			var v = new[]
 			{
@@ -45,7 +43,7 @@ internal class CvCell : UICollectionViewCell
 				UIKeyCommand.Create(new NSString(" "), 0, new ObjCRuntime.Selector("keyCommandSelect")),
 			};
 
-            keyCommands = new WeakReference<UIKeyCommand[]>(v);
+			keyCommands = new WeakReference<UIKeyCommand[]>(v);
 
 			return v;
 		}
@@ -119,33 +117,43 @@ internal class CvCell : UICollectionViewCell
 
 	public void SetupView(IView view)
 	{
-        // Create a new platform native view if we don't have one yet
-        if (!(NativeView?.TryGetTarget(out var _) ?? false))
-        {
-			var nativeView = view.ToPlatform(this.Handler.MauiContext);
-            nativeView.Frame = this.ContentView.Frame;
-            nativeView.AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth;
-            
-			this.ContentView.AddSubview(nativeView);
-            
-			NativeView = new WeakReference<UIView>(nativeView);
-        }
+		if (view is VisualElement ve) {
+			ve.MeasureInvalidated += (s, e) => {
+				System.Diagnostics.Debug.WriteLine("Measure invalidated");
+				//this.SizeToFit();
+			};
+		}
+		// if (view is VisualElement ve) {
+		// 	ve.SizeChanged += (s, e) => {
+		// 		this.SetNeedsLayout();
+		// 	};
+		// }
 
-        if (!(VirtualView?.TryGetTarget(out var virtualView) ?? false) || (virtualView?.Handler is null))
-        {
-            VirtualView = new WeakReference<IView>(view);
-        }
-    }
+		// Create a new platform native view if we don't have one yet
+		if (!(NativeView?.TryGetTarget(out var _) ?? false))
+		{
+			var nativeView = view.ToPlatform(this.Handler.MauiContext);
+			nativeView.Frame = this.ContentView.Frame;
+			nativeView.AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth;
+			this.ContentView.AddSubview(nativeView);
+			NativeView = new WeakReference<UIView>(nativeView);
+		}
+
+		if (!(VirtualView?.TryGetTarget(out var virtualView) ?? false) || (virtualView?.Handler is null))
+		{
+			VirtualView = new WeakReference<IView>(view);
+		}
+	}
 
 	public void UpdatePosition(PositionInfo positionInfo)
 	{
-        PositionInfo = positionInfo;
-        if (VirtualView?.TryGetTarget(out var virtualView) ?? false)
+		PositionInfo = positionInfo;
+		if (VirtualView?.TryGetTarget(out var virtualView) ?? false)
 		{
-            if (virtualView is IPositionInfo viewPositionInfo)
-                viewPositionInfo.Update(positionInfo);
-        }
-    }
+			if (virtualView is IPositionInfo viewPositionInfo)
+				viewPositionInfo.Update(positionInfo);
+		}
+	}
 	
 	class TapHandlerCallback
 	{
