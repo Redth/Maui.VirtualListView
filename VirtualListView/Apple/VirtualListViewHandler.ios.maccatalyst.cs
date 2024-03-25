@@ -146,10 +146,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 		if (cell is CvCell cvcell)
 		{
-			PlatformView.InvokeOnMainThread(() =>
-			{
-				cvcell.UpdateSelected(selected);
-			});
+			cvcell.UpdateSelected(selected);
 		}
 	}
 
@@ -191,8 +188,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		if (PlatformView is not null && PlatformView.BackgroundView is not null)
 		{
 			var visibility = ShouldShowEmptyView ? Visibility.Visible : Visibility.Collapsed;
-
-			PlatformView.BackgroundView?.UpdateVisibility(visibility);
+			var current = PlatformView.BackgroundView.Hidden ? Visibility.Collapsed : Visibility.Visible;
+            if (current != visibility)
+				PlatformView.BackgroundView?.UpdateVisibility(visibility);
 		}
 	}
 
@@ -215,15 +213,15 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 	public void InvalidateData()
 	{
-		this.PlatformView.InvokeOnMainThread(() => {
-			layout?.InvalidateLayout();
+		//this.PlatformView.InvokeOnMainThread(() => {
+			//layout?.InvalidateLayout();
 
 			UpdateEmptyViewVisibility();
 
-			PlatformView?.SetNeedsLayout();
+			//PlatformView?.SetNeedsLayout();
 			PlatformView?.ReloadData();
-			PlatformView?.LayoutIfNeeded();
-		});
+			//PlatformView?.LayoutIfNeeded();
+		//});
 		
 	}
 }
