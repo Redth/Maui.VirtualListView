@@ -17,6 +17,9 @@
 		<Authors>Microsoft, Redth</Authors>
 		<NeutralLanguage>en</NeutralLanguage>
 		<Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<GitThisAssemblyMetadata>True</GitThisAssemblyMetadata>
 		<RepositoryUrl>$(GitRepositoryUrl)</RepositoryUrl>
 		<RepositoryCommit>$(GitCommit)</RepositoryCommit>
@@ -25,15 +28,13 @@
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<DebugType>portable</DebugType>
 		<DebugSymbols>true</DebugSymbols>
-
-		
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
-		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 	</ItemGroup>
-	<ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Release'">
 		<PackageReference Include="GitInfo" Version="3.1.1" PrivateAssets="all" />
 		<PackageReference Include="MemoryAnalyzers" Version="0.1.0-beta.5" PrivateAssets="all" />
 	</ItemGroup>
