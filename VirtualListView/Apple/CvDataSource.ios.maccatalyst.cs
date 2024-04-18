@@ -1,4 +1,5 @@
-﻿using Foundation;
+﻿#nullable enable
+using Foundation;
 using UIKit;
 
 namespace Microsoft.Maui;
@@ -20,54 +21,74 @@ internal class CvDataSource : UICollectionViewDataSource
 
 	public override nint NumberOfSections(UICollectionView collectionView)
 		=> 1;
-
+	
 	public override UICollectionViewCell GetCell(UICollectionView collectionView, NSIndexPath indexPath)
 	{
 		var info = Handler?.PositionalViewSelector?.GetInfo(indexPath.Item.ToInt32());
 
-		var data = Handler?.PositionalViewSelector?.Adapter?.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
+		object? data = null;
 
-		var reuseId = Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info, data);
-
-		var nativeReuseId = info.Kind switch
+		var nativeReuseId = CvCell.ReuseIdUnknown;
+		
+		if (info is not null)
 		{
-			PositionKind.Item => itemIdManager.GetReuseId(collectionView, reuseId),
-			PositionKind.SectionHeader => sectionHeaderIdManager.GetReuseId(collectionView, reuseId),
-			PositionKind.SectionFooter => sectionFooterIdManager.GetReuseId(collectionView, reuseId),
-			PositionKind.Header => globalIdManager.GetReuseId(collectionView, reuseId),
-			PositionKind.Footer => globalIdManager.GetReuseId(collectionView, reuseId),
-			_ => "UNKNOWN",
-		};
+			data = Handler?.PositionalViewSelector?.Adapter?.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
 
-		var cell = (collectionView.DequeueReusableCell(nativeReuseId, indexPath) as CvCell)!;
+			if (data is not null)
+			{
+				var reuseId = Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info, data);
+
+				nativeReuseId = info.Kind switch
+				{
+					PositionKind.Item => itemIdManager.GetReuseId(collectionView, reuseId),
+					PositionKind.SectionHeader => sectionHeaderIdManager.GetReuseId(collectionView, reuseId),
+					PositionKind.SectionFooter => sectionFooterIdManager.GetReuseId(collectionView, reuseId),
+					PositionKind.Header => globalIdManager.GetReuseId(collectionView, reuseId),
+					PositionKind.Footer => globalIdManager.GetReuseId(collectionView, reuseId),
+					_ => CvCell.ReuseIdUnknown,
+				};
+			}
+		}
+
+		var nativeCell = collectionView.DequeueReusableCell(nativeReuseId, indexPath);
+		if (nativeCell is not CvCell cell)
+			return (UICollectionViewCell)nativeCell;
+		
 		cell.SetTapHandlerCallback(TapCellHandler);
 		cell.Handler = Handler;
 		cell.IndexPath = new WeakReference<NSIndexPath>(indexPath);
 
 		cell.ReuseCallback = new WeakReference<Action<IView>>((rv) =>
 		{
-			if (cell?.VirtualView?.TryGetTarget(out var cellVirtualView) ?? false)
-				Handler.VirtualView.ViewSelector.ViewDetached(info, cellVirtualView);
+			if (info is not null && (cell.VirtualView?.TryGetTarget(out var cellView) ?? false))
+				Handler?.VirtualView?.ViewSelector?.ViewDetached(info, cellView);
 		});
 
-		if (info.SectionIndex < 0 || info.ItemIndex < 0)
-			info.IsSelected = false;
-		else
-			info.IsSelected = Handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false;
-
-		if (cell.NeedsView)
+		if (info is not null)
 		{
-			var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info, data);
-			cell.SetupView(view);
+			if (info.SectionIndex < 0 || info.ItemIndex < 0)
+				info.IsSelected = false;
+			else
+				info.IsSelected = Handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false;
 		}
 
-		cell.UpdatePosition(info);
-
-		if (cell.VirtualView.TryGetTarget(out var cellVirtualView))
+		if (cell.NeedsView && info is not null && data is not null)
 		{
-			Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info, data, cellVirtualView);
+			var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info, data);
+			if (view is not null)
+				cell.SetupView(view);
+		}
 
-			Handler.VirtualView.ViewSelector.ViewAttached(info, cellVirtualView);
+		if (info is not null)
+		{
+			cell.UpdatePosition(info);
+
+			if (data is not null && (cell.VirtualView?.TryGetTarget(out var cellVirtualView) ?? false))
+			{
+				Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info, data, cellVirtualView);
+
+				Handler?.VirtualView?.ViewSelector?.ViewAttached(info, cellVirtualView);
+			}
 		}
 
 		return cell;
