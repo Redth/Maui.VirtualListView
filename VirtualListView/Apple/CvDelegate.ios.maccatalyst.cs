@@ -17,7 +17,7 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 	internal readonly WeakReference<UICollectionView> NativeCollectionView;
 	internal readonly VirtualListViewHandler Handler;
 
-	public WeakReference<Action<NFloat, NFloat>> ScrollHandler { get; set; }
+	public Action<NFloat, NFloat> ScrollHandler { get; set; }
 
 	public override void ItemSelected(UICollectionView collectionView, NSIndexPath indexPath)
 		=> HandleSelection(collectionView, indexPath, true);
@@ -49,8 +49,7 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 
 	public override void Scrolled(UIScrollView scrollView)
 	{
-		if (ScrollHandler?.TryGetTarget(out var handler) ?? false)
-			handler?.Invoke(scrollView.ContentOffset.X, scrollView.ContentOffset.Y);
+		ScrollHandler?.Invoke(scrollView.ContentOffset.X, scrollView.ContentOffset.Y);
 	}
 
 	public override bool ShouldSelectItem(UICollectionView collectionView, NSIndexPath indexPath)
