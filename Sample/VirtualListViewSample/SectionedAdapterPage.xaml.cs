@@ -47,4 +47,10 @@ public partial class SectionedAdapterPage : ContentPage
 		}
 	
 	}
+
+	private async void Vlv_OnOnRefresh(object sender, RefreshEventArgs e)
+	{
+		await Task.Delay(3000);
+		e.Complete();
+	}
 }
