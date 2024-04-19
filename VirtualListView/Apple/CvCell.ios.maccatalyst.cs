@@ -7,6 +7,8 @@ namespace Microsoft.Maui;
 
 internal class CvCell : UICollectionViewCell
 {
+	internal const string ReuseIdUnknown = "UNKNOWN";
+	
 	public VirtualListViewHandler Handler { get; set; }
 
 	public WeakReference<NSIndexPath> IndexPath { get; set; }

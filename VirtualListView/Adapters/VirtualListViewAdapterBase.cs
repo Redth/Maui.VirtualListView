@@ -2,7 +2,12 @@
 
 public abstract class VirtualListViewAdapterBase<TSection, TItem> : IVirtualListViewAdapter
 {
-	public virtual int GetNumberOfSections() => 1;
+	// This adapter assumes we only ever have 1 section
+	// however we really want to return 0 if there's no items at all
+	// So, ask the derived class how many items might be in the first
+	// section and if any, we return 1 section otherwise 0
+	public virtual int GetNumberOfSections() =>
+		GetNumberOfItemsInSection(0) > 0 ? 1 : 0;
 
 	public event EventHandler OnDataInvalidated;
 
