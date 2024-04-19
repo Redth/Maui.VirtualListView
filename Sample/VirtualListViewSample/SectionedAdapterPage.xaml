@@ -10,6 +10,8 @@
 		<vlv:VirtualListView
 			Grid.Row="0"
 			Grid.Column="0" Grid.ColumnSpan="3"
+			IsRefreshEnabled="False"
+			OnRefresh="Vlv_OnOnRefresh"
 			x:Name="vlv"
 			OnSelectedItemsChanged="vlv_SelectedItemsChanged"
 			SelectionMode="Single">

@@ -36,13 +36,21 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 
 		refreshControl = new UIRefreshControl();
+		refreshControl.Enabled = VirtualView?.IsRefreshEnabled ?? false;
 		refreshControl.AddTarget(new EventHandler((s, a) =>
 		{
 			refreshControl.BeginRefreshing();
-			VirtualView?.Refresh(() => refreshControl.EndRefreshing());
+			try
+			{
+				VirtualView?.Refresh(() => refreshControl.EndRefreshing());
+			}
+			catch
+			{
+				refreshControl.EndRefreshing();
+			}
 		}), UIControlEvent.ValueChanged);
 
-		collectionView.AddSubview(refreshControl);
+		//collectionView.AddSubview(refreshControl);
 
 		collectionView.AlwaysBounceVertical = true;
 
@@ -176,8 +184,20 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 	public static void MapIsRefreshEnabled(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
+		var isRefreshEnabled = virtualListView?.IsRefreshEnabled ?? false;
 		if (handler.refreshControl is not null)
-			handler.refreshControl.Enabled = virtualListView.IsRefreshEnabled;
+		{
+			if (isRefreshEnabled)
+			{
+				handler.PlatformView.AddSubview(handler.refreshControl);
+				handler.refreshControl.Enabled = true;
+			}
+			else
+			{
+				handler.refreshControl.Enabled = false;
+				handler.refreshControl.RemoveFromSuperview();
+			}
+		}
 	}
 
 
