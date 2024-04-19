@@ -72,6 +72,15 @@
 				<Label Padding="20" Text="That's all folks!" TextColor="White" HorizontalOptions="Center" />
 			</Grid>
 		</vlv:VirtualListView.GlobalFooter>
+		
+		<vlv:VirtualListView.EmptyView>
+			<Grid>
+				<Label
+					VerticalOptions="Center"
+					HorizontalOptions="Center"
+					Text="No Items" />
+			</Grid>
+		</vlv:VirtualListView.EmptyView>
 	</vlv:VirtualListView>
 
 </ContentPage>
