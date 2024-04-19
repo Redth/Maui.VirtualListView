@@ -62,8 +62,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		dataSource = new CvDataSource(this);
 		
 		cvdelegate = new CvDelegate(this, nativeView);
-		cvdelegate.ScrollHandler = new WeakReference<Action<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>>((x, y) =>
-			VirtualView?.Scrolled(x, y));
+		cvdelegate.ScrollHandler = (x, y) => VirtualView?.Scrolled(x, y);
 
 		nativeView.DataSource = dataSource;
 		nativeView.Delegate = cvdelegate;
