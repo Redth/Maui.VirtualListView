@@ -235,13 +235,13 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	public void InvalidateData()
 	{
 		this.PlatformView.InvokeOnMainThread(() => {
-			layout?.InvalidateLayout();
+			//layout?.InvalidateLayout();
 
 			UpdateEmptyViewVisibility();
 
-			PlatformView?.SetNeedsLayout();
+			//PlatformView?.SetNeedsLayout();
 			PlatformView?.ReloadData();
-			PlatformView?.LayoutIfNeeded();
+			//PlatformView?.LayoutIfNeeded();
 		});
 		
 	}
