@@ -2,7 +2,7 @@
 
 namespace VirtualListViewSample;
 
-public class SectionedAdapter : VirtualListViewAdapterBase<Section, string>
+public class SectionedAdapter : VirtualListViewAdapterBase<Section, Item>
 {
 	public SectionedAdapter(IList<Section> items) : base()
 	{
@@ -20,7 +20,7 @@ public class SectionedAdapter : VirtualListViewAdapterBase<Section, string>
 	public override int GetNumberOfItemsInSection(int sectionIndex)
 		=> Items[sectionIndex].Count;
 
-	public override string GetItem(int sectionIndex, int itemIndex)
+	public override Item GetItem(int sectionIndex, int itemIndex)
 		=> Items[sectionIndex][itemIndex];
 
 	public void AddItem(string sectionTitle, string itemName)
@@ -33,7 +33,7 @@ public class SectionedAdapter : VirtualListViewAdapterBase<Section, string>
 			Items.Add(section);
 		}
 
-		section.Add(itemName);
+		section.Add(new Item { Name = itemName });
 		InvalidateData();
 	}
 
@@ -51,4 +51,16 @@ public class SectionedAdapter : VirtualListViewAdapterBase<Section, string>
 
 		InvalidateData();
 	}
+
+	public void UpdateItem(int sectionIndex, int itemIndex)
+	{
+        var section = Items.ElementAtOrDefault(sectionIndex);
+
+        if (section is null)
+            return;
+
+		section[itemIndex].Name = $"{section[itemIndex].Name} Updated";
+
+		InvalidateItems(new ItemPosition(sectionIndex, itemIndex));
+    }
 }

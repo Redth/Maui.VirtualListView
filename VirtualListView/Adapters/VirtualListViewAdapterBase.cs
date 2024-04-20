@@ -11,6 +11,8 @@ public abstract class VirtualListViewAdapterBase<TSection, TItem> : IVirtualList
 
 	public event EventHandler OnDataInvalidated;
 
+	public event EventHandler<InvalidateItemsEventArgs> OnItemsInvalidated;
+
 	public virtual void InvalidateData()
 	{
 		OnDataInvalidated?.Invoke(this, EventArgs.Empty);
@@ -31,4 +33,12 @@ public abstract class VirtualListViewAdapterBase<TSection, TItem> : IVirtualList
 
 	void IVirtualListViewAdapter.InvalidateData()
 		=> InvalidateData();
+
+	public virtual void InvalidateItems(params ItemPosition[] items)
+	{
+		OnItemsInvalidated?.Invoke(this, new InvalidateItemsEventArgs(items));
+	}
+
+	void IVirtualListViewAdapter.InvalidateItems(params Microsoft.Maui.ItemPosition[] items)
+		=> InvalidateItems(items);
 }

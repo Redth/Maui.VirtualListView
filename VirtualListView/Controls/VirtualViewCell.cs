@@ -61,6 +61,7 @@ public class VirtualViewCell : ContentView, IPositionInfo
 		{
 			sectionIndex = value;
 			this.Resources[nameof(SectionIndex)] = sectionIndex;
+			this.Resources[nameof(ItemPosition)] = new  ItemPosition(sectionIndex, ItemIndex);
 			this.OnPropertyChanged(nameof(SectionIndex));
 		}
 	}
@@ -73,6 +74,7 @@ public class VirtualViewCell : ContentView, IPositionInfo
 		{
 			itemIndex = value;
 			this.Resources[nameof(ItemIndex)] = itemIndex;
+			this.Resources[nameof(ItemPosition)] = new ItemPosition(SectionIndex, itemIndex);
 			this.OnPropertyChanged(nameof(ItemIndex));
 			this.OnPropertyChanged(nameof(IsFirstItemInSection));
 			this.OnPropertyChanged(nameof(IsNotFirstItemInSection));

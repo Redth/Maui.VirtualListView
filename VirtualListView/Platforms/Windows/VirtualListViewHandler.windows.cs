@@ -164,4 +164,10 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 		UpdateEmptyViewVisibility();
 	}
+
+	void InvalidateItems(params ItemPosition[] items)
+	{
+		if (items is not null && items.Length > 0)
+			irSource?.ResetItems(items);
+	}
 }

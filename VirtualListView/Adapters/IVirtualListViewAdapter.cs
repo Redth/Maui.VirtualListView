@@ -13,4 +13,8 @@ public interface IVirtualListViewAdapter
 	event EventHandler OnDataInvalidated;
 
 	void InvalidateData();
+
+	event EventHandler<InvalidateItemsEventArgs> OnItemsInvalidated;
+
+	void InvalidateItems(params ItemPosition[] items);
 }

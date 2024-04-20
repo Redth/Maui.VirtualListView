@@ -22,7 +22,7 @@ public partial class VirtualListViewHandler
 
 	public static CommandMapper<IVirtualListView, VirtualListViewHandler> CommandMapper = new(ViewCommandMapper)
 	{
-		[nameof(IVirtualListView.ScrollToItem)] = MapScrollToItem,
+		[nameof(IVirtualListView.ScrollToItem)] = MapScrollToItem
 	};
 
 	public static void MapScrollToItem(VirtualListViewHandler handler, IVirtualListView view, object parameter)
@@ -67,10 +67,16 @@ public partial class VirtualListViewHandler
 	public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
 		if (handler.currentAdapter != null)
+		{
 			handler.currentAdapter.OnDataInvalidated -= handler.Adapter_OnDataInvalidated;
+			handler.currentAdapter.OnItemsInvalidated -= handler.Adapter_OnItemsInvalidated;
+		}
 
 		if (virtualListView?.Adapter != null)
+		{
 			virtualListView.Adapter.OnDataInvalidated += handler.Adapter_OnDataInvalidated;
+			virtualListView.Adapter.OnItemsInvalidated += handler.Adapter_OnItemsInvalidated;
+		}
 
 		handler.currentAdapter = virtualListView.Adapter;
 		handler?.InvalidateData();
@@ -81,6 +87,11 @@ public partial class VirtualListViewHandler
 	void Adapter_OnDataInvalidated(object sender, EventArgs e)
 	{
 		InvalidateData();
+	}
+
+	void Adapter_OnItemsInvalidated(object sender, InvalidateItemsEventArgs e)
+	{
+		InvalidateItems(e.Items);
 	}
 
 	public bool IsItemSelected(int sectionIndex, int itemIndex)
