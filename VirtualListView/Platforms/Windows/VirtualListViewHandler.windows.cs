@@ -4,6 +4,7 @@ using WStackLayout = Microsoft.UI.Xaml.Controls.StackLayout;
 using WGrid = Microsoft.UI.Xaml.Controls.Grid;
 using WVisibility = Microsoft.UI.Xaml.Visibility;
 using WFrameworkElement = Microsoft.UI.Xaml.FrameworkElement;
+using WScrollBarVisibility = Microsoft.UI.Xaml.Controls.ScrollBarVisibility;
 using Microsoft.Maui.Platform;
 using Microsoft.UI.Xaml;
 
@@ -169,5 +170,27 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	{
 		if (items is not null && items.Length > 0)
 			irSource?.ResetItems(items);
+  }
+  
+	void UpdateVerticalScrollbarVisibility(ScrollBarVisibility scrollBarVisibility)
+	{
+		scrollViewer.VerticalScrollBarVisibility = scrollBarVisibility switch
+		{
+			ScrollBarVisibility.Default => WScrollBarVisibility.Auto,
+			ScrollBarVisibility.Always => WScrollBarVisibility.Visible,
+			ScrollBarVisibility.Never => WScrollBarVisibility.Hidden,
+			_ => WScrollBarVisibility.Auto
+		};
+	}
+
+	void UpdateHorizontalScrollbarVisibility(ScrollBarVisibility scrollBarVisibility)
+	{
+		scrollViewer.HorizontalScrollBarVisibility = scrollBarVisibility switch
+		{
+			ScrollBarVisibility.Default => WScrollBarVisibility.Auto,
+			ScrollBarVisibility.Always => WScrollBarVisibility.Visible,
+			ScrollBarVisibility.Never => WScrollBarVisibility.Hidden,
+			_ => WScrollBarVisibility.Auto
+		};
 	}
 }

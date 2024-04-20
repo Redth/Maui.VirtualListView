@@ -25,6 +25,10 @@ public interface IVirtualListView : IView
 	IList<ItemPosition> SelectedItems { get; set; }
 
 	ItemPosition? SelectedItem { get; set; }
+	
+	ScrollBarVisibility VerticalScrollbarVisibility { get; set; }
+	
+	ScrollBarVisibility HorizontalScrollbarVisibility { get; set; }
 
 	event EventHandler<SelectedItemsChangedEventArgs> OnSelectedItemsChanged;
 

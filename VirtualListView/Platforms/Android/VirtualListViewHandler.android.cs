@@ -164,7 +164,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 			UpdateEmptyViewVisibility();
 		}
 	}
-
+  
 	void InvalidateItems(params ItemPosition[] items)
 	{
 		if (items is not null && items.Length > 0)
@@ -175,6 +175,36 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 				adapter.NotifyItemChanged(rawPosition);
 			}
-		}
+  }
+	
+	ScrollBarVisibility _defaultHorizontalScrollVisibility = ScrollBarVisibility.Default;
+	ScrollBarVisibility _defaultVerticalScrollVisibility = ScrollBarVisibility.Default;
+
+	void UpdateVerticalScrollbarVisibility(ScrollBarVisibility scrollBarVisibility)
+	{
+		if (_defaultVerticalScrollVisibility == ScrollBarVisibility.Default)
+			_defaultVerticalScrollVisibility =
+				recyclerView.VerticalScrollBarEnabled ? ScrollBarVisibility.Always : ScrollBarVisibility.Never;
+
+		var newVerticalScrollVisiblility = scrollBarVisibility;
+
+		if (newVerticalScrollVisiblility == ScrollBarVisibility.Default)
+			newVerticalScrollVisiblility = _defaultVerticalScrollVisibility;
+
+		recyclerView.VerticalScrollBarEnabled = newVerticalScrollVisiblility == ScrollBarVisibility.Always;
+	}
+	
+	void UpdateHorizontalScrollbarVisibility(ScrollBarVisibility scrollBarVisibility)
+	{
+		if (_defaultHorizontalScrollVisibility == ScrollBarVisibility.Default)
+			_defaultHorizontalScrollVisibility =
+				recyclerView.HorizontalScrollBarEnabled ? ScrollBarVisibility.Always : ScrollBarVisibility.Never;
+
+		var newHorizontalScrollVisiblility = scrollBarVisibility;
+
+		if (newHorizontalScrollVisiblility == ScrollBarVisibility.Default)
+			newHorizontalScrollVisiblility = _defaultHorizontalScrollVisibility;
+
+		recyclerView.HorizontalScrollBarEnabled = newHorizontalScrollVisiblility == ScrollBarVisibility.Always;
 	}
 }
