@@ -232,6 +232,16 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		}
 	}
 
+	void UpdateVerticalScrollbarVisibility(ScrollBarVisibility scrollBarVisibility)
+	{
+		PlatformView.ShowsVerticalScrollIndicator = scrollBarVisibility == ScrollBarVisibility.Always || scrollBarVisibility == ScrollBarVisibility.Default;
+	}
+	
+	void UpdateHorizontalScrollbarVisibility(ScrollBarVisibility scrollBarVisibility)
+	{
+		PlatformView.ShowsHorizontalScrollIndicator = scrollBarVisibility == ScrollBarVisibility.Always || scrollBarVisibility == ScrollBarVisibility.Default;
+	}
+
 	public void InvalidateData()
 	{
 		this.PlatformView.InvokeOnMainThread(() => {
