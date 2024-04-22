@@ -175,7 +175,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 				adapter.NotifyItemChanged(rawPosition);
 			}
-  }
+		}
+	}
 	
 	ScrollBarVisibility _defaultHorizontalScrollVisibility = ScrollBarVisibility.Default;
 	ScrollBarVisibility _defaultVerticalScrollVisibility = ScrollBarVisibility.Default;
