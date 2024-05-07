@@ -17,36 +17,68 @@ internal class CvLayout : UICollectionViewFlowLayout
 
 	readonly bool isiOS11;
 
+	NFloat GetLayoutFullWidth(UIEdgeInsets sectionInset)
+	{
+		if (isiOS11)
+			return CollectionView.SafeAreaLayoutGuide.LayoutFrame.Width - sectionInset.Left - sectionInset.Right;
+		else
+			return CollectionView.Bounds.Width - sectionInset.Left - sectionInset.Right;
+	}
+
+	NFloat GetLayoutFullHeight(UIEdgeInsets sectionInset)
+	{
+		if (isiOS11)
+			return CollectionView.SafeAreaLayoutGuide.LayoutFrame.Height - sectionInset.Top - sectionInset.Bottom;
+		else
+			return CollectionView.Bounds.Height - sectionInset.Top - sectionInset.Bottom;
+	}
 
 	public override UICollectionViewLayoutAttributes LayoutAttributesForItem(NSIndexPath path)
 	{
 		var layoutAttributes = base.LayoutAttributesForItem(path);
 
+		PositionInfo? info = null;
+
+		var columns = Handler.VirtualView.Columns;
+
+		if (columns > 1)
+		{
+			info = Handler?.PositionalViewSelector?.GetInfo(path.Item.ToInt32());
+		}
+
+		var sectionInset = SectionInset;
+
 		if (Handler.VirtualView.Orientation == ListOrientation.Vertical)
 		{
-			var x = SectionInset.Left;
+			var width = GetLayoutFullWidth(sectionInset);
+			NFloat gridItemInset = 0f;
 
-			NFloat width;
+			if (columns > 1 && info is not null && info.Kind != PositionKind.Header && info.Kind != PositionKind.Footer)
+			{
+				width = width / columns;
 
-			if (isiOS11)
-				width = CollectionView.SafeAreaLayoutGuide.LayoutFrame.Width - SectionInset.Left - SectionInset.Right;
-			else
-				width = CollectionView.Bounds.Width - SectionInset.Left - SectionInset.Right;
+				// Index 0 is first item in grid's row, so 0 additional inset
+				// for every next item, we need to add width of previous item
+				gridItemInset = width * info.ItemIndex;
+			}
 
-			layoutAttributes.Frame = new CGRect(x, layoutAttributes.Frame.Y, width, layoutAttributes.Frame.Height);
+			layoutAttributes.Frame = new CGRect(sectionInset.Left + gridItemInset, layoutAttributes.Frame.Y, width, layoutAttributes.Frame.Height);
 		}
 		else
 		{
-			var y = SectionInset.Top;
+			var height = GetLayoutFullHeight(sectionInset);
+			NFloat gridItemInset = 0f;
 
-			NFloat height;
+			if (columns > 1 && info is not null && info.Kind != PositionKind.Header && info.Kind != PositionKind.Footer)
+			{
+				height = height / columns;
 
-			if (isiOS11)
-				height = CollectionView.SafeAreaLayoutGuide.LayoutFrame.Height - SectionInset.Top - SectionInset.Bottom;
-			else
-				height = CollectionView.Bounds.Height - SectionInset.Top - SectionInset.Bottom;
+				// Index 0 is first item in grid's column, so 0 additional inset
+				// for every next item, we need to add height of previous item
+				gridItemInset = height * info.ItemIndex;
+			}
 
-			layoutAttributes.Frame = new CGRect(layoutAttributes.Frame.X, y, layoutAttributes.Frame.Width, height);
+			layoutAttributes.Frame = new CGRect(layoutAttributes.Frame.X, sectionInset.Top + gridItemInset, layoutAttributes.Frame.Width, height);
 		}
 
 		return layoutAttributes;
