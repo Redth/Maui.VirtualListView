@@ -39,7 +39,7 @@ internal class CvCell : UICollectionViewCell
 		get
 		{
 			if (keyCommands?.TryGetTarget(out var commands) ?? false)
-                return commands;
+				return commands;
 
 			var v = new[]
 			{
@@ -47,7 +47,7 @@ internal class CvCell : UICollectionViewCell
 				UIKeyCommand.Create(new NSString(" "), 0, new ObjCRuntime.Selector("keyCommandSelect")),
 			};
 
-            keyCommands = new WeakReference<UIKeyCommand[]>(v);
+			keyCommands = new WeakReference<UIKeyCommand[]>(v);
 
 			return v;
 		}

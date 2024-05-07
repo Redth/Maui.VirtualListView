@@ -8,6 +8,7 @@
 	Title="SectionedAdapterPage">
 	<Grid RowDefinitions="*,Auto" ColumnDefinitions="*,*,Auto" Padding="20">
 		<vlv:VirtualListView
+			Columns="3"
 			Grid.Row="0"
 			Grid.Column="0" Grid.ColumnSpan="3"
 			IsRefreshEnabled="False"

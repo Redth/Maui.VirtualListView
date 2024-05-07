@@ -13,7 +13,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	SwipeRefreshLayout swipeRefreshLayout;
 	RvAdapter adapter;
 	RecyclerView recyclerView;
-	LinearLayoutManager layoutManager;
+	GridLayoutManager layoutManager;
+	RvSpanLookup spanLookup;
 	Android.Views.View emptyView;
 
 	protected override FrameLayout CreatePlatformView()
@@ -40,10 +41,12 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 			VirtualView?.Refresh(() => swipeRefreshLayout.Refreshing = false);
 		}));
 
-		layoutManager = new LinearLayoutManager(Context);
-		//layoutManager.Orientation = LinearLayoutManager.Horizontal;
+		layoutManager = new GridLayoutManager(Context, VirtualView?.Columns ?? 1);
 
 		PositionalViewSelector = new PositionalViewSelector(VirtualView);
+
+		spanLookup = new RvSpanLookup(VirtualView, PositionalViewSelector);
+		layoutManager.SetSpanSizeLookup(spanLookup);
 
 		adapter = new RvAdapter(Context, this, PositionalViewSelector);
 		
