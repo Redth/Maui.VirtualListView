@@ -20,6 +20,7 @@ public partial class VirtualListViewHandler
 		[nameof(IVirtualListView.SelectedItems)] = MapSelectedItems,
 		[nameof(IVirtualListView.VerticalScrollbarVisibility)] = MapVerticalScrollbarVisibility,
 		[nameof(IVirtualListView.HorizontalScrollbarVisibility)] = MapHorizontalScrollbarVisibility,
+		[nameof(IVirtualListView.Columns)] = MapColumns,
 	};
 
 	public static CommandMapper<IVirtualListView, VirtualListViewHandler> CommandMapper = new(ViewCommandMapper)

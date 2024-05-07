@@ -195,4 +195,10 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 		recyclerView.HorizontalScrollBarEnabled = newHorizontalScrollVisiblility == ScrollBarVisibility.Always;
 	}
+
+	public static void MapColumns(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		handler.layoutManager.SpanCount = Math.Clamp(virtualListView.Columns, 1, 999);
+		handler.InvalidateData();
+	}
 }

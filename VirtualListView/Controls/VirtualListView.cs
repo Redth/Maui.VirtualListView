@@ -401,4 +401,18 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	void RaiseSelectedItemsChanged(ItemPosition[] previousSelection, ItemPosition[] newSelection)
 		=> this.OnSelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(previousSelection, newSelection));
 
+	public int Columns
+	{
+		get => (int)GetValue(ColumnsProperty);
+		set => SetValue(ColumnsProperty, value);
+	}
+
+	public static readonly BindableProperty ColumnsProperty =
+		BindableProperty.Create(nameof(Columns), typeof(int), typeof(VirtualListView), 1, propertyChanging: (bindableObject, oldValue, newValue) =>
+		{
+			if (newValue is int columns && columns < 1)
+				throw new ArgumentOutOfRangeException(nameof(Columns), "Columns must be greater than 0");
+		});
+
+
 }

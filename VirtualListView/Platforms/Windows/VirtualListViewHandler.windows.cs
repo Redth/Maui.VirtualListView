@@ -187,4 +187,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 			_ => WScrollBarVisibility.Auto
 		};
 	}
+
+	public static void MapColumns(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+
+	}
 }

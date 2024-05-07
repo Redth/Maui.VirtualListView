@@ -40,6 +40,8 @@ public interface IVirtualListView : IView
 	
 	ListOrientation Orientation { get; }
 
+	int Columns { get; }
+
 	IView EmptyView { get; }
 
 	void SelectItem(ItemPosition path);

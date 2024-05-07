@@ -255,4 +255,12 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		});
 		
 	}
+
+	public static void MapColumns(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		if (virtualListView.Columns > 1)
+		{
+
+		}
+	}
 }
