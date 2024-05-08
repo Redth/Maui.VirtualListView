@@ -53,13 +53,13 @@ internal class CvLayout : UICollectionViewFlowLayout
 			var width = GetLayoutFullWidth(sectionInset);
 			NFloat gridItemInset = 0f;
 
-			if (columns > 1 && info is not null && info.Kind != PositionKind.Header && info.Kind != PositionKind.Footer)
+			if (columns > 1 && info is not null && info.Kind == PositionKind.Item)
 			{
 				width = width / columns;
 
 				// Index 0 is first item in grid's row, so 0 additional inset
 				// for every next item, we need to add width of previous item
-				gridItemInset = width * info.ItemIndex;
+				gridItemInset = width * (info.ItemIndex % columns);
 			}
 
 			layoutAttributes.Frame = new CGRect(sectionInset.Left + gridItemInset, layoutAttributes.Frame.Y, width, layoutAttributes.Frame.Height);
@@ -69,7 +69,7 @@ internal class CvLayout : UICollectionViewFlowLayout
 			var height = GetLayoutFullHeight(sectionInset);
 			NFloat gridItemInset = 0f;
 
-			if (columns > 1 && info is not null && info.Kind != PositionKind.Header && info.Kind != PositionKind.Footer)
+			if (columns > 1 && info is not null && info.Kind == PositionKind.Item)
 			{
 				height = height / columns;
 
@@ -84,10 +84,26 @@ internal class CvLayout : UICollectionViewFlowLayout
 		return layoutAttributes;
 	}
 
+	// public override UICollectionViewLayoutAttributes[] LayoutAttributesForElementsInRect(CGRect rect)
+	// {
+	// 	var layoutAttributesObjects = base.LayoutAttributesForElementsInRect(rect);
+	//
+	// 	foreach (var layoutAttributes in layoutAttributesObjects)
+	// 	{
+	// 		if (layoutAttributes.RepresentedElementCategory == UICollectionElementCategory.Cell)
+	// 		{
+	// 			var newFrame = LayoutAttributesForItem(layoutAttributes.IndexPath).Frame;
+	// 			layoutAttributes.Frame = newFrame;
+	// 		}
+	// 	}
+	//
+	// 	return layoutAttributesObjects;
+	// }
+	
 	public override UICollectionViewLayoutAttributes[] LayoutAttributesForElementsInRect(CGRect rect)
 	{
 		var layoutAttributesObjects = base.LayoutAttributesForElementsInRect(rect);
-
+		
 		foreach (var layoutAttributes in layoutAttributesObjects)
 		{
 			if (layoutAttributes.RepresentedElementCategory == UICollectionElementCategory.Cell)
