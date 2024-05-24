@@ -19,6 +19,8 @@ public partial class VirtualListViewHandler
 		[nameof(IVirtualListView.IsRefreshEnabled)] = MapIsRefreshEnabled,
 		[nameof(IVirtualListView.EmptyView)] = MapEmptyView,
 		[nameof(IVirtualListView.SelectedItems)] = MapSelectedItems,
+		[nameof(IVirtualListView.VerticalScrollbarVisibility)] = MapVerticalScrollbarVisibility,
+		[nameof(IVirtualListView.HorizontalScrollbarVisibility)] = MapHorizontalScrollbarVisibility,
 	};
 
 	public static CommandMapper<IVirtualListView, VirtualListViewHandler> CommandMapper = new(ViewCommandMapper)
@@ -136,6 +138,15 @@ public partial class VirtualListViewHandler
 	{
 		handler?.InvalidateData();
 	}
-#endif
+	
+	public static void MapVerticalScrollbarVisibility(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		handler?.UpdateVerticalScrollbarVisibility(virtualListView.VerticalScrollbarVisibility);
+	}
+	
+	public static void MapHorizontalScrollbarVisibility(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		handler?.UpdateHorizontalScrollbarVisibility(virtualListView.HorizontalScrollbarVisibility);
+	}
 
 }
