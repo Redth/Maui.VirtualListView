@@ -148,5 +148,5 @@ public partial class VirtualListViewHandler
 	{
 		handler?.UpdateHorizontalScrollbarVisibility(virtualListView.HorizontalScrollbarVisibility);
 	}
-
+#endif
 }
