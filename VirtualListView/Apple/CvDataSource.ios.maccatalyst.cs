@@ -72,7 +72,7 @@ internal class CvDataSource : UICollectionViewDataSource
 				info.IsSelected = Handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false;
 		}
 
-		if (cell.NeedsView && info is not null && data is not null)
+		if (cell.NeedsView)
 		{
 			var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info, data);
 			if (view is not null)
