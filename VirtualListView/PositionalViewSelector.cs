@@ -30,6 +30,10 @@ internal class PositionalViewSelector
 
 		var hasAtLeastOneItem = false;
 		var numberOfSections = Adapter.GetNumberOfSections();
+		if (Adapter is null)
+		{
+			return 0;
+		}
 
 		if (HasGlobalHeader && numberOfSections > 0)
 		{
