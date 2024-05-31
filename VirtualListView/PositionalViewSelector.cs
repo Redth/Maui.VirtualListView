@@ -26,14 +26,15 @@ internal class PositionalViewSelector
 
 	int GetTotalCount()
 	{
-		var sum = 0;
-
-		var hasAtLeastOneItem = false;
-		var numberOfSections = Adapter.GetNumberOfSections();
 		if (Adapter is null)
 		{
 			return 0;
 		}
+		
+		var sum = 0;
+
+		var hasAtLeastOneItem = false;
+		var numberOfSections = Adapter.GetNumberOfSections();
 
 		if (HasGlobalHeader && numberOfSections > 0)
 		{
