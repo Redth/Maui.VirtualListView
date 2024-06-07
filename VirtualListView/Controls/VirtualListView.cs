@@ -402,4 +402,12 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	void RaiseSelectedItemsChanged(ItemPosition[] previousSelection, ItemPosition[] newSelection)
 		=> this.OnSelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(previousSelection, newSelection));
 
+	public IReadOnlyList<IPositionInfo> FindVisiblePositions()
+	{
+#if ANDROID || IOS || MACCATALYST || WINDOWS
+		if (Handler is IVirtualListViewHandler handler)
+			return handler.FindVisiblePositions();
+#endif
+		return [];
+	}
 }

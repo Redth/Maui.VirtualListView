@@ -2,7 +2,7 @@ using Microsoft.Maui.Adapters;
 
 namespace Microsoft.Maui;
 
-public partial class VirtualListViewHandler
+public partial class VirtualListViewHandler : IVirtualListViewHandler
 {
 	#if ANDROID || IOS || MACCATALYST || WINDOWS
 	public static new IPropertyMapper<IVirtualListView, VirtualListViewHandler> ViewMapper = new PropertyMapper<IVirtualListView, VirtualListViewHandler>(Handlers.ViewHandler.ViewMapper)
