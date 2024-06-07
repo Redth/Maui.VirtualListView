@@ -33,7 +33,7 @@ internal class PositionalViewSelector
 		
 		var sum = 0;
 
-		var hasAtLeastOneItem = false;
+		//var hasAtLeastOneItem = false;
 		var numberOfSections = Adapter.GetNumberOfSections();
 
 		if (HasGlobalHeader && numberOfSections > 0)
@@ -50,7 +50,6 @@ internal class PositionalViewSelector
 					// If we found one, we can stop looping
 					// since we just care to calculate a spot
 					// for the header cell if the adapter isn't empty
-					hasAtLeastOneItem = true;
 					break;
 				}
 			}
@@ -72,7 +71,7 @@ internal class PositionalViewSelector
 
 		// Only count footer if there is already at least one item
 		// otherwise the adapter is empty and we shouldn't count it
-		if (HasGlobalFooter && hasAtLeastOneItem)
+		if (HasGlobalFooter && sum > 0)
 			sum += 1;
 
 		return sum;
