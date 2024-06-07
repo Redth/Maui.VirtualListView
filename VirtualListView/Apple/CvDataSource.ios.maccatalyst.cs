@@ -33,21 +33,18 @@ internal class CvDataSource : UICollectionViewDataSource
 		if (info is not null)
 		{
 			data = Handler?.PositionalViewSelector?.Adapter?.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
+			
+			var reuseId = Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info, data);
 
-			if (data is not null)
+			nativeReuseId = info.Kind switch
 			{
-				var reuseId = Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info, data);
-
-				nativeReuseId = info.Kind switch
-				{
-					PositionKind.Item => itemIdManager.GetReuseId(collectionView, reuseId),
-					PositionKind.SectionHeader => sectionHeaderIdManager.GetReuseId(collectionView, reuseId),
-					PositionKind.SectionFooter => sectionFooterIdManager.GetReuseId(collectionView, reuseId),
-					PositionKind.Header => globalIdManager.GetReuseId(collectionView, reuseId),
-					PositionKind.Footer => globalIdManager.GetReuseId(collectionView, reuseId),
-					_ => CvCell.ReuseIdUnknown,
-				};
-			}
+				PositionKind.Item => itemIdManager.GetReuseId(collectionView, reuseId),
+				PositionKind.SectionHeader => sectionHeaderIdManager.GetReuseId(collectionView, reuseId),
+				PositionKind.SectionFooter => sectionFooterIdManager.GetReuseId(collectionView, reuseId),
+				PositionKind.Header => globalIdManager.GetReuseId(collectionView, reuseId),
+				PositionKind.Footer => globalIdManager.GetReuseId(collectionView, reuseId),
+				_ => CvCell.ReuseIdUnknown,
+			};
 		}
 
 		var nativeCell = collectionView.DequeueReusableCell(nativeReuseId, indexPath);
