@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 
 namespace VirtualListViewSample;
@@ -53,4 +54,15 @@ public partial class SectionedAdapterPage : ContentPage
 		await Task.Delay(3000);
 		e.Complete();
 	}
+
+    private void ButtonAddTextClicked(object sender, EventArgs e)
+    {
+		if (sender is Button button)
+		{
+			if (button.CommandParameter is ItemPosition itemPosition)
+			{
+                this.Adapter.UpdateItem(itemPosition.SectionIndex, itemPosition.ItemIndex);
+            }
+		}
+    }
 }

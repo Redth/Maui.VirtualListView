@@ -255,4 +255,24 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		});
 		
 	}
+
+	void InvalidateItems(params ItemPosition[] items)
+	{
+		if (items is not null && items.Length > 0)
+		{
+			var paths = new List<NSIndexPath>();
+			foreach (var item in items)
+			{
+				paths.Add(NSIndexPath.FromItemSection(item.ItemIndex, item.SectionIndex));
+			}
+
+			if (paths.Count > 0)
+			{
+				this.PlatformView.InvokeOnMainThread(() =>
+				{
+					PlatformView.ReloadItems(paths.ToArray());
+				});
+			}
+		}
+	}
 }

@@ -29,14 +29,19 @@
 				</DataTemplate>
 			</vlv:VirtualListView.SectionHeaderTemplate>
 			<vlv:VirtualListView.ItemTemplate>
-				<DataTemplate>
-					<Border
-					Margin="10,0,0,0"
-					Padding="4"
-					Background="LightBlue"
-					StrokeShape="{RoundRectangle CornerRadius=10}">
-						<Label Margin="10,6,10,6" Text="{Binding .}" />
-					</Border>
+				<DataTemplate x:DataType="local:Item">
+					<vlv:VirtualViewCell x:Name="cell">
+						<Border
+						Margin="10,0,0,0"
+						Padding="4"
+						Background="LightBlue"
+						StrokeShape="{RoundRectangle CornerRadius=10}">
+							<VerticalStackLayout>
+								<Button Text="Test" Clicked="ButtonAddTextClicked"  CommandParameter="{DynamicResource ItemPosition}" />
+								<Label Margin="10,6,10,6" Text="{Binding Name}" />
+							</VerticalStackLayout>
+						</Border>
+					</vlv:VirtualViewCell>
 				</DataTemplate>
 			</vlv:VirtualListView.ItemTemplate>
 		</vlv:VirtualListView>

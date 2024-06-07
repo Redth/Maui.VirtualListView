@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Reflection;
 
 namespace Microsoft.Maui;
 
@@ -24,6 +25,12 @@ class IrSource : IReadOnlyList<IrDataWrapper>, INotifyCollectionChanged
 	public void Reset()
 	{
 		CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+	}
+
+	public void ResetItems(params ItemPosition[] items)
+	{
+		// TODO: Fire a more specific event
+		Reset();
 	}
 
 	public int Count

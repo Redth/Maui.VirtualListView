@@ -164,6 +164,19 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 			UpdateEmptyViewVisibility();
 		}
 	}
+  
+	void InvalidateItems(params ItemPosition[] items)
+	{
+		if (items is not null && items.Length > 0)
+		{
+			foreach (var item in items)
+			{
+				var rawPosition = PositionalViewSelector.GetPosition(item.SectionIndex, item.ItemIndex);
+
+				adapter.NotifyItemChanged(rawPosition);
+			}
+		}
+	}
 	
 	ScrollBarVisibility _defaultHorizontalScrollVisibility = ScrollBarVisibility.Default;
 	ScrollBarVisibility _defaultVerticalScrollVisibility = ScrollBarVisibility.Default;
