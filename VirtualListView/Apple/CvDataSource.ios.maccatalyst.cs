@@ -70,23 +70,19 @@ internal class CvDataSource : UICollectionViewDataSource
 				info.IsSelected = false;
 			else
 				info.IsSelected = Handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false;
-		}
+		
+			if (cell.NeedsView)
+			{
+				var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info, data);
+				if (view is not null)
+					cell.SetupView(view);
+			}
 
-		if (cell.NeedsView && info is not null && data is not null)
-		{
-			var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info, data);
-			if (view is not null)
-				cell.SetupView(view);
-		}
-
-		if (info is not null)
-		{
 			cell.UpdatePosition(info);
 
-			if (data is not null && (cell.VirtualView?.TryGetTarget(out var cellVirtualView) ?? false))
+			if (cell.VirtualView?.TryGetTarget(out var cellVirtualView) ?? false)
 			{
 				Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info, data, cellVirtualView);
-
 				Handler?.VirtualView?.ViewSelector?.ViewAttached(info, cellVirtualView);
 			}
 		}
