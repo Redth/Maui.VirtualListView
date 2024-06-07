@@ -1,4 +1,5 @@
-﻿using System.Windows.Input;
+﻿#nullable enable
+using System.Windows.Input;
 using Microsoft.Maui.Adapters;
 
 namespace Microsoft.Maui.Controls;
@@ -21,7 +22,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		BindableProperty.Create(nameof(Adapter), typeof(IVirtualListViewAdapter), typeof(VirtualListView), default);
 
 
-	public IView GlobalHeader
+	public IView? GlobalHeader
 	{
 		get => (IView)GetValue(GlobalHeaderProperty);
 		set => SetValue(GlobalHeaderProperty, value);
@@ -39,7 +40,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty IsHeaderVisibleProperty =
 		BindableProperty.Create(nameof(IsHeaderVisible), typeof(bool), typeof(VirtualListView), true);
 
-	public IView GlobalFooter
+	public IView? GlobalFooter
 	{
 		get => (IView)GetValue(GlobalFooterProperty);
 		set => SetValue(GlobalFooterProperty, value);
@@ -59,7 +60,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		BindableProperty.Create(nameof(IsFooterVisible), typeof(bool), typeof(VirtualListView), true);
 
 
-	public DataTemplate ItemTemplate
+	public DataTemplate? ItemTemplate
 	{
 		get => (DataTemplate)GetValue(ItemTemplateProperty);
 		set => SetValue(ItemTemplateProperty, value);
@@ -68,7 +69,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty ItemTemplateProperty =
 		BindableProperty.Create(nameof(ItemTemplate), typeof(DataTemplate), typeof(VirtualListView), default);
 
-	public VirtualListViewItemTemplateSelector ItemTemplateSelector
+	public VirtualListViewItemTemplateSelector? ItemTemplateSelector
 	{
 		get => (VirtualListViewItemTemplateSelector)GetValue(ItemTemplateSelectorProperty);
 		set => SetValue(ItemTemplateSelectorProperty, value);
@@ -97,7 +98,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty HorizontalScrollbarVisibilityProperty =
 		BindableProperty.Create(nameof(HorizontalScrollbarVisibility), typeof(ScrollBarVisibility), typeof(VirtualListView), ScrollBarVisibility.Default);
 
-	public DataTemplate SectionHeaderTemplate
+	public DataTemplate? SectionHeaderTemplate
 	{
 		get => (DataTemplate)GetValue(SectionHeaderTemplateProperty);
 		set => SetValue(SectionHeaderTemplateProperty, value);
@@ -106,7 +107,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty SectionHeaderTemplateProperty =
 		BindableProperty.Create(nameof(SectionHeaderTemplate), typeof(DataTemplate), typeof(VirtualListView), default);
 
-	public VirtualListViewSectionTemplateSelector SectionHeaderTemplateSelector
+	public VirtualListViewSectionTemplateSelector? SectionHeaderTemplateSelector
 	{
 		get => (VirtualListViewSectionTemplateSelector)GetValue(SectionHeaderTemplateSelectorProperty);
 		set => SetValue(SectionHeaderTemplateSelectorProperty, value);
@@ -117,7 +118,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 
 
 
-	public DataTemplate SectionFooterTemplate
+	public DataTemplate? SectionFooterTemplate
 	{
 		get => (DataTemplate)GetValue(SectionFooterTemplateProperty);
 		set => SetValue(SectionFooterTemplateProperty, value);
@@ -126,7 +127,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty SectionFooterTemplateProperty =
 		BindableProperty.Create(nameof(SectionFooterTemplate), typeof(DataTemplate), typeof(VirtualListView), default);
 
-	public VirtualListViewSectionTemplateSelector SectionFooterTemplateSelector
+	public VirtualListViewSectionTemplateSelector? SectionFooterTemplateSelector
 	{
 		get => (VirtualListViewSectionTemplateSelector)GetValue(SectionFooterTemplateSelectorProperty);
 		set => SetValue(SectionFooterTemplateSelectorProperty, value);
@@ -159,7 +160,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		OnRefresh?.Invoke(this, new RefreshEventArgs(completionCallback));
 	}
 
-	public ICommand RefreshCommand
+	public ICommand? RefreshCommand
 	{
 		get => (ICommand)GetValue(RefreshCommandProperty);
 		set => SetValue(RefreshCommandProperty, value);
@@ -168,9 +169,9 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty RefreshCommandProperty =
 		BindableProperty.Create(nameof(RefreshCommand), typeof(ICommand), typeof(VirtualListView), default);
 
-	public Color RefreshAccentColor
+	public Color? RefreshAccentColor
 	{
-		get => (Color)GetValue(RefreshAccentColorProperty);
+		get => (Color?)GetValue(RefreshAccentColorProperty);
 		set => SetValue(RefreshAccentColorProperty, value);
 	}
 
@@ -196,14 +197,14 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		BindableProperty.Create(nameof(Orientation), typeof(ListOrientation), typeof(VirtualListView), ListOrientation.Vertical);
 
 
-	public View EmptyView
+	public IView? EmptyView
 	{
-		get => (View)GetValue(EmptyViewProperty);
+		get => (IView)GetValue(EmptyViewProperty);
 		set => SetValue(EmptyViewProperty, value);
 	}
 
 	public static readonly BindableProperty EmptyViewProperty =
-		BindableProperty.Create(nameof(EmptyView), typeof(View), typeof(VirtualListView), null,
+		BindableProperty.Create(nameof(EmptyView), typeof(IView), typeof(VirtualListView), null,
 			propertyChanged: (bobj, oldValue, newValue) =>
 			{
 				if (bobj is VirtualListView virtualListView)
@@ -216,13 +217,13 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 				}
 			});
 
-	IView IVirtualListView.EmptyView => EmptyView;
+	IView? IVirtualListView.EmptyView => EmptyView;
 
 
 	public IVirtualListViewSelector ViewSelector => this;
 
-	public IView Header => GlobalHeader;
-	public IView Footer => GlobalFooter;
+	public IView? Header => GlobalHeader;
+	public IView? Footer => GlobalFooter;
 
 	public event EventHandler<ScrolledEventArgs> OnScrolled;
 
@@ -239,7 +240,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty ScrolledCommandProperty =
 		BindableProperty.Create(nameof(ScrolledCommand), typeof(ICommand), typeof(VirtualListView), default);
 
-	public ICommand ScrolledCommand
+	public ICommand? ScrolledCommand
 	{
 		get => (ICommand)GetValue(ScrolledCommandProperty);
 		set => SetValue(ScrolledCommandProperty, value);
@@ -256,7 +257,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 					vlv.RaiseSelectedItemsChanged(oldSelection.ToArray(), newSelection.ToArray());
 				}
 			});
-	public IList<ItemPosition> SelectedItems
+	public IList<ItemPosition>? SelectedItems
 	{
 		get => (IList<ItemPosition>)GetValue(SelectedItemsProperty);
 		set => SetValue(SelectedItemsProperty, value ?? Array.Empty<ItemPosition>());
@@ -314,9 +315,9 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		else if (SelectionMode == Maui.SelectionMode.Multiple)
 		{
 			var current = SelectedItems;
-			if (!current.Contains(itemPosition))
+			if (current is null || !current.Contains(itemPosition))
 			{
-				SelectedItems = current.Append(itemPosition).ToArray();
+				SelectedItems = (current ?? []).Append(itemPosition).ToArray();
 			}
 		}
 	}
@@ -338,7 +339,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public bool SectionHasFooter(int sectionIndex)
 		=> SectionFooterTemplateSelector != null || SectionFooterTemplate != null;
 
-	public IView CreateView(PositionInfo position, object data)
+	public IView? CreateView(PositionInfo position, object? data)
 		=> position.Kind switch
 		{
 			PositionKind.Item =>
@@ -357,7 +358,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 			_ => default
 		};
 
-	public void RecycleView(PositionInfo position, object data, IView view)
+	public void RecycleView(PositionInfo position, object? data, IView view)
 	{
 		if (view is View controlsView)
 		{
@@ -370,7 +371,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		}
 	}
 
-	public string GetReuseId(PositionInfo position, object data)
+	public string GetReuseId(PositionInfo position, object? data)
 		=> position.Kind switch
 		{
 			PositionKind.Item =>
