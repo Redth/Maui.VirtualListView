@@ -11,12 +11,13 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 	{
 		Handler = handler;
 		NativeCollectionView = new WeakReference<UICollectionView>(collectionView);
+		collectionView.RegisterClassForCell(typeof(CvCell), CvCell.ReuseIdUnknown);
 	}
 
 	internal readonly WeakReference<UICollectionView> NativeCollectionView;
 	internal readonly VirtualListViewHandler Handler;
 
-	public WeakReference<Action<NFloat, NFloat>> ScrollHandler { get; set; }
+	public Action<NFloat, NFloat> ScrollHandler { get; set; }
 
 	public override void ItemSelected(UICollectionView collectionView, NSIndexPath indexPath)
 		=> HandleSelection(collectionView, indexPath, true);
@@ -27,27 +28,28 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 	void HandleSelection(UICollectionView collectionView, NSIndexPath indexPath, bool selected)
 	{
 		//UIView.AnimationsEnabled = false;
-		var selectedCell = collectionView.CellForItem(indexPath) as CvCell;
-
-		if ((selectedCell?.PositionInfo?.Kind ?? PositionKind.Header) == PositionKind.Item)
+		if (collectionView.CellForItem(indexPath) is CvCell selectedCell
+		    && (selectedCell.PositionInfo?.Kind ?? PositionKind.Header) == PositionKind.Item)
 		{
 			selectedCell.UpdateSelected(selected);
 
-			var itemPos = new ItemPosition(
-				selectedCell.PositionInfo.SectionIndex,
-				selectedCell.PositionInfo.ItemIndex);
+			if (selectedCell.PositionInfo is not null)
+			{
+				var itemPos = new ItemPosition(
+					selectedCell.PositionInfo.SectionIndex,
+					selectedCell.PositionInfo.ItemIndex);
 
-			if (selected)
-				Handler?.VirtualView?.SelectItem(itemPos);
-			else
-				Handler?.VirtualView?.DeselectItem(itemPos);
+				if (selected)
+					Handler?.VirtualView?.SelectItem(itemPos);
+				else
+					Handler?.VirtualView?.DeselectItem(itemPos);
+			}
 		}
 	}
 
 	public override void Scrolled(UIScrollView scrollView)
 	{
-		if (ScrollHandler?.TryGetTarget(out var handler) ?? false)
-			handler?.Invoke(scrollView.ContentOffset.X, scrollView.ContentOffset.Y);
+		ScrollHandler?.Invoke(scrollView.ContentOffset.X, scrollView.ContentOffset.Y);
 	}
 
 	public override bool ShouldSelectItem(UICollectionView collectionView, NSIndexPath indexPath)

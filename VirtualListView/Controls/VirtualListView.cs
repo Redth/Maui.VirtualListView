@@ -77,7 +77,25 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty ItemTemplateSelectorProperty =
 		BindableProperty.Create(nameof(ItemTemplateSelector), typeof(VirtualListViewItemTemplateSelector), typeof(VirtualListView), default);
 
+	
+	public ScrollBarVisibility VerticalScrollbarVisibility
+	{
+		get => (ScrollBarVisibility)GetValue(VerticalScrollbarVisibilityProperty);
+		set => SetValue(VerticalScrollbarVisibilityProperty, value);
+	}
 
+	public static readonly BindableProperty VerticalScrollbarVisibilityProperty =
+		BindableProperty.Create(nameof(VerticalScrollbarVisibility), typeof(ScrollBarVisibility), typeof(VirtualListView), ScrollBarVisibility.Default);
+
+
+	public ScrollBarVisibility HorizontalScrollbarVisibility
+	{
+		get => (ScrollBarVisibility)GetValue(HorizontalScrollbarVisibilityProperty);
+		set => SetValue(HorizontalScrollbarVisibilityProperty, value);
+	}
+
+	public static readonly BindableProperty HorizontalScrollbarVisibilityProperty =
+		BindableProperty.Create(nameof(HorizontalScrollbarVisibility), typeof(ScrollBarVisibility), typeof(VirtualListView), ScrollBarVisibility.Default);
 
 	public DataTemplate SectionHeaderTemplate
 	{
