@@ -49,6 +49,8 @@ public interface IVirtualListView : IView
 	void ClearSelectedItems();
 
 	void ScrollToItem(ItemPosition path, bool animated);
+
+	IReadOnlyList<IPositionInfo> FindVisiblePositions();
 }
 
 public enum ListOrientation

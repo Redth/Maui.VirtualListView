@@ -5,8 +5,10 @@ using WGrid = Microsoft.UI.Xaml.Controls.Grid;
 using WVisibility = Microsoft.UI.Xaml.Visibility;
 using WFrameworkElement = Microsoft.UI.Xaml.FrameworkElement;
 using WScrollBarVisibility = Microsoft.UI.Xaml.Controls.ScrollBarVisibility;
+using WRect = Windows.Foundation.Rect;
 using Microsoft.Maui.Platform;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 
 namespace Microsoft.Maui;
 
@@ -186,5 +188,38 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 			ScrollBarVisibility.Never => WScrollBarVisibility.Hidden,
 			_ => WScrollBarVisibility.Auto
 		};
+	}
+
+	public IReadOnlyList<IPositionInfo> FindVisiblePositions()
+	{
+		var positions = new List<PositionInfo>();
+
+		// This gets us all the direct children of our repeater which should be IrElementContainers
+		// The items will not all be visible, since virtualizing causes items to get setup out of view
+		// before being displayed.  We need to check if they are actually visible.
+		var childrenCount = VisualTreeHelper.GetChildrenCount(itemsRepeater);
+
+		for (int i = 0; i < childrenCount; i++)
+		{
+			// See if the child is an IrElementContainer
+			if (VisualTreeHelper.GetChild(itemsRepeater, i) is IrElementContainer irElementContainer)
+			{
+				// Is the item actually visible?
+				if (VisibilityHitTest(irElementContainer, itemsRepeater))
+					positions.Add(irElementContainer.PositionInfo);
+			}
+		}
+
+		return positions;
+	}
+
+	static bool VisibilityHitTest(IrElementContainer element, FrameworkElement container)
+	{
+		var bounds = element.TransformToVisual(container).TransformBounds(new WRect(0.0, 0.0, element.ActualWidth, element.ActualHeight));
+
+		return bounds.Left < container.ActualWidth
+			&& bounds.Top < container.ActualHeight
+			&& bounds.Right > 0
+			&& bounds.Bottom > 0;
 	}
 }
