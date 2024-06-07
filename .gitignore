@@ -350,4 +350,5 @@ MigrationBackup/
 .ionide/
 .DS_Store
 
-.idea/
+# Rider
+.idea
