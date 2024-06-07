@@ -1,8 +1,6 @@
 ﻿using CoreGraphics;
 using Foundation;
 using Microsoft.Maui.Platform;
-using Microsoft.VisualBasic;
-using System.Diagnostics.CodeAnalysis;
 using UIKit;
 
 namespace Microsoft.Maui;

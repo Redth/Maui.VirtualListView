@@ -1,10 +1,11 @@
-﻿using Microsoft.Maui.Adapters;
+﻿#nullable enable
+using Microsoft.Maui.Adapters;
 
 namespace Microsoft.Maui;
 
 internal static class VirtualListViewExtensions
 {
-	public static object DataFor(this IVirtualListViewAdapter vlva, PositionKind kind, int sectionIndex, int itemIndex)
+	public static object? DataFor(this IVirtualListViewAdapter vlva, PositionKind kind, int sectionIndex, int itemIndex)
 		=> kind switch
 		{
 			PositionKind.Item => vlva.GetItem(sectionIndex, itemIndex),

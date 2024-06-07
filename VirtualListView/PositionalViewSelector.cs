@@ -26,6 +26,11 @@ internal class PositionalViewSelector
 
 	int GetTotalCount()
 	{
+		if (Adapter is null)
+		{
+			return 0;
+		}
+		
 		var sum = 0;
 
 		var hasAtLeastOneItem = false;
