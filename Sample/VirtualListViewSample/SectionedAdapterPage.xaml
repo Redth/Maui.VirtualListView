@@ -30,13 +30,21 @@
 			</vlv:VirtualListView.SectionHeaderTemplate>
 			<vlv:VirtualListView.ItemTemplate>
 				<DataTemplate>
-					<Border
+                    <Grid>
+                        <Border
 					Margin="10,0,0,0"
 					Padding="4"
 					Background="LightBlue"
 					StrokeShape="{RoundRectangle CornerRadius=10}">
-						<Label Margin="10,6,10,6" Text="{Binding .}" />
+                        <VerticalStackLayout>
+                            <Label Margin="10,6,10,6" Text="{Binding Text}" />
+                            <Button Text="Expand" Command="{Binding ToggleDetailCommand}" />
+                            <Border Background="Green" WidthRequest="100" HeightRequest="100" IsVisible="{Binding IsDetailVisible}">
+                                
+                            </Border>
+                        </VerticalStackLayout>
 					</Border>
+                    </Grid>
 				</DataTemplate>
 			</vlv:VirtualListView.ItemTemplate>
 		</vlv:VirtualListView>
