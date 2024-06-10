@@ -280,5 +280,17 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		// {
 		// 	
 		// }
+	
+	public IReadOnlyList<IPositionInfo> FindVisiblePositions()
+	{
+		var positions = new List<PositionInfo>();
+			
+		foreach (var cell in PlatformView.VisibleCells)
+		{
+			if (cell is CvCell cvCell)
+				positions.Add(cvCell.PositionInfo);
+		}
+
+		return positions;
 	}
 }

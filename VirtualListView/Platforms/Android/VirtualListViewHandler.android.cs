@@ -205,3 +205,19 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		handler.InvalidateData();
 	}
 }
+	
+	public IReadOnlyList<IPositionInfo> FindVisiblePositions()
+	{
+		var positions = new List<IPositionInfo>();
+		
+		var firstVisibleItemPosition = layoutManager.FindFirstVisibleItemPosition();
+		var lastVisibleItemPosition = layoutManager.FindLastVisibleItemPosition();
+
+		for (var p = firstVisibleItemPosition; p <= lastVisibleItemPosition; p++)
+		{
+			positions.Add(PositionalViewSelector.GetInfo(p));
+		}
+
+		return positions;
+	}
+}

@@ -35,7 +35,7 @@ internal class CvDataSource : UICollectionViewDataSource
 		{
 			data = Handler?.Adapter?.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
 
-			if (data is not null)
+			nativeReuseId = info.Kind switch
 			{
 				var reuseId = Handler?.VirtualView?.ViewSelector?.GetReuseId(info, data);
 
@@ -71,7 +71,13 @@ internal class CvDataSource : UICollectionViewDataSource
 				info.IsSelected = false;
 			else
 				info.IsSelected = Handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false;
-		}
+		
+			if (cell.NeedsView)
+			{
+				var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info, data);
+				if (view is not null)
+					cell.SetupView(view);
+			}
 
 		if (cell.NeedsView && info is not null && data is not null)
 		{
@@ -84,7 +90,7 @@ internal class CvDataSource : UICollectionViewDataSource
 		{
 			cell.UpdatePosition(info);
 
-			if (data is not null && (cell.VirtualView?.TryGetTarget(out var cellVirtualView) ?? false))
+			if (cell.VirtualView?.TryGetTarget(out var cellVirtualView) ?? false)
 			{
 				Handler?.VirtualView?.ViewSelector?.RecycleView(info, data, cellVirtualView);
 
