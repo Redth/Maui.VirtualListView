@@ -2,7 +2,13 @@
 
 public interface IVirtualListViewHandler
 {
-#if ANDROID || IOS || MACCATALYST || WINDOWS
 	IReadOnlyList<IPositionInfo> FindVisiblePositions();
-#endif
+
+	Adapters.IVirtualListViewAdapter Adapter { get; }
+
+	IVirtualListViewSelector ViewSelector { get; }
+
+	IVirtualListView VirtualView {get; }
+	
+	void InvalidateData();
 }

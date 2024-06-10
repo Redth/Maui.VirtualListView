@@ -8,10 +8,10 @@ public class PositionInfo : IPositionInfo
 	internal static PositionInfo ForFooter(int position)
 		=> new() { Position = position, Kind = PositionKind.Footer };
 
-	internal static PositionInfo ForSectionHeader(int positon, int sectionIndex, int itemsInSection = 0)
+	internal static PositionInfo ForSectionHeader(int position, int sectionIndex, int itemsInSection = 0)
 		=> new()
 		{
-			Position = positon,
+			Position = position,
 			Kind = PositionKind.SectionHeader,
 			SectionIndex = sectionIndex,
 			ItemsInSection = itemsInSection
@@ -29,6 +29,32 @@ public class PositionInfo : IPositionInfo
 		=> new()
 		{
 			Position = position,
+			Kind = PositionKind.Item,
+			SectionIndex = sectionIndex,
+			ItemIndex = itemIndex,
+			ItemsInSection = itemsInSection,
+			NumberOfSections = numberOfSections,
+			IsSelected = selected
+		};
+	
+	internal static PositionInfo ForSectionHeader(int sectionIndex, int itemsInSection = 0)
+		=> new()
+		{
+			Kind = PositionKind.SectionHeader,
+			SectionIndex = sectionIndex,
+			ItemsInSection = itemsInSection
+		};
+	internal static PositionInfo ForSectionFooter(int sectionIndex, int itemsInSection = 0)
+		=> new()
+		{
+			Kind = PositionKind.SectionFooter,
+			SectionIndex = sectionIndex,
+			ItemsInSection = itemsInSection
+		};
+
+	internal static PositionInfo ForItem(int sectionIndex, int itemIndex, int itemsInSection, int numberOfSections, bool selected = false)
+		=> new()
+		{
 			Kind = PositionKind.Item,
 			SectionIndex = sectionIndex,
 			ItemIndex = itemIndex,

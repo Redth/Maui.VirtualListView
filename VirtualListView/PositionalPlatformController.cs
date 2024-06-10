@@ -1,25 +1,26 @@
-﻿using Microsoft.Maui.Adapters;
+﻿#nullable enable
+using Microsoft.Maui.Adapters;
 
 namespace Microsoft.Maui;
 
-#if !IOS && !MACCATALYST
-internal class PositionalViewSelector : IPositionalViewSelector
+internal class PositionalPlatformController : IPositionalPlatformController
 {
-	public readonly IVirtualListView VirtualListView;
-	public IVirtualListViewAdapter Adapter => VirtualListView?.Adapter;
-	public IVirtualListViewSelector ViewSelector => VirtualListView?.ViewSelector;
+	public readonly IVirtualListViewHandler Handler;
+
+	public IVirtualListViewAdapter Adapter => Handler.Adapter;
+	public IVirtualListViewSelector ViewSelector => Handler.ViewSelector;
 
 	public bool HasGlobalHeader =>
-		(VirtualListView?.IsHeaderVisible ?? false)
-			&& (VirtualListView?.Header?.Visibility ?? Visibility.Collapsed) == Visibility.Visible;
+		(Handler.VirtualView?.IsHeaderVisible ?? false)
+			&& (Handler.VirtualView?.Header?.Visibility ?? Visibility.Collapsed) == Visibility.Visible;
 
 	public bool HasGlobalFooter =>
-		(VirtualListView?.IsFooterVisible ?? false)
-			&& (VirtualListView?.Footer?.Visibility ?? Visibility.Collapsed) == Visibility.Visible;
+		(Handler.VirtualView?.IsFooterVisible ?? false)
+			&& (Handler.VirtualView?.Footer?.Visibility ?? Visibility.Collapsed) == Visibility.Visible;
 
-	public PositionalViewSelector(IVirtualListView virtualListView)
+	public PositionalPlatformController(IVirtualListViewHandler virtualListViewHandler)
 	{
-		VirtualListView = virtualListView;
+		Handler = virtualListViewHandler;
 	}
 
 	public int TotalCount
@@ -118,9 +119,6 @@ internal class PositionalViewSelector : IPositionalViewSelector
 
 	public PositionInfo GetInfo(int position)
 	{
-		if (Adapter == null)
-			return null;
-
 		var linear = 0;
 
 		var numberSections = Adapter.GetNumberOfSections();
@@ -172,4 +170,3 @@ internal class PositionalViewSelector : IPositionalViewSelector
 	}
 
 }
-#endif

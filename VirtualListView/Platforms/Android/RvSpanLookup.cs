@@ -4,13 +4,13 @@ namespace Microsoft.Maui;
 
 class RvSpanLookup : GridLayoutManager.SpanSizeLookup
 {
-	readonly PositionalViewSelector positionalViewSelector;
+	readonly IPositionalPlatformController positionalPlatformController;
 	readonly IVirtualListView virtualListView;
 
-	public RvSpanLookup(IVirtualListView virtualListView, PositionalViewSelector positionalViewSelector)
+	public RvSpanLookup(IVirtualListView virtualListView, IPositionalPlatformController positionalPlatformController)
 	{
 		this.virtualListView = virtualListView;
-		this.positionalViewSelector = positionalViewSelector;
+		this.positionalPlatformController = positionalPlatformController;
 	}
 
 	public override int GetSpanSize(int position)
@@ -19,7 +19,7 @@ class RvSpanLookup : GridLayoutManager.SpanSizeLookup
 
 		if (columns > 1)
 		{
-			var kind = positionalViewSelector.GetInfo(position)?.Kind;
+			var kind = positionalPlatformController.GetInfo(position)?.Kind;
 
 			if (kind == PositionKind.Item)
 				return 1;

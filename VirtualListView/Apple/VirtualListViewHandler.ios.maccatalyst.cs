@@ -1,4 +1,6 @@
 ﻿#nullable enable
+using System;
+using System.Collections.Generic;
 using CoreGraphics;
 using Foundation;
 using Microsoft.Maui.Handlers;
@@ -28,8 +30,15 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		// layout.SectionInset = new UIEdgeInsets(0, 0, 0, 0);
 		// layout.MinimumInteritemSpacing = 0f;
 		// layout.MinimumLineSpacing = 0f;
-		
-		CreateLayout(this, VirtualView);
+
+		try
+		{
+			layout = BuildLayout(VirtualView, this.VirtualView.Columns);
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex);
+		}
 
 		var collectionView = new UICollectionView(CGRect.Empty, layout);
 		//collectionView.ContentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentBehavior.Never;
@@ -259,18 +268,31 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		
 	}
 
-	static void CreateLayout(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	static UICollectionViewLayout BuildLayout(IVirtualListView virtualListView, int columns)
 	{
-		if (virtualListView.Columns > 1)
+		if (columns > 1)
 		{
-			handler.layout = LayoutFactory.CreateGrid(virtualListView);
+			return LayoutFactory.CreateGrid(virtualListView);
 		}
 		else
 		{
-			handler.layout = LayoutFactory.CreateList(virtualListView);
+			return LayoutFactory.CreateList(virtualListView);
 		}
-
-		handler.PlatformView.CollectionViewLayout = handler.layout;
+	}
+	
+	static void CreateLayout(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		handler.layout = BuildLayout(virtualListView, virtualListView.Columns);
+		
+		try
+		{
+			handler.PlatformView.CollectionViewLayout = handler.layout;
+			handler.PlatformView.ReloadData();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex);
+		}
 	}
 
 	public static void MapColumns(VirtualListViewHandler handler, IVirtualListView virtualListView)
@@ -280,7 +302,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		// {
 		// 	
 		// }
+	}
 	
+
 	public IReadOnlyList<IPositionInfo> FindVisiblePositions()
 	{
 		var positions = new List<PositionInfo>();

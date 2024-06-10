@@ -20,37 +20,18 @@ internal class CvDataSource : UICollectionViewDataSource
 	readonly ReusableIdManager sectionFooterIdManager = new ReusableIdManager("SectionFooter", new NSString("SectionFooter"));
 
 	public override nint NumberOfSections(UICollectionView collectionView)
-		=> 1;
-	
+		=> Handler.Adapter.GetNumberOfSections();
 	
 	public override UICollectionViewCell GetCell(UICollectionView collectionView, NSIndexPath indexPath)
 	{
-		var info = PositionInfo.ForItem();
-
-		object? data = null;
-
-		var nativeReuseId = CvCell.ReuseIdUnknown;
+		var sectionIndex = indexPath.Section;
+		var itemIndex = indexPath.Item.ToInt32();
+		var info = Handler.PlatformController.GetInfo(sectionIndex, itemIndex);
 		
-		if (info is not null)
-		{
-			data = Handler?.Adapter?.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
-
-			nativeReuseId = info.Kind switch
-			{
-				var reuseId = Handler?.VirtualView?.ViewSelector?.GetReuseId(info, data);
-
-				nativeReuseId = info.Kind switch
-				{
-					PositionKind.Item => itemIdManager.GetReuseId(collectionView, reuseId),
-					PositionKind.SectionHeader => sectionHeaderIdManager.GetReuseId(collectionView, reuseId),
-					PositionKind.SectionFooter => sectionFooterIdManager.GetReuseId(collectionView, reuseId),
-					PositionKind.Header => globalIdManager.GetReuseId(collectionView, reuseId),
-					PositionKind.Footer => globalIdManager.GetReuseId(collectionView, reuseId),
-					_ => CvCell.ReuseIdUnknown,
-				};
-			}
-		}
-
+		object? data = Handler.Adapter.DataFor(PositionKind.Item, sectionIndex, itemIndex);
+		var reuseId = Handler.VirtualView.ViewSelector?.GetReuseId(info, data);
+		var nativeReuseId = itemIdManager.GetReuseId(collectionView, reuseId);
+		
 		var nativeCell = collectionView.DequeueReusableCell(nativeReuseId, indexPath);
 		if (nativeCell is not CvCell cell)
 			return (UICollectionViewCell)nativeCell;
@@ -62,7 +43,7 @@ internal class CvDataSource : UICollectionViewDataSource
 		cell.ReuseCallback = new WeakReference<Action<IView>>((rv) =>
 		{
 			if (info is not null && (cell.VirtualView?.TryGetTarget(out var cellView) ?? false))
-				Handler?.VirtualView?.ViewSelector?.ViewDetached(info, cellView);
+				Handler.VirtualView.ViewSelector?.ViewDetached(info, cellView);
 		});
 
 		if (info is not null)
@@ -70,42 +51,40 @@ internal class CvDataSource : UICollectionViewDataSource
 			if (info.SectionIndex < 0 || info.ItemIndex < 0)
 				info.IsSelected = false;
 			else
-				info.IsSelected = Handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false;
+				info.IsSelected = Handler.IsItemSelected(info.SectionIndex, info.ItemIndex);
 		
 			if (cell.NeedsView)
 			{
-				var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info, data);
+				var view = Handler.ViewSelector?.CreateView(info, data);
+				if (view is not null)
+					cell.SetupView(view);
+			}
+			
+			if (cell.NeedsView)
+			{
+				var view = Handler.VirtualView.ViewSelector?.CreateView(info, data);
 				if (view is not null)
 					cell.SetupView(view);
 			}
 
-		if (cell.NeedsView && info is not null && data is not null)
-		{
-			var view = Handler?.VirtualView?.ViewSelector?.CreateView(info, data);
-			if (view is not null)
-				cell.SetupView(view);
-		}
-
-		if (info is not null)
-		{
 			cell.UpdatePosition(info);
 
-			if (cell.VirtualView?.TryGetTarget(out var cellVirtualView) ?? false)
+			if (cell.VirtualView.TryGetTarget(out var cellVirtualView))
 			{
-				Handler?.VirtualView?.ViewSelector?.RecycleView(info, data, cellVirtualView);
+				Handler.VirtualView.ViewSelector?.RecycleView(info, data, cellVirtualView);
 
-				Handler?.VirtualView?.ViewSelector?.ViewAttached(info, cellVirtualView);
+				Handler.VirtualView.ViewSelector?.ViewAttached(info, cellVirtualView);
 			}
 		}
 
 		return cell;
 	}
 
-	public override UICollectionReusableView GetViewForSupplementaryElement(UICollectionView collectionView, NSString elementKind,
-		NSIndexPath indexPath)
-	{
-		return base.GetViewForSupplementaryElement(collectionView, elementKind, indexPath);
-	}
+	// public override UICollectionReusableView GetViewForSupplementaryElement(UICollectionView collectionView, NSString elementKind,
+	// 	NSIndexPath indexPath)
+	// {
+	// 	return base.GetViewForSupplementaryElement(collectionView, elementKind, indexPath);
+	// }
 
 	void TapCellHandler(CvCell cell)
 	{
@@ -114,13 +93,11 @@ internal class CvDataSource : UICollectionViewDataSource
 		cell.PositionInfo.IsSelected = !cell.PositionInfo.IsSelected;
 
 		if (cell.PositionInfo.IsSelected)
-			Handler?.VirtualView?.SelectItem(p);
+			Handler.VirtualView.SelectItem(p);
 		else
-			Handler?.VirtualView?.DeselectItem(p);
+			Handler.VirtualView.DeselectItem(p);
 	}
 
 	public override nint GetItemsCount(UICollectionView collectionView, nint section)
-	{
-		return Handler?.PositionalViewSelector?.TotalCount ?? 0;
-	}
+		=> Handler.Adapter.GetNumberOfItemsInSection(section.ToInt32());
 }

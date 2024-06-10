@@ -1,3 +1,4 @@
+#nullable enable
 using Microsoft.Maui.Adapters;
 
 namespace Microsoft.Maui;
@@ -50,14 +51,22 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 
 	public VirtualListViewHandler() : base(ViewMapper, CommandMapper)
 	{
-
+		#if IOS || MACCATALYST
+		PlatformController = new SectionalPlatformController(this);
+		#else
+		PlatformController = new PositionalPlatformController(this);
+		#endif
 	}
 
-    #if !IOS && !MACCATALYST
-	internal PositionalViewSelector PositionalViewSelector { get; private set; }
+    #if IOS || MACCATALYST
+	internal ISectionalPlatformController PlatformController { get; private set; }
+	#else
+	internal IPositionalPlatformController PlatformController { get; private set; }
 	#endif
+
+	public IVirtualListViewSelector ViewSelector => VirtualView.ViewSelector;
     
-	bool ShouldShowEmptyiew
+	bool ShouldShowEmptyView
 	{
 		get
 		{
@@ -77,22 +86,25 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		}
 	}
 
-	public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	public static void MapAdapter(IVirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		if (handler.currentAdapter != null)
-			handler.currentAdapter.OnDataInvalidated -= handler.Adapter_OnDataInvalidated;
+		if (handler is VirtualListViewHandler typedHandler)
+		{
+			typedHandler.currentAdapter.OnDataInvalidated -= typedHandler.Adapter_OnDataInvalidated;
 
-		if (virtualListView?.Adapter != null)
-			virtualListView.Adapter.OnDataInvalidated += handler.Adapter_OnDataInvalidated;
+			virtualListView.Adapter.OnDataInvalidated += typedHandler.Adapter_OnDataInvalidated;
 
-		handler.currentAdapter = virtualListView.Adapter;
-		handler?.InvalidateData();
+			typedHandler.currentAdapter = virtualListView.Adapter;
+		}
+
+		handler.InvalidateData();
 	}
 
-	IVirtualListViewAdapter currentAdapter = default;
+	IVirtualListViewAdapter currentAdapter = new EmptyAdapter();
 
-	internal IVirtualListViewAdapter Adapter => currentAdapter;
+	public IVirtualListViewAdapter Adapter => currentAdapter;
 	
+
 	void Adapter_OnDataInvalidated(object sender, EventArgs e)
 	{
 		InvalidateData();
@@ -113,10 +125,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 
 	public static void MapSelectedItems(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		if (handler is null)
-			return;
-
-		var newSelections = virtualListView?.SelectedItems ?? Array.Empty<ItemPosition>();
+		var newSelections = virtualListView.SelectedItems ?? Array.Empty<ItemPosition>();
 
 		if (virtualListView.SelectionMode == SelectionMode.None)
 			newSelections = Array.Empty<ItemPosition>();
@@ -141,24 +150,36 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		handler.previousSelections = newSelections.ToArray();
 	}
 
-	public static void MapIsHeaderVisible(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	public static void MapIsHeaderVisible(IVirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		handler?.InvalidateData();
+		handler.InvalidateData();
 	}
 
-	public static void MapIsFooterVisible(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	public static void MapIsFooterVisible(IVirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		handler?.InvalidateData();
+		handler.InvalidateData();
 	}
 	
 	public static void MapVerticalScrollbarVisibility(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		handler?.UpdateVerticalScrollbarVisibility(virtualListView.VerticalScrollbarVisibility);
+		handler.UpdateVerticalScrollbarVisibility(virtualListView.VerticalScrollbarVisibility);
 	}
 	
 	public static void MapHorizontalScrollbarVisibility(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		handler?.UpdateHorizontalScrollbarVisibility(virtualListView.HorizontalScrollbarVisibility);
+		handler.UpdateHorizontalScrollbarVisibility(virtualListView.HorizontalScrollbarVisibility);
 	}
+#endif
+
+#if !ANDROID && !IOS && !WINDOWS && !MACCATALYST
+	public IVirtualListViewAdapter Adapter => throw new NotImplementedException();
+
+	public IVirtualListViewSelector ViewSelector => throw new NotImplementedException();
+
+	public void InvalidateData() => throw new NotImplementedException();
+
+	public IVirtualListView VirtualView => throw new NotImplementedException();
+
+	public IReadOnlyList<IPositionInfo> FindVisiblePositions() => throw new NotImplementedException();
 #endif
 }

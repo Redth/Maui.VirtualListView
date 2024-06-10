@@ -1,4 +1,5 @@
-﻿using Android.Content;
+﻿#nullable enable
+using Android.Content;
 using Android.Views;
 using AndroidX.RecyclerView.Widget;
 
@@ -10,7 +11,7 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 	readonly object lockObj = new object();
 
-	readonly PositionalViewSelector positionalViewSelector;
+	readonly IPositionalPlatformController positionalPlatformController;
 
 	RvViewHolderClickListener clickListener;
 
@@ -21,25 +22,25 @@ internal partial class RvAdapter : RecyclerView.Adapter
 	int? cachedItemCount = null;
 
 	public override int ItemCount
-		=> (cachedItemCount ??= positionalViewSelector?.TotalCount ?? 0);
+		=> (cachedItemCount ??= positionalPlatformController?.TotalCount ?? 0);
 
-	internal RvAdapter(Context context, VirtualListViewHandler handler, PositionalViewSelector positionalViewSelector)
+	internal RvAdapter(Context context, VirtualListViewHandler handler, IPositionalPlatformController positionalPlatformController)
 	{
 		Context = context;
 		HasStableIds = false;
 
 		this.handler = handler;
-		this.positionalViewSelector = positionalViewSelector;
+		this.positionalPlatformController = positionalPlatformController;
 	}
 
 	public float DisplayScale =>
-		handler?.Context?.Resources.DisplayMetrics.Density ?? 1;
+		handler.Context?.Resources.DisplayMetrics.Density ?? 1;
 
 	public override void OnViewAttachedToWindow(Java.Lang.Object holder)
 	{
 		base.OnViewAttachedToWindow(holder);
 
-		if (holder is RvItemHolder rvItemHolder && rvItemHolder?.ViewContainer?.VirtualView != null)
+		if (holder is RvItemHolder rvItemHolder && rvItemHolder.ViewContainer?.VirtualView != null)
 			handler.VirtualView.ViewSelector.ViewAttached(rvItemHolder.PositionInfo, rvItemHolder.ViewContainer.VirtualView);
 	}
 
@@ -53,7 +54,7 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 	public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
 	{
-		var info = positionalViewSelector.GetInfo(position);
+		var info = positionalPlatformController.GetInfo(position);
 
 		if (info == null)
 			return;
@@ -61,29 +62,29 @@ internal partial class RvAdapter : RecyclerView.Adapter
 		// The template selector doesn't infer selected properly
 		// so we need to ask the listview which tracks selections about the state
 		info.IsSelected = info.Kind == PositionKind.Item
-			&& (handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false);
+			&& handler.IsItemSelected(info.SectionIndex, info.ItemIndex);
 
 		if (holder is RvItemHolder itemHolder)
 		{
 			var data = info.Kind switch {
 				PositionKind.Item =>
-					positionalViewSelector?.Adapter?.GetItem(info.SectionIndex, info.ItemIndex),
+					handler.Adapter.GetItem(info.SectionIndex, info.ItemIndex),
 				PositionKind.SectionHeader =>
-					positionalViewSelector?.Adapter?.GetSection(info.SectionIndex),
+					handler.Adapter.GetSection(info.SectionIndex),
 				PositionKind.SectionFooter =>
-					positionalViewSelector?.Adapter?.GetSection(info.SectionIndex),
+					handler.Adapter.GetSection(info.SectionIndex),
 				_ => null
 			};
 
 			if (itemHolder.NeedsView)
 			{
-				var newView = positionalViewSelector?.ViewSelector?.CreateView(info, data);
+				var newView = handler.ViewSelector.CreateView(info, data);
 				itemHolder.SetupView(newView);
             }
 
             itemHolder.UpdatePosition(info);
 
-            positionalViewSelector?.ViewSelector?.RecycleView(info, data, itemHolder.ViewContainer.VirtualView);
+            handler.ViewSelector.RecycleView(info, data, itemHolder.ViewContainer.VirtualView);
 		}
 	}
 
@@ -94,19 +95,19 @@ internal partial class RvAdapter : RecyclerView.Adapter
 	{
 		base.GetItemViewType(position);
 
-		var info = positionalViewSelector.GetInfo(position);
+		var info = positionalPlatformController.GetInfo(position);
 
 		var data = info.Kind switch {
 			PositionKind.Item =>
-				positionalViewSelector?.Adapter?.GetItem(info.SectionIndex, info.ItemIndex),
+				handler.Adapter.GetItem(info.SectionIndex, info.ItemIndex),
 			PositionKind.SectionHeader =>
-				positionalViewSelector?.Adapter?.GetSection(info.SectionIndex),
+				handler.Adapter.GetSection(info.SectionIndex),
 			PositionKind.SectionFooter =>
-				positionalViewSelector?.Adapter?.GetSection(info.SectionIndex),
+				handler.Adapter.GetSection(info.SectionIndex),
 			_ => null
 		};
 
-		var reuseId = positionalViewSelector.ViewSelector.GetReuseId(info, data);
+		var reuseId = handler.ViewSelector.GetReuseId(info, data);
 
 		int vt = -1;
 

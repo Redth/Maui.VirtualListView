@@ -21,6 +21,9 @@ public class ObservableCollectionAdapter<TItem> : VirtualListViewAdapterBase<obj
 	public override TItem GetItem(int sectionIndex, int itemIndex)
 		=> Items[itemIndex];
 
+	public override int GetNumberOfSections()
+		=> 1;
+
 	public override int GetNumberOfItemsInSection(int sectionIndex)
 		=> Items.Count;
 

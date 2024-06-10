@@ -96,12 +96,12 @@ internal class CvCell : UICollectionViewCell
 		
 		var preferredAttributes = base.PreferredLayoutAttributesFittingAttributes(layoutAttributes);
 		
-		if (Handler?.VirtualView is not null)
+		if (VirtualView.TryGetTarget(out var virtualView))
 		{
 			if (Handler.VirtualView.Orientation == ListOrientation.Vertical)
 			{
 				var measure =
-					Handler.VirtualView.Measure(preferredAttributes.Size.Width, double.PositiveInfinity);
+					virtualView.Measure(preferredAttributes.Size.Width, double.PositiveInfinity);
 		
 				preferredAttributes.Frame =
 					new CGRect(preferredAttributes.Frame.X, preferredAttributes.Frame.Y,
@@ -110,7 +110,7 @@ internal class CvCell : UICollectionViewCell
 			else
 			{
 				var measure =
-					Handler.VirtualView.Measure(double.PositiveInfinity, preferredAttributes.Size.Height);
+					virtualView.Measure(double.PositiveInfinity, preferredAttributes.Size.Height);
 		
 				preferredAttributes.Frame =
 					new CGRect(preferredAttributes.Frame.X, preferredAttributes.Frame.Y,

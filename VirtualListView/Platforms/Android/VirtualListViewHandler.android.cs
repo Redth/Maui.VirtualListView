@@ -43,12 +43,12 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 		layoutManager = new GridLayoutManager(Context, VirtualView?.Columns ?? 1);
 
-		PositionalViewSelector = new PositionalViewSelector(VirtualView);
+		PlatformController = new PositionalPlatformController(this);
 
-		spanLookup = new RvSpanLookup(VirtualView, PositionalViewSelector);
+		spanLookup = new RvSpanLookup(VirtualView, PlatformController);
 		layoutManager.SetSpanSizeLookup(spanLookup);
 
-		adapter = new RvAdapter(Context, this, PositionalViewSelector);
+		adapter = new RvAdapter(Context, this, PlatformController);
 		
 		recyclerView.AddOnScrollListener(new RvScrollListener((rv, dx, dy) =>
 		{
@@ -83,7 +83,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 	void PlatformScrollToItem(ItemPosition itemPosition, bool animated)
 	{
-		var position = PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
+		var position = PlatformController.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
 
 		recyclerView.ScrollToPosition(position);
 	}
@@ -105,7 +105,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
 	{
-		var position = PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
+		var position = PlatformController.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
 
 		var vh = recyclerView.FindViewHolderForAdapterPosition(position);
 
@@ -204,7 +204,6 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		handler.layoutManager.SpanCount = Math.Clamp(virtualListView.Columns, 1, 999);
 		handler.InvalidateData();
 	}
-}
 	
 	public IReadOnlyList<IPositionInfo> FindVisiblePositions()
 	{
@@ -215,7 +214,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 		for (var p = firstVisibleItemPosition; p <= lastVisibleItemPosition; p++)
 		{
-			positions.Add(PositionalViewSelector.GetInfo(p));
+			positions.Add(PlatformController.GetInfo(p));
 		}
 
 		return positions;
