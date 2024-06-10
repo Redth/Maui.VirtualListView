@@ -52,18 +52,27 @@ public partial class VirtualListViewHandler
 
 	}
 
+    #if !IOS && !MACCATALYST
 	internal PositionalViewSelector PositionalViewSelector { get; private set; }
-
-	bool ShouldShowEmptyView
+	#endif
+    
+	bool ShouldShowEmptyiew
 	{
 		get
 		{
-			var sections = PositionalViewSelector?.Adapter?.GetNumberOfSections() ?? 0;
-
+			var sections = currentAdapter?.GetNumberOfSections() ?? 0;
+			
 			if (sections <= 0)
 				return true;
+			
+			for (var s = 0; s < sections; s++)
+			{
+				var itemsInSection = (currentAdapter?.GetNumberOfItemsInSection(0) ?? 0);
+				if (itemsInSection > 0)
+					return false;
+			}
 
-			return (PositionalViewSelector?.Adapter?.GetNumberOfItemsInSection(0) ?? 0) <= 0;
+			return true;
 		}
 	}
 
@@ -81,6 +90,8 @@ public partial class VirtualListViewHandler
 
 	IVirtualListViewAdapter currentAdapter = default;
 
+	internal IVirtualListViewAdapter Adapter => currentAdapter;
+	
 	void Adapter_OnDataInvalidated(object sender, EventArgs e)
 	{
 		InvalidateData();

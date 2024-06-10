@@ -53,14 +53,14 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 	}
 
 	public override bool ShouldSelectItem(UICollectionView collectionView, NSIndexPath indexPath)
-		=> IsRealItem(indexPath);
+		=> true;// IsRealItem(indexPath);
 
 	public override bool ShouldDeselectItem(UICollectionView collectionView, NSIndexPath indexPath)
-		=> IsRealItem(indexPath);
+		=> true; //IsRealItem(indexPath);
 
-	bool IsRealItem(NSIndexPath indexPath)
-	{
-		var info = Handler?.PositionalViewSelector?.GetInfo(indexPath.Item.ToInt32());
-		return (info?.Kind ?? PositionKind.Header) == PositionKind.Item;
-	}
+	// bool IsRealItem(NSIndexPath indexPath)
+	// {
+	// 	var info = Handler?.PositionalViewSelector?.GetInfo(indexPath.Item.ToInt32());
+	// 	return (info?.Kind ?? PositionKind.Header) == PositionKind.Item;
+	// }
 }

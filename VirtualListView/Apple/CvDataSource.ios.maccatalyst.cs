@@ -22,9 +22,10 @@ internal class CvDataSource : UICollectionViewDataSource
 	public override nint NumberOfSections(UICollectionView collectionView)
 		=> 1;
 	
+	
 	public override UICollectionViewCell GetCell(UICollectionView collectionView, NSIndexPath indexPath)
 	{
-		var info = Handler?.PositionalViewSelector?.GetInfo(indexPath.Item.ToInt32());
+		var info = PositionInfo.ForItem();
 
 		object? data = null;
 
@@ -32,11 +33,11 @@ internal class CvDataSource : UICollectionViewDataSource
 		
 		if (info is not null)
 		{
-			data = Handler?.PositionalViewSelector?.Adapter?.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
+			data = Handler?.Adapter?.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
 
 			if (data is not null)
 			{
-				var reuseId = Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info, data);
+				var reuseId = Handler?.VirtualView?.ViewSelector?.GetReuseId(info, data);
 
 				nativeReuseId = info.Kind switch
 				{
@@ -74,7 +75,7 @@ internal class CvDataSource : UICollectionViewDataSource
 
 		if (cell.NeedsView && info is not null && data is not null)
 		{
-			var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info, data);
+			var view = Handler?.VirtualView?.ViewSelector?.CreateView(info, data);
 			if (view is not null)
 				cell.SetupView(view);
 		}
@@ -85,13 +86,19 @@ internal class CvDataSource : UICollectionViewDataSource
 
 			if (data is not null && (cell.VirtualView?.TryGetTarget(out var cellVirtualView) ?? false))
 			{
-				Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info, data, cellVirtualView);
+				Handler?.VirtualView?.ViewSelector?.RecycleView(info, data, cellVirtualView);
 
 				Handler?.VirtualView?.ViewSelector?.ViewAttached(info, cellVirtualView);
 			}
 		}
 
 		return cell;
+	}
+
+	public override UICollectionReusableView GetViewForSupplementaryElement(UICollectionView collectionView, NSString elementKind,
+		NSIndexPath indexPath)
+	{
+		return base.GetViewForSupplementaryElement(collectionView, elementKind, indexPath);
 	}
 
 	void TapCellHandler(CvCell cell)

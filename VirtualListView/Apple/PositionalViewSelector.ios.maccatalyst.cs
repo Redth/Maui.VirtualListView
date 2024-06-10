@@ -1,8 +1,8 @@
-﻿using Microsoft.Maui.Adapters;
+using Microsoft.Maui.Adapters;
+using Microsoft.Maui.Animations;
 
 namespace Microsoft.Maui;
 
-#if !IOS && !MACCATALYST
 internal class PositionalViewSelector : IPositionalViewSelector
 {
 	public readonly IVirtualListView VirtualListView;
@@ -23,55 +23,19 @@ internal class PositionalViewSelector : IPositionalViewSelector
 	}
 
 	public int TotalCount
-		=> GetTotalCount();
-
-	int GetTotalCount()
 	{
-		var sum = 0;
-
-		var hasAtLeastOneItem = false;
-		var numberOfSections = Adapter.GetNumberOfSections();
-
-		if (HasGlobalHeader && numberOfSections > 0)
+		get
 		{
-			// Make sure that there's at least one section with at least
-			// one item, otherwise it's 'empty'
-			// The default adapter may always return 1 for number of sections
-			// so it's not enough to check that
-			for (int s = 0; s < numberOfSections; s++)
+			var total = 0;
+			var sections = Adapter.GetNumberOfSections();
+
+			for (var i = 0; i < sections; i++)
 			{
-				if (Adapter.GetNumberOfItemsInSection(s) > 0)
-				{
-					sum += 1;
-					// If we found one, we can stop looping
-					// since we just care to calculate a spot
-					// for the header cell if the adapter isn't empty
-					hasAtLeastOneItem = true;
-					break;
-				}
+				total += Adapter.GetNumberOfItemsInSection(i);
 			}
+
+			return total;
 		}
-
-		if (Adapter != null)
-		{
-			for (int s = 0; s < numberOfSections; s++)
-			{
-				if (ViewSelector.SectionHasHeader(s))
-					sum += 1;
-
-				sum += Adapter.GetNumberOfItemsInSection(s);
-
-				if (ViewSelector.SectionHasFooter(s))
-					sum += 1;
-			}
-		}
-
-		// Only count footer if there is already at least one item
-		// otherwise the adapter is empty and we shouldn't count it
-		if (HasGlobalFooter && hasAtLeastOneItem)
-			sum += 1;
-
-		return sum;
 	}
 
 	public int GetPosition(int sectionIndex, int itemIndex)
@@ -168,4 +132,3 @@ internal class PositionalViewSelector : IPositionalViewSelector
 	}
 
 }
-#endif

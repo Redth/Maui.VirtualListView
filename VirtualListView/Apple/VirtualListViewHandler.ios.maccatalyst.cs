@@ -10,24 +10,26 @@ namespace Microsoft.Maui;
 public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICollectionView>
 {
 	CvDataSource? dataSource;
-	CvLayout? layout;
+	UICollectionViewLayout? layout;
 	CvDelegate? cvdelegate;
 	UIRefreshControl? refreshControl;
 
 	protected override UICollectionView CreatePlatformView()
 	{
-		layout = new (this);
-		layout.ScrollDirection = VirtualView.Orientation switch
-		{
-			ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
-			ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
-			_ => UICollectionViewScrollDirection.Vertical
-		};
-		layout.EstimatedItemSize = UICollectionViewFlowLayout.AutomaticSize;
-		layout.ItemSize = UICollectionViewFlowLayout.AutomaticSize;
-		layout.SectionInset = new UIEdgeInsets(0, 0, 0, 0);
-		layout.MinimumInteritemSpacing = 0f;
-		layout.MinimumLineSpacing = 0f;
+		// layout = new (this);
+		// layout.ScrollDirection = VirtualView.Orientation switch
+		// {
+		// 	ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
+		// 	ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
+		// 	_ => UICollectionViewScrollDirection.Vertical
+		// };
+		// layout.EstimatedItemSize = UICollectionViewFlowLayout.AutomaticSize;
+		// layout.ItemSize = UICollectionViewFlowLayout.AutomaticSize;
+		// layout.SectionInset = new UIEdgeInsets(0, 0, 0, 0);
+		// layout.MinimumInteritemSpacing = 0f;
+		// layout.MinimumLineSpacing = 0f;
+		
+		CreateLayout(this, VirtualView);
 
 		var collectionView = new UICollectionView(CGRect.Empty, layout);
 		//collectionView.ContentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentBehavior.Never;
@@ -65,7 +67,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	{
 		base.ConnectHandler(nativeView);
 
-		PositionalViewSelector = new PositionalViewSelector(VirtualView);
+		//PositionalViewSelector = new PositionalViewSelector(VirtualView);
 
 		dataSource = new CvDataSource(this);
 		
@@ -132,24 +134,24 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 	void PlatformScrollToItem(ItemPosition itemPosition, bool animated)
 	{
-		var realIndex = PositionalViewSelector?.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex) ?? -1;
+		// var realIndex = PositionalViewSelector?.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex) ?? -1;
+		//
+		// if (realIndex < 0)
+		// 	return;
 
-		if (realIndex < 0)
-			return;
-
-		var indexPath = NSIndexPath.FromItemSection(realIndex, 0);
+		var indexPath = NSIndexPath.FromItemSection(itemPosition.ItemIndex, itemPosition.SectionIndex);
 
 		PlatformView.ScrollToItem(indexPath, UICollectionViewScrollPosition.Top, animated);
 	}
 
 	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
 	{
-		var realIndex = PositionalViewSelector?.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex) ?? -1;
+		// var realIndex = PositionalViewSelector?.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex) ?? -1;
+		//
+		// if (realIndex < 0)
+		// 	return;
 
-		if (realIndex < 0)
-			return;
-
-		var cell = PlatformView.CellForItem(NSIndexPath.FromItemSection(realIndex, 0));
+		var cell = PlatformView.CellForItem(NSIndexPath.FromItemSection(itemPosition.ItemIndex, itemPosition.SectionIndex));
 
 		if (cell is CvCell cvcell)
 		{
@@ -162,15 +164,16 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 	public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		if (handler.layout is not null)
-		{
-			handler.layout.ScrollDirection = virtualListView.Orientation switch
-			{
-				ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
-				ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
-				_ => UICollectionViewScrollDirection.Vertical
-			};
-		}
+		CreateLayout(handler, virtualListView);
+		// if (handler.layout is not null)
+		// {
+		// 	handler.layout.ScrollDirection = virtualListView.Orientation switch
+		// 	{
+		// 		ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
+		// 		ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
+		// 		_ => UICollectionViewScrollDirection.Vertical
+		// 	};
+		// }
 
 		handler.InvalidateData();
 	}
@@ -256,11 +259,26 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		
 	}
 
-	public static void MapColumns(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	static void CreateLayout(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
 		if (virtualListView.Columns > 1)
 		{
-
+			handler.layout = LayoutFactory.CreateGrid(virtualListView);
 		}
+		else
+		{
+			handler.layout = LayoutFactory.CreateList(virtualListView);
+		}
+
+		handler.PlatformView.CollectionViewLayout = handler.layout;
+	}
+
+	public static void MapColumns(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		CreateLayout(handler, virtualListView);
+		// if (virtualListView.Columns > 1)
+		// {
+		// 	
+		// }
 	}
 }

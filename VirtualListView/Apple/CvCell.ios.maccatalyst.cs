@@ -84,17 +84,45 @@ internal class CvCell : UICollectionViewCell
 
 	public override UICollectionViewLayoutAttributes PreferredLayoutAttributesFittingAttributes(UICollectionViewLayoutAttributes layoutAttributes)
 	{
-		if ((NativeView is not null && NativeView.TryGetTarget(out var _))
-			&& (VirtualView is not null && VirtualView.TryGetTarget(out var virtualView)))
+		// if ((NativeView is not null && NativeView.TryGetTarget(out var _))
+		// 	&& (VirtualView is not null && VirtualView.TryGetTarget(out var virtualView)))
+		// {
+		// 	var measure = virtualView.Measure(layoutAttributes.Size.Width, double.PositiveInfinity);
+		//
+		// 	layoutAttributes.Frame = new CGRect(0, layoutAttributes.Frame.Y, layoutAttributes.Frame.Width, measure.Height);
+		//
+		// 	return layoutAttributes;
+		// }
+		//
+		// return layoutAttributes;
+		
+		var preferredAttributes = base.PreferredLayoutAttributesFittingAttributes(layoutAttributes);
+		
+		if (Handler?.VirtualView is not null)
 		{
-			var measure = virtualView.Measure(layoutAttributes.Size.Width, double.PositiveInfinity);
-
-			layoutAttributes.Frame = new CGRect(0, layoutAttributes.Frame.Y, layoutAttributes.Frame.Width, measure.Height);
-
-			return layoutAttributes;
+			if (Handler.VirtualView.Orientation == ListOrientation.Vertical)
+			{
+				var measure =
+					Handler.VirtualView.Measure(preferredAttributes.Size.Width, double.PositiveInfinity);
+		
+				preferredAttributes.Frame =
+					new CGRect(preferredAttributes.Frame.X, preferredAttributes.Frame.Y,
+						preferredAttributes.Frame.Width, measure.Height);
+			}
+			else
+			{
+				var measure =
+					Handler.VirtualView.Measure(double.PositiveInfinity, preferredAttributes.Size.Height);
+		
+				preferredAttributes.Frame =
+					new CGRect(preferredAttributes.Frame.X, preferredAttributes.Frame.Y,
+						measure.Width, preferredAttributes.Frame.Height);
+			}
+		
+			preferredAttributes.ZIndex = 2;
 		}
-
-		return layoutAttributes;
+			
+		return preferredAttributes;
 	}
 
 	public bool NeedsView
