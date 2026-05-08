@@ -14,7 +14,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	RvAdapter adapter;
 	RecyclerView recyclerView;
 	LinearLayoutManager layoutManager;
-	Android.Views.View emptyView;
+	global::Android.Views.View emptyView;
 
 	protected override FrameLayout CreatePlatformView()
 	{

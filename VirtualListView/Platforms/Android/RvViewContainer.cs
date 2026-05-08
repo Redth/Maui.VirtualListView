@@ -1,9 +1,9 @@
-﻿using AView = Android.Views.View;
+﻿using AView = global::Android.Views.View;
 using Microsoft.Maui.Platform;
 
 namespace Microsoft.Maui;
 
-sealed class RvViewContainer : Android.Widget.FrameLayout
+sealed class RvViewContainer : global::Android.Widget.FrameLayout
 {
 	public RvViewContainer(IMauiContext context)
 		: base(context.Context ?? throw new ArgumentNullException($"{nameof(context.Context)}"))
