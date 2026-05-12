@@ -15,10 +15,10 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v2
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '10.0.x'
 
@@ -38,7 +38,7 @@ jobs:
         if ($env:GITHUB_EVENT_NAME -eq "release") {
           $VERSION = $env:GITHUB_REF.Substring($env:GITHUB_REF.LastIndexOf('/') + 1)
         }
-        echo "pkgverci=$VERSION" >> $env:GITHUB_OUTPUT
+        echo "::set-output name=pkgverci::$VERSION"
         echo "PACKAGE VERSION: $VERSION"
         
         New-Item -ItemType Directory -Force -Path .\artifacts
@@ -48,7 +48,7 @@ jobs:
         nuget sign .\artifacts\*.nupkg -CertificatePath $pfxPath -Timestamper http://timestamp.entrust.net/TSS/RFC3161sha2TS
         
     - name: Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v1
       with:
         name: NuGet
         path: ./artifacts
@@ -60,10 +60,9 @@ jobs:
     if: github.event_name == 'release'
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v1
         with:
           name: NuGet
-          path: NuGet
       - name: Push NuGet
         run: |
           dotnet nuget push NuGet\*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_ORG_API_KEY }}
