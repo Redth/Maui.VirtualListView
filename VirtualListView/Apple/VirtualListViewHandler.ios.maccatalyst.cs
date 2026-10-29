@@ -112,6 +112,17 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	internal CvCell? GetCell(NSIndexPath indexPath)
 		=> dataSource?.GetCell(PlatformView, indexPath) as CvCell;
 
+	internal double ContentCrossSize => layout?.CrossSize(VirtualView.Orientation) ?? 0;
+
+	void PlatformInvalidateContentLayout(PositionInfo position)
+	{
+		if (layout is null || PositionalViewSelector?.GetInfo(position.Position) is null)
+			return;
+		using var context = new UICollectionViewFlowLayoutInvalidationContext();
+		context.InvalidateItems(new[] { NSIndexPath.FromItemSection(position.Position, 0) });
+		layout.InvalidateLayout(context);
+	}
+
 	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
 	}
@@ -145,17 +156,19 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 	public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		if (handler.layout is not null)
+		handler.Publish(() =>
 		{
-			handler.layout.ScrollDirection = virtualListView.Orientation switch
+			if (handler.layout is not null)
 			{
-				ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
-				ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
-				_ => UICollectionViewScrollDirection.Vertical
-			};
-		}
-
-		handler.InvalidateData();
+				handler.layout.ScrollDirection = virtualListView.Orientation switch
+				{
+					ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
+					ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
+					_ => UICollectionViewScrollDirection.Vertical
+				};
+				handler.layout.InvalidateLayout();
+			}
+		});
 	}
 
 	public static void MapRefreshAccentColor(VirtualListViewHandler handler, IVirtualListView virtualListView)

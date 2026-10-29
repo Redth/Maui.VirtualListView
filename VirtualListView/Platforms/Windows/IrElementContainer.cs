@@ -7,26 +7,47 @@ using Microsoft.UI.Xaml.Input;
 
 namespace Microsoft.Maui;
 
-internal class IrElementContainer : ContentControl
+internal class IrElementContainer : Panel
 {
-	public IrElementContainer(IMauiContext context, string reuseId, PositionalViewSelector positionalViewSelector)
+	readonly VirtualListViewHandler handler;
+	RetainedContentLayout contentLayout;
+
+	public IrElementContainer(IMauiContext context, string reuseId, PositionalViewSelector positionalViewSelector, VirtualListViewHandler handler)
 		: base()
 	{
 		MauiContext = context;
 		ReuseId = reuseId;
 		PositionalViewSelector = positionalViewSelector;
-		ContentOwner = new RetainedView(positionalViewSelector.VirtualListView, SetupView, () => Content = null);
+		this.handler = handler;
+		ContentOwner = new RetainedView(positionalViewSelector.VirtualListView, SetupView, ClearView);
+		UpdateOrientation();
+		Tapped += ContainerTapped;
+	}
 
-		if (positionalViewSelector.VirtualListView.Orientation == ListOrientation.Vertical)
-		{
-			HorizontalContentAlignment = UI.Xaml.HorizontalAlignment.Stretch;
-			HorizontalAlignment = UI.Xaml.HorizontalAlignment.Stretch;
-		}
-		else
-		{
-			VerticalContentAlignment = UI.Xaml.VerticalAlignment.Stretch;
-			VerticalAlignment = UI.Xaml.VerticalAlignment.Stretch;
-		}
+	internal void UpdateOrientation()
+	{
+		var vertical = PositionalViewSelector.VirtualListView.Orientation == ListOrientation.Vertical;
+		HorizontalAlignment = vertical ? UI.Xaml.HorizontalAlignment.Stretch : UI.Xaml.HorizontalAlignment.Left;
+		VerticalAlignment = vertical ? UI.Xaml.VerticalAlignment.Top : UI.Xaml.VerticalAlignment.Stretch;
+		InvalidateMeasure();
+	}
+
+	protected override global::Windows.Foundation.Size MeasureOverride(global::Windows.Foundation.Size availableSize)
+	{
+		if (contentLayout is null)
+			return new global::Windows.Foundation.Size();
+		var axis = PositionalViewSelector.VirtualListView.Orientation;
+		var cross = axis == ListOrientation.Vertical ? availableSize.Width : availableSize.Height;
+		if (double.IsPositiveInfinity(cross))
+			cross = handler.ContentCrossSize;
+		var desired = contentLayout.Measure(axis, cross, force: true);
+		return new global::Windows.Foundation.Size(desired.Width, desired.Height);
+	}
+
+	protected override global::Windows.Foundation.Size ArrangeOverride(global::Windows.Foundation.Size finalSize)
+	{
+		contentLayout?.Arrange(PositionalViewSelector.VirtualListView.Orientation, new Size(finalSize.Width, finalSize.Height));
+		return finalSize;
 	}
 
 	public readonly string ReuseId;
@@ -54,10 +75,24 @@ internal class IrElementContainer : ContentControl
 		=> VirtualView is null || VirtualView.Handler is null;
 
 	public IView VirtualView => ContentOwner.View;
+	internal UIElement Content => Children.FirstOrDefault();
 
 	public void SetupView(IView view)
 	{
-		Content = view.ToPlatform(MauiContext);
+		Children.Add(view.ToPlatform(MauiContext));
+		var weakSelf = new WeakReference<IrElementContainer>(this);
+		contentLayout = new RetainedContentLayout(view, handler.DispatchContentLayout, _ =>
+		{
+			if (weakSelf.TryGetTarget(out var container) && container.handler.IsConnected && !container.IsRecycled)
+				container.InvalidateMeasure();
+		});
+	}
+
+	void ClearView()
+	{
+		contentLayout?.Dispose();
+		contentLayout = null;
+		Children.Clear();
 	}
 
 	public void UpdatePosition(PositionInfo positionInfo)
@@ -66,10 +101,8 @@ internal class IrElementContainer : ContentControl
             viewWithPositionInfo.Update(PositionInfo);
     }
 
-	protected override void OnTapped(TappedRoutedEventArgs e)
+	void ContainerTapped(object sender, TappedRoutedEventArgs e)
 	{
-		base.OnTapped(e);
-
 		// Don't select non-item positions
 		if (IsRecycled || (PositionInfo?.Kind ?? PositionKind.Header) != PositionKind.Item)
 			return;

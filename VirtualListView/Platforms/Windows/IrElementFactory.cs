@@ -28,8 +28,9 @@ internal class IrElementFactory : IElementFactory, IDisposable
 			throw new InvalidOperationException("The ItemsRepeater requested an invalid VirtualListView row.");
 
 		var reuseId = selector.ViewSelector.GetReuseId(info, wrapper.data);
-		var container = pool.Take(reuseId) ?? new IrElementContainer(context, reuseId, selector);
+		var container = pool.Take(reuseId) ?? new IrElementContainer(context, reuseId, selector, handler);
 		active.Add(container);
+		container.UpdateOrientation();
 		info.IsSelected = info.Kind == PositionKind.Item && handler.IsItemSelected(info.SectionIndex, info.ItemIndex);
 		container.IsRecycled = false;
 		try { container.ContentOwner.Bind(info, wrapper.data); }

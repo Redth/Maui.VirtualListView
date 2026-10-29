@@ -18,6 +18,31 @@ Controls used on each platform:
   - Android: RecyclerView
   - WinAppSDK: ItemsRepeater + ScrollHost with IElementFactory
 
+### Variable content sizing
+
+The native collection owns scrolling and row placement. Retained MAUI content is
+measured with a finite cross-axis constraint (width for vertical lists, height for
+horizontal lists), then arranged at the size accepted by the native row. MAUI
+counts the root `Margin` and nested padding; do not add those margins again in a
+native row wrapper. Android converts logical units to pixels at that boundary.
+
+Content `MeasureInvalidated` notifications are coalesced on the owning dispatcher.
+Text, font, style, viewport and orientation changes can remeasure compatible
+content without replacing its MAUI tree or resetting the data source. Each slot
+keeps only its latest compatible measurement; global header/footer content has
+its own measurement, not the first data row's size.
+
+The sample's **Measurement Smoke** page contains short/long wrapping rows,
+multiline global header/footer, root margins and nested padding. Toggle width,
+orientation, text expansion, font size and 0/1/60 rows, then scroll forward/back
+and resize or rotate the window/device. In vertical mode check every `END`
+marker, both padding levels and the 12-by-6 root margins. In horizontal mode
+check variable row widths, finite viewport height and retained orientation
+changes; content taller than that viewport still needs an application-appropriate
+height or template. Repeat on iOS, Mac Catalyst, Android at multiple densities,
+and Windows. Portable sizing tests and native reference builds do **not** prove
+native text rendering, lifecycle behavior or scrolling performance.
+
 ## Setup
 
 To add the Virtual List View control to your project, you need to add `.UseVirtualListView()` to your app builder:

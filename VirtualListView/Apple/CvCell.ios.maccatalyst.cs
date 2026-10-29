@@ -17,6 +17,7 @@ internal class CvCell : UICollectionViewCell
 	[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "The callback holds only a weak cell reference; the cell removes and disposes its recognizer.")]
 	readonly UITapGestureRecognizer tapRecognizer;
 	bool disposed;
+	RetainedContentLayout contentLayout;
 
 	[Export("initWithFrame:")]
 	public CvCell(CGRect frame) : base(frame)
@@ -91,16 +92,22 @@ internal class CvCell : UICollectionViewCell
 
 	public override UICollectionViewLayoutAttributes PreferredLayoutAttributesFittingAttributes(UICollectionViewLayoutAttributes layoutAttributes)
 	{
-		if (NativeView is not null && VirtualView is IView virtualView)
-		{
-			var measure = virtualView.Measure(layoutAttributes.Size.Width, double.PositiveInfinity);
+		var result = (UICollectionViewLayoutAttributes)layoutAttributes.Copy();
+		if (contentLayout is null || Handler?.IsConnected != true)
+			return result;
+		var axis = Handler.VirtualView.Orientation;
+		var frame = result.Frame;
+		var cross = Handler.ContentCrossSize;
+		var size = contentLayout.Measure(axis, cross, force: true);
+		result.Frame = new CGRect(frame.X, frame.Y, size.Width, size.Height);
+		return result;
+	}
 
-			layoutAttributes.Frame = new CGRect(0, layoutAttributes.Frame.Y, layoutAttributes.Frame.Width, measure.Height);
-
-			return layoutAttributes;
-		}
-
-		return layoutAttributes;
+	public override void LayoutSubviews()
+	{
+		base.LayoutSubviews();
+		if (Handler?.IsConnected == true && contentLayout is not null)
+			contentLayout.Arrange(Handler.VirtualView.Orientation, new Size(ContentView.Bounds.Width, ContentView.Bounds.Height));
 	}
 
 	public IView VirtualView => Content?.View;
@@ -128,6 +135,7 @@ internal class CvCell : UICollectionViewCell
 				});
 		}
 		Content.Bind(position, data);
+		SetNeedsLayout();
 	}
 
 	public override void PrepareForReuse()
@@ -141,13 +149,24 @@ internal class CvCell : UICollectionViewCell
 	{
 		NativeView = view.ToPlatform(Handler.MauiContext);
 		NativeView.RemoveFromSuperview();
-		NativeView.Frame = ContentView.Frame;
-		NativeView.AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth;
+		NativeView.AutoresizingMask = UIViewAutoresizing.None;
 		ContentView.AddSubview(NativeView);
+		var weakSelf = new WeakReference<CvCell>(this);
+		contentLayout = new RetainedContentLayout(view, Handler.DispatchContentLayout, changed =>
+		{
+			if (weakSelf.TryGetTarget(out var cell) && cell.Handler?.IsConnected == true && cell.PositionInfo is not null)
+			{
+				cell.SetNeedsLayout();
+				if (changed)
+					cell.Handler.InvalidateContentLayout(cell.PositionInfo);
+			}
+		});
     }
 
 	void ClearView()
 	{
+		contentLayout?.Dispose();
+		contentLayout = null;
 		NativeView?.RemoveFromSuperview();
 		NativeView = null;
 	}

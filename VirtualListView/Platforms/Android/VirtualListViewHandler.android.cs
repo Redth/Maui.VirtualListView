@@ -101,6 +101,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	}
 
 	void PlatformResetTemplates() => adapter?.ResetTemplates();
+	void PlatformInvalidateContentLayout(PositionInfo position) => adapter?.InvalidateContentLayout(position);
 
 	void PlatformScrollToItem(ItemPosition itemPosition, bool animated)
 	{
@@ -138,13 +139,13 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 	public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		handler.layoutManager.Orientation = virtualListView.Orientation switch
+		handler.Publish(() =>
 		{
-			ListOrientation.Vertical => LinearLayoutManager.Vertical,
-			ListOrientation.Horizontal => LinearLayoutManager.Horizontal,
-			_ => LinearLayoutManager.Vertical
-		};
-		handler.InvalidateData();
+			handler.layoutManager.Orientation = virtualListView.Orientation == ListOrientation.Vertical
+				? LinearLayoutManager.Vertical : LinearLayoutManager.Horizontal;
+			handler.adapter?.UpdateOrientation();
+			handler.recyclerView.RequestLayout();
+		});
 	}
 
 	public static void MapRefreshAccentColor(VirtualListViewHandler handler, IVirtualListView virtualListView)

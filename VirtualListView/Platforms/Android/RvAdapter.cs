@@ -76,6 +76,7 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 		if (holder is RvItemHolder itemHolder)
 		{
+			itemHolder.ViewContainer.UpdateOrientation();
 			var data = positionalViewSelector.Adapter.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
 			itemHolder.Content.Bind(info, data);
 		}
@@ -149,6 +150,16 @@ internal partial class RvAdapter : RecyclerView.Adapter
 	}
 
 	internal void ResetTemplates() => holders.ForEach(holder => holder.Content.Release());
+	internal void UpdateOrientation() => holders.ForEach(holder => holder.ViewContainer.UpdateOrientation());
+
+	internal void InvalidateContentLayout(PositionInfo position)
+	{
+		holders.ForEach(holder =>
+		{
+			if (ReferenceEquals(holder.PositionInfo, position))
+				holder.ViewContainer.RequestLayout();
+		});
+	}
 
 	protected override void Dispose(bool disposing)
 	{

@@ -13,12 +13,7 @@ internal class RvItemHolder : RecyclerView.ViewHolder
 	bool released;
 
 	public RvItemHolder(VirtualListViewHandler handler)
-		: base(new RvViewContainer(handler.MauiContext)
-		{
-			LayoutParameters = new RecyclerView.LayoutParams(
-				handler.VirtualView.Orientation == ListOrientation.Vertical ? ViewGroup.LayoutParams.MatchParent : ViewGroup.LayoutParams.WrapContent,
-				handler.VirtualView.Orientation == ListOrientation.Vertical ? ViewGroup.LayoutParams.WrapContent : ViewGroup.LayoutParams.MatchParent)
-		})
+		: base(new RvViewContainer(handler))
 	{
 		ViewContainer = ItemView as RvViewContainer;
 		var container = new WeakReference<RvViewContainer>(ViewContainer);

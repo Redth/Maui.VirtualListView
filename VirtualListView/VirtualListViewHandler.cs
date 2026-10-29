@@ -56,6 +56,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 
 	internal PositionalViewSelector PositionalViewSelector { get; private set; }
 	readonly HandlerPublication publication = new();
+	IDispatcher contentDispatcher;
 	OwnedRefresh ownedRefresh;
 	internal bool IsConnected => publication.IsConnected;
 
@@ -63,6 +64,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	{
 		var dispatcher = VirtualView is Controls.BindableObject bindable
 			? bindable.Dispatcher : MauiContext.Services.GetRequiredService<IDispatcher>();
+		contentDispatcher = dispatcher;
 		publication.Connect(dispatcher, VirtualView.Adapter, ApplyDataInvalidation);
 		ownedRefresh ??= new OwnedRefresh(publication);
 		MapHeader(this, VirtualView);
@@ -72,6 +74,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	void DisconnectLifetime()
 	{
 		publication.Disconnect();
+		contentDispatcher = null;
 		ownedRefresh?.End();
 		DisconnectProjectionObservers();
 		PositionalViewSelector = null;
@@ -80,6 +83,15 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 
 	internal void Publish(Action action) => publication.Post(action);
 	internal Action<Action> CapturePublisher() => publication.CapturePublisher();
+	internal bool DispatchContentLayout(Action action)
+	{
+		var dispatcher = contentDispatcher;
+		// A disconnected slot is retired; its pending measurement is no longer needed.
+		return dispatcher is null || dispatcher.Dispatch(action);
+	}
+
+	// This updates geometry for the currently bound slot, never source/projection state.
+	internal void InvalidateContentLayout(PositionInfo position) => Publish(() => PlatformInvalidateContentLayout(position));
 
 	public void InvalidateData() => Publish(ApplyDataInvalidation);
 

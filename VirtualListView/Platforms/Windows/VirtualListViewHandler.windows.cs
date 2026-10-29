@@ -5,6 +5,7 @@ using WGrid = Microsoft.UI.Xaml.Controls.Grid;
 using WVisibility = Microsoft.UI.Xaml.Visibility;
 using WFrameworkElement = Microsoft.UI.Xaml.FrameworkElement;
 using WScrollBarVisibility = Microsoft.UI.Xaml.Controls.ScrollBarVisibility;
+using WScrollMode = Microsoft.UI.Xaml.Controls.ScrollMode;
 using WRect = Windows.Foundation.Rect;
 using Microsoft.Maui.Platform;
 using Microsoft.UI.Xaml;
@@ -110,6 +111,14 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	}
 
 	void PlatformResetTemplates() => elementFactory?.ResetTemplates();
+	internal double ContentCrossSize => VirtualView.Orientation == ListOrientation.Vertical
+		? Math.Max(0, scrollViewer.ViewportWidth) : Math.Max(0, scrollViewer.ViewportHeight);
+
+	void PlatformInvalidateContentLayout(PositionInfo position)
+	{
+		if (itemsRepeater.TryGetElement(position.Position) is IrElementContainer container)
+			container.InvalidateMeasure();
+	}
 
 	void PlatformScrollToItem(ItemPosition itemPosition, bool animated)
 	{
@@ -146,8 +155,19 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 	public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		handler.layout.Orientation = handler.NativeOrientation;
-		handler.InvalidateData();
+		handler.Publish(() =>
+		{
+			handler.layout.Orientation = handler.NativeOrientation;
+			var vertical = virtualListView.Orientation == ListOrientation.Vertical;
+			handler.scrollViewer.HorizontalScrollMode = vertical ? WScrollMode.Disabled : WScrollMode.Enabled;
+			handler.scrollViewer.VerticalScrollMode = vertical ? WScrollMode.Enabled : WScrollMode.Disabled;
+			handler.UpdateHorizontalScrollbarVisibility(virtualListView.HorizontalScrollbarVisibility);
+			handler.UpdateVerticalScrollbarVisibility(virtualListView.VerticalScrollbarVisibility);
+			if (handler.elementFactory is not null)
+				foreach (var container in handler.elementFactory.ActiveElements)
+					container.UpdateOrientation();
+			handler.itemsRepeater.InvalidateMeasure();
+		});
 	}
 
 	public static void MapRefreshAccentColor(VirtualListViewHandler handler, IVirtualListView virtualListView)
@@ -188,7 +208,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 	void UpdateVerticalScrollbarVisibility(ScrollBarVisibility scrollBarVisibility)
 	{
-		scrollViewer.VerticalScrollBarVisibility = scrollBarVisibility switch
+		scrollViewer.VerticalScrollBarVisibility = VirtualView.Orientation == ListOrientation.Horizontal
+			? WScrollBarVisibility.Disabled : scrollBarVisibility switch
 		{
 			ScrollBarVisibility.Default => WScrollBarVisibility.Auto,
 			ScrollBarVisibility.Always => WScrollBarVisibility.Visible,
@@ -199,7 +220,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 	void UpdateHorizontalScrollbarVisibility(ScrollBarVisibility scrollBarVisibility)
 	{
-		scrollViewer.HorizontalScrollBarVisibility = scrollBarVisibility switch
+		scrollViewer.HorizontalScrollBarVisibility = VirtualView.Orientation == ListOrientation.Vertical
+			? WScrollBarVisibility.Disabled : scrollBarVisibility switch
 		{
 			ScrollBarVisibility.Default => WScrollBarVisibility.Auto,
 			ScrollBarVisibility.Always => WScrollBarVisibility.Visible,
