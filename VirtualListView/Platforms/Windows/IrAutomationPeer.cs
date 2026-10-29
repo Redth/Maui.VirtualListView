@@ -17,7 +17,7 @@ namespace Microsoft.Maui
 		protected override AutomationHeadingLevel GetHeadingLevelCore()
 		{
 			return ContainerAutomationPeer()?.GetHeadingLevel() ??
-				container.PositionInfo.Kind switch
+				container.PositionInfo?.Kind switch
 				{
 					PositionKind.Header => AutomationHeadingLevel.Level1,
 					PositionKind.Footer => AutomationHeadingLevel.Level1,
@@ -29,7 +29,7 @@ namespace Microsoft.Maui
 		}
 
 		protected override AutomationControlType GetAutomationControlTypeCore()
-			=> container.PositionInfo.Kind switch {
+			=> container.PositionInfo?.Kind switch {
 					PositionKind.Header => AutomationControlType.Header,
 					PositionKind.Footer => AutomationControlType.Header,
 					PositionKind.SectionHeader => AutomationControlType.HeaderItem,
@@ -40,20 +40,24 @@ namespace Microsoft.Maui
 
 		protected override int GetPositionInSetCore()
 		{
-			if (container.PositionInfo.Kind == PositionKind.Item)
-				return container.PositionInfo.ItemIndex + 1;
-			else if (container.PositionInfo.Kind == PositionKind.SectionHeader)
-				return container.PositionInfo.SectionIndex + 1;
+			if (container.PositionInfo is not PositionInfo position)
+				return 0;
+			if (position.Kind == PositionKind.Item)
+				return position.ItemIndex + 1;
+			else if (position.Kind == PositionKind.SectionHeader)
+				return position.SectionIndex + 1;
 
 			return 0;
 		}
 
 		protected override int GetSizeOfSetCore()
 		{
-			if (container.PositionInfo.Kind == PositionKind.Item)
-				return container.PositionInfo.ItemsInSection;
-			else if (container.PositionInfo.Kind == PositionKind.SectionHeader)
-				return container.PositionInfo.NumberOfSections;
+			if (container.PositionInfo is not PositionInfo position)
+				return 0;
+			if (position.Kind == PositionKind.Item)
+				return position.ItemsInSection;
+			else if (position.Kind == PositionKind.SectionHeader)
+				return position.NumberOfSections;
 
 			return 0;
 		}
@@ -68,6 +72,8 @@ namespace Microsoft.Maui
 
 		FrameworkElementAutomationPeer ContainerAutomationPeer()
 		{
+			if (IsRecycled)
+				return null;
 			if (container.Content is UIElement uiElement)
 				return FrameworkElementAutomationPeer.FromElement(uiElement) as FrameworkElementAutomationPeer;
 

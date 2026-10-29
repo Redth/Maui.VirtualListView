@@ -156,7 +156,9 @@ public sealed class SectionWindowAdapter : VirtualListViewAdapterBase<GroupInfo,
 }
 ```
 
-The repository should enforce bounds on both sections and items before publication. Keep item/group model revisions consistent with the snapshot as well; do not concurrently mutate it during native reads. All source publication and `InvalidateData()` notifications must be serialized on the UI thread. `ObservableCollectionAdapter` forwards collection notifications on the caller's thread, so its mutations follow the same rule.
+The repository should enforce bounds on both sections and items before publication. Keep item/group model revisions consistent with the snapshot as well; do not concurrently mutate it during native reads. Publish mutable source changes on the control's owning UI dispatcher. `ObservableCollectionAdapter` forwards collection notifications on the caller's thread, so its mutations follow the same rule.
+
+The handler serializes native invalidations on that owning dispatcher and drops queued notifications from an old adapter or disconnected handler. This is a native-view safety boundary, **not** synchronization for your source: dispatching an event does not make concurrent edits to a backing list safe. Use immutable prepared data or serialize publication and native reads on the same dispatcher.
 
 `CachingVirtualListViewAdapter` caches section objects and counts, not items or database queries. It clears all metadata caches when it or its wrapped source invalidates, and forwards one notification without recursively invalidating the source. Dispose the wrapper when you are finished with it to detach its source subscription; disposal does **not** dispose the shared source adapter.
 
@@ -180,6 +182,18 @@ In addition, it's possible to use Template Selectors which allow you to use diff
 Template selectors are available for:
  - Section Headers and Footers
  - Items
+
+Return stable `DataTemplate` instances from selectors; do not create a new template for every item. Compatibility uses template instance identity without private MAUI reflection. Global headers and footers use the supplied view's identity, so replacing a header with another instance of the same type replaces the displayed content.
+
+### Retained content and cleanup
+
+A native slot keeps its compatible MAUI tree and child handlers through ordinary rebinds. Binding updates position and selection before creating native child handlers. Temporary disappearance only changes visibility: it does not remove logical ownership or clear the retained tree's binding context. `IVirtualListViewSelector.ViewAttached` and `ViewDetached` describe actual display, not template creation or final destruction.
+
+True recycling clears item binding/position state while retaining compatible content. Replacing an incompatible template, evicting pooled content, or disconnecting the handler detaches logical/native ownership and disconnects the owned child tree. Android and Windows pools keep at most two spare trees per type, with a total spare budget based on the visible/active slots (minimum four). Native Apple slots remain owned by UIKit; retired slots are pruned and all tracked content is released at teardown.
+
+The application still owns supplied `GlobalHeader`, `GlobalFooter`, `EmptyView`, and adapters. The handler removes them from its native hosts but does not dispose their handlers or services. Supplied views keep their explicit binding contexts; otherwise they inherit the list's context through public MAUI logical-child APIs.
+
+Refresh completion is owned by the refresh that started it. It runs on the owning dispatcher, completes at most once, and cannot stop a later refresh after source replacement or reconnect. Disabling refresh or disconnecting ends the current indicator. Synchronous refresh failures end the indicator and propagate rather than being silently swallowed.
 
 
 For Item template selectors, sublcass the `AdapterItemDataTemplateSelector`:

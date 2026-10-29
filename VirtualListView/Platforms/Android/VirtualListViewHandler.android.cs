@@ -15,19 +15,16 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	RecyclerView recyclerView;
 	LinearLayoutManager layoutManager;
 	Android.Views.View emptyView;
+	SrlRefreshListener refreshListener;
+	RvScrollListener scrollListener;
+	RvRecycledViewPool recycledViewPool;
 
 	protected override FrameLayout CreatePlatformView()
 	{
-		rootLayout ??= new FrameLayout(Context);
-
-		recyclerView ??= new RecyclerView(Context);
-
-		if (swipeRefreshLayout is null)
-		{
-			swipeRefreshLayout = new SwipeRefreshLayout(Context);
-			swipeRefreshLayout.AddView(recyclerView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
-		}
-
+		rootLayout = new FrameLayout(Context);
+		recyclerView = new RecyclerView(Context);
+		swipeRefreshLayout = new SwipeRefreshLayout(Context);
+		swipeRefreshLayout.AddView(recyclerView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
 		rootLayout.AddView(swipeRefreshLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
 
 		return rootLayout;
@@ -35,10 +32,15 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 	protected override void ConnectHandler(FrameLayout nativeView)
 	{
-		swipeRefreshLayout.SetOnRefreshListener(new SrlRefreshListener(() =>
+		if (IsConnected && VirtualView.IsRefreshEnabled)
+			return;
+		base.ConnectHandler(nativeView);
+		refreshListener = new SrlRefreshListener(() =>
 		{
-			VirtualView?.Refresh(() => swipeRefreshLayout.Refreshing = false);
-		}));
+			if (IsConnected)
+				BeginRefresh(() => swipeRefreshLayout.Refreshing = true, () => swipeRefreshLayout.Refreshing = false);
+		});
+		swipeRefreshLayout.SetOnRefreshListener(refreshListener);
 
 		layoutManager = new LinearLayoutManager(Context);
 		//layoutManager.Orientation = LinearLayoutManager.Horizontal;
@@ -46,39 +48,59 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		PositionalViewSelector = new PositionalViewSelector(VirtualView);
 
 		adapter = new RvAdapter(Context, this, PositionalViewSelector);
+		recycledViewPool = new RvRecycledViewPool(() => recyclerView.ChildCount);
+		recyclerView.SetRecycledViewPool(recycledViewPool);
 		
-		recyclerView.AddOnScrollListener(new RvScrollListener((rv, dx, dy) =>
+		scrollListener = new RvScrollListener((rv, dx, dy) =>
 		{
 			var x = Context.FromPixels(dx);
 			var y = Context.FromPixels(dy);
 			
-			VirtualView?.Scrolled(x, y);
-		}));
+			if (IsConnected)
+				VirtualView?.Scrolled(x, y);
+		});
+		recyclerView.AddOnScrollListener(scrollListener);
 
 		recyclerView.SetLayoutManager(layoutManager);
 		recyclerView.SetAdapter(adapter);
 		recyclerView.LayoutParameters = new ViewGroup.LayoutParams(
 			ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
+		ConnectLifetime();
 	}
 
 	protected override void DisconnectHandler(FrameLayout nativeView)
 	{
-		DisconnectProjectionObservers();
-		recyclerView.ClearOnScrollListeners();
+		DisconnectLifetime();
+		swipeRefreshLayout.SetOnRefreshListener(null);
+		refreshListener?.Dispose();
+		refreshListener = null;
+		if (scrollListener is not null)
+			recyclerView.RemoveOnScrollListener(scrollListener);
+		scrollListener?.Dispose();
+		scrollListener = null;
 		recyclerView.SetAdapter(null);
-		adapter.Dispose();
+		recycledViewPool?.Clear();
+		recyclerView.SetRecycledViewPool(null);
+		recycledViewPool?.Dispose();
+		recycledViewPool = null;
+		adapter?.Dispose();
 		adapter = null;
-		layoutManager.Dispose();
+		recyclerView.SetLayoutManager(null);
+		layoutManager?.Dispose();
 		layoutManager = null;
+		emptyView?.RemoveFromParent();
+		emptyView = null;
+		base.DisconnectHandler(nativeView);
 	}
 
-	public void InvalidateData()
+	void PlatformInvalidateData()
 	{
-		PositionalViewSelector?.Invalidate();
 		UpdateEmptyViewVisibility();
 		adapter?.Reset();
 		adapter?.NotifyDataSetChanged();
 	}
+
+	void PlatformResetTemplates() => adapter?.ResetTemplates();
 
 	void PlatformScrollToItem(ItemPosition itemPosition, bool animated)
 	{
@@ -105,7 +127,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 		var vh = recyclerView.FindViewHolderForAdapterPosition(position);
 
-		if (vh is RvItemHolder rvh)
+		if (vh is RvItemHolder rvh && rvh.PositionInfo is not null)
 		{
 			rvh.PositionInfo.IsSelected = selected;
 
@@ -133,6 +155,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 	public static void MapIsRefreshEnabled(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
+		if (!virtualListView.IsRefreshEnabled)
+			handler.EndRefresh();
 		handler.swipeRefreshLayout.Enabled = virtualListView.IsRefreshEnabled;
 	}
 
@@ -152,7 +176,6 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		if (emptyView is not null)
 		{
 			emptyView.RemoveFromParent();
-			emptyView.Dispose();
 		}
 
 		emptyView = VirtualView?.EmptyView?.ToPlatform(MauiContext);

@@ -1,4 +1,5 @@
 ﻿using CoreGraphics;
+using System.Diagnostics.CodeAnalysis;
 using Foundation;
 using Microsoft.Maui.Platform;
 using UIKit;
@@ -11,16 +12,22 @@ internal class CvCell : UICollectionViewCell
 	
 	public VirtualListViewHandler Handler { get; set; }
 
-	public WeakReference<NSIndexPath> IndexPath { get; set; }
-
-	public PositionInfo PositionInfo { get; private set; }
-
-	public WeakReference<Action<IView>> ReuseCallback { get; set; }
+	public PositionInfo PositionInfo => Content?.Position;
+	internal RetainedView Content { get; private set; }
+	[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "The callback holds only a weak cell reference; the cell removes and disposes its recognizer.")]
+	readonly UITapGestureRecognizer tapRecognizer;
+	bool disposed;
 
 	[Export("initWithFrame:")]
 	public CvCell(CGRect frame) : base(frame)
 	{
-		this.ContentView.AddGestureRecognizer(new UITapGestureRecognizer(() => InvokeTap()));
+		var weakSelf = new WeakReference<CvCell>(this);
+		tapRecognizer = new UITapGestureRecognizer(() =>
+		{
+			if (weakSelf.TryGetTarget(out var cell))
+				cell.InvokeTap();
+		});
+		ContentView.AddGestureRecognizer(tapRecognizer);
 	}
 
 	private TapHandlerCallback TapHandler;
@@ -60,7 +67,7 @@ internal class CvCell : UICollectionViewCell
 
 	void InvokeTap()
 	{
-		if (PositionInfo.Kind == PositionKind.Item)
+		if (Handler?.IsConnected == true && PositionInfo?.Kind == PositionKind.Item)
 		{
 			TapHandler.Invoke(this);
 		}
@@ -68,9 +75,11 @@ internal class CvCell : UICollectionViewCell
 
 	public void UpdateSelected(bool selected)
 	{
+		if (PositionInfo is null)
+			return;
 		PositionInfo.IsSelected = selected;
 
-		if (VirtualView?.TryGetTarget(out var virtualView) ?? false)
+		if (VirtualView is IView virtualView)
 		{
 			if (virtualView is IPositionInfo positionInfo)
 			{
@@ -82,8 +91,7 @@ internal class CvCell : UICollectionViewCell
 
 	public override UICollectionViewLayoutAttributes PreferredLayoutAttributesFittingAttributes(UICollectionViewLayoutAttributes layoutAttributes)
 	{
-		if ((NativeView is not null && NativeView.TryGetTarget(out var _))
-			&& (VirtualView is not null && VirtualView.TryGetTarget(out var virtualView)))
+		if (NativeView is not null && VirtualView is IView virtualView)
 		{
 			var measure = virtualView.Measure(layoutAttributes.Size.Width, double.PositiveInfinity);
 
@@ -95,57 +103,74 @@ internal class CvCell : UICollectionViewCell
 		return layoutAttributes;
 	}
 
-	public bool NeedsView
-		=> NativeView == null 
-			|| VirtualView is null
-			|| !NativeView.TryGetTarget(out var _) 
-			|| !VirtualView.TryGetTarget(out var _);
+	public IView VirtualView => Content?.View;
 
-	public WeakReference<IView> VirtualView { get; set; }
+	[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "The slot owns retained content; ClearView removes it and Release disconnects owned MAUI handlers.")]
+	public UIView NativeView { get; private set; }
 
-	public WeakReference<UIView> NativeView { get; set; }
+	public void Bind(VirtualListViewHandler handler, PositionInfo position, object data)
+	{
+		Handler = handler;
+		if (Content is null)
+		{
+			var weakSelf = new WeakReference<CvCell>(this);
+			Content = new RetainedView(handler.VirtualView,
+				view =>
+				{
+					if (!weakSelf.TryGetTarget(out var cell))
+						throw new InvalidOperationException("The Apple content host is no longer available.");
+					cell.SetupView(view);
+				},
+				() =>
+				{
+					if (weakSelf.TryGetTarget(out var cell))
+						cell.ClearView();
+				});
+		}
+		Content.Bind(position, data);
+	}
 
 	public override void PrepareForReuse()
 	{
 		base.PrepareForReuse();
 
-		// TODO: Recycle
-		if ((VirtualView?.TryGetTarget(out var virtualView) ?? false)
-			&& (ReuseCallback?.TryGetTarget(out var reuseCallback) ?? false))
-		{
-			reuseCallback?.Invoke(virtualView);
-		}
+		Content?.Unbind();
 	}
 
 	public void SetupView(IView view)
 	{
-        // Create a new platform native view if we don't have one yet
-        if (!(NativeView?.TryGetTarget(out var _) ?? false))
-        {
-			var nativeView = view.ToPlatform(this.Handler.MauiContext);
-            nativeView.Frame = this.ContentView.Frame;
-            nativeView.AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth;
-            
-			this.ContentView.AddSubview(nativeView);
-            
-			NativeView = new WeakReference<UIView>(nativeView);
-        }
-
-        if (!(VirtualView?.TryGetTarget(out var virtualView) ?? false) || (virtualView?.Handler is null))
-        {
-            VirtualView = new WeakReference<IView>(view);
-        }
+		NativeView = view.ToPlatform(Handler.MauiContext);
+		NativeView.RemoveFromSuperview();
+		NativeView.Frame = ContentView.Frame;
+		NativeView.AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth;
+		ContentView.AddSubview(NativeView);
     }
 
-	public void UpdatePosition(PositionInfo positionInfo)
+	void ClearView()
 	{
-        PositionInfo = positionInfo;
-        if (VirtualView?.TryGetTarget(out var virtualView) ?? false)
+		NativeView?.RemoveFromSuperview();
+		NativeView = null;
+	}
+
+	internal void Release()
+	{
+		Content?.Release();
+		Content = null;
+		TapHandler = null;
+		Handler = null;
+	}
+
+	protected override void Dispose(bool disposing)
+	{
+		if (disposing && !disposed)
 		{
-            if (virtualView is IPositionInfo viewPositionInfo)
-                viewPositionInfo.Update(positionInfo);
-        }
-    }
+			disposed = true;
+			Release();
+			ContentView.RemoveGestureRecognizer(tapRecognizer);
+			tapRecognizer.Dispose();
+		}
+		base.Dispose(disposing);
+	}
 	
 	class TapHandlerCallback
 	{

@@ -12,7 +12,7 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 	readonly PositionalViewSelector positionalViewSelector;
 
-	RvViewHolderClickListener clickListener;
+	readonly NativeViewRegistry<RvItemHolder> holders = new();
 
 	public Context Context { get; }
 
@@ -39,16 +39,23 @@ internal partial class RvAdapter : RecyclerView.Adapter
 	{
 		base.OnViewAttachedToWindow(holder);
 
-		if (holder is RvItemHolder rvItemHolder && rvItemHolder?.ViewContainer?.VirtualView != null)
-			handler.VirtualView.ViewSelector.ViewAttached(rvItemHolder.PositionInfo, rvItemHolder.ViewContainer.VirtualView);
+		if (holder is RvItemHolder rvItemHolder)
+			rvItemHolder.Content.SetVisible(true);
 	}
 
 	public override void OnViewDetachedFromWindow(Java.Lang.Object holder)
 	{
-		if (holder is RvItemHolder rvItemHolder && rvItemHolder?.ViewContainer?.VirtualView != null)
-			handler.VirtualView.ViewSelector.ViewDetached(rvItemHolder.PositionInfo, rvItemHolder.ViewContainer.VirtualView);
+		if (holder is RvItemHolder rvItemHolder)
+			rvItemHolder.Content.SetVisible(false);
 
 		base.OnViewDetachedFromWindow(holder);
+	}
+
+	public override void OnViewRecycled(Java.Lang.Object holder)
+	{
+		if (holder is RvItemHolder itemHolder)
+			itemHolder.Content.Unbind();
+		base.OnViewRecycled(holder);
 	}
 
 	public override void OnBindViewHolder(RecyclerView.ViewHolder holder, int position)
@@ -56,7 +63,11 @@ internal partial class RvAdapter : RecyclerView.Adapter
 		var info = positionalViewSelector.GetInfo(position);
 
 		if (info == null)
+		{
+			if (holder is RvItemHolder stale)
+				stale.Content.Unbind();
 			return;
+		}
 
 		// The template selector doesn't infer selected properly
 		// so we need to ask the listview which tracks selections about the state
@@ -65,25 +76,8 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 		if (holder is RvItemHolder itemHolder)
 		{
-			var data = info.Kind switch {
-				PositionKind.Item =>
-					positionalViewSelector?.Adapter?.GetItem(info.SectionIndex, info.ItemIndex),
-				PositionKind.SectionHeader =>
-					positionalViewSelector?.Adapter?.GetSection(info.SectionIndex),
-				PositionKind.SectionFooter =>
-					positionalViewSelector?.Adapter?.GetSection(info.SectionIndex),
-				_ => null
-			};
-
-			if (itemHolder.NeedsView)
-			{
-				var newView = positionalViewSelector?.ViewSelector?.CreateView(info, data);
-				itemHolder.SetupView(newView);
-            }
-
-            itemHolder.UpdatePosition(info);
-
-            positionalViewSelector?.ViewSelector?.RecycleView(info, data, itemHolder.ViewContainer.VirtualView);
+			var data = positionalViewSelector.Adapter.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
+			itemHolder.Content.Bind(info, data);
 		}
 	}
 
@@ -96,17 +90,10 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 		var info = positionalViewSelector.GetInfo(position);
 
-		var data = info.Kind switch {
-			PositionKind.Item =>
-				positionalViewSelector?.Adapter?.GetItem(info.SectionIndex, info.ItemIndex),
-			PositionKind.SectionHeader =>
-				positionalViewSelector?.Adapter?.GetSection(info.SectionIndex),
-			PositionKind.SectionFooter =>
-				positionalViewSelector?.Adapter?.GetSection(info.SectionIndex),
-			_ => null
-		};
+		var data = positionalViewSelector.Adapter.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
 
-		var reuseId = positionalViewSelector.ViewSelector.GetReuseId(info, data);
+		var reuseId = info.Kind is PositionKind.Header or PositionKind.Footer
+			? info.Kind.ToString() : positionalViewSelector.ViewSelector.GetReuseId(info, data);
 
 		int vt = -1;
 
@@ -129,11 +116,12 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 	public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)
 	{
-		var viewHolder = new RvItemHolder(handler.MauiContext, handler.VirtualView.Orientation);
+		var viewHolder = new RvItemHolder(handler);
+		holders.Add(viewHolder, viewHolder.Content);
 
-		clickListener = new RvViewHolderClickListener(viewHolder, rvh =>
+		viewHolder.ClickListener = new RvViewHolderClickListener(viewHolder, rvh =>
 		{
-			if (rvh.PositionInfo == null || rvh.PositionInfo.Kind != PositionKind.Item)
+			if (!handler.IsConnected || rvh.PositionInfo == null || rvh.PositionInfo.Kind != PositionKind.Item)
 				return;
 
 			var p = new ItemPosition(rvh.PositionInfo.SectionIndex, rvh.PositionInfo.ItemIndex);
@@ -149,7 +137,7 @@ internal partial class RvAdapter : RecyclerView.Adapter
 				handler?.VirtualView?.DeselectItem(p);
 		});
 
-		viewHolder.ItemView.SetOnClickListener(clickListener);
+		viewHolder.ItemView.SetOnClickListener(viewHolder.ClickListener);
 
 		return viewHolder;
 	}
@@ -157,9 +145,18 @@ internal partial class RvAdapter : RecyclerView.Adapter
 	public void Reset()
 	{
 		cachedItemCount = null;
-		//lock (lockObj)
-		//{
-		//	cachedReuseIds.Clear();
-		//}
+		holders.ForEach(_ => { });
+	}
+
+	internal void ResetTemplates() => holders.ForEach(holder => holder.Content.Release());
+
+	protected override void Dispose(bool disposing)
+	{
+		if (disposing)
+		{
+			holders.Drain(holder => holder.Release());
+			cachedReuseIds.Clear();
+		}
+		base.Dispose(disposing);
 	}
 }

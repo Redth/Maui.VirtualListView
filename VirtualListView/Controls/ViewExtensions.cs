@@ -1,58 +1,31 @@
-﻿using System;
-using System.Reflection;
+#nullable enable
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Microsoft.Maui.Controls;
 
 internal static class ViewExtensions
 {
-	static PropertyInfo DataTemplateIdPropertyInfo;
+	sealed record Identity(long Value);
+	static readonly ConditionalWeakTable<object, Identity> identities = new();
+	static long nextIdentity;
 
-	internal static string GetDataTemplateId(this DataTemplate dataTemplate)
+	internal static string GetStableIdentity(this object? value)
+		=> value is null ? "NIL" : identities.GetValue(value,
+			_ => new Identity(Interlocked.Increment(ref nextIdentity))).Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+	internal static string GetDataTemplateId(this DataTemplate? template)
+		=> template.GetStableIdentity();
+
+	internal static void RemoveLogicalView(this Element parent, IView view)
 	{
-		DataTemplateIdPropertyInfo ??= dataTemplate.GetType().GetProperty("Id", BindingFlags.Instance | BindingFlags.NonPublic);
-
-		return DataTemplateIdPropertyInfo.GetValue(dataTemplate)?.ToString();
-
+		if (view is Element child && ReferenceEquals(child.Parent, parent))
+			parent.RemoveLogicalChild(child);
 	}
 
-	static MethodInfo removeLogicalChildMethod = null;
-
-	internal static void RemoveLogicalChild(this Element parent, IView view)
+	internal static void AddLogicalView(this Element parent, IView view)
 	{
-		if (view is Element elem)
-		{
-			removeLogicalChildMethod ??= GetLogicalChildMethod(parent, "RemoveLogicalChildInternal", "RemoveLogicalChild");
-			removeLogicalChildMethod?.Invoke(parent, new[] { elem });
-		}
-	}
-
-	static MethodInfo addLogicalChildMethod = null;
-
-	internal static void AddLogicalChild(this Element parent, IView view)
-	{
-		if (view is Element elem)
-		{
-			addLogicalChildMethod ??= GetLogicalChildMethod(parent, "AddLogicalChildInternal", "AddLogicalChild");
-			addLogicalChildMethod?.Invoke(parent, new[] { elem });
-		}
-	}
-
-	static MethodInfo GetLogicalChildMethod(Element parent, string internalName, string publicName)
-	{
-		var internalMethod = parent.GetType().GetMethod(
-				internalName,
-				BindingFlags.Instance | BindingFlags.NonPublic,
-				new[] { typeof(Element) });
-
-		if (internalMethod is null)
-		{
-			internalMethod = parent.GetType().GetMethod(
-				publicName,
-				BindingFlags.Instance | BindingFlags.Public,
-				new[] { typeof(Element) });
-		}
-
-		return internalMethod;
+		if (view is Element child && !ReferenceEquals(child.Parent, parent))
+			parent.AddLogicalChild(child);
 	}
 }
-

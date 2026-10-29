@@ -1,5 +1,6 @@
 using Microsoft.Maui.Adapters;
 using System.ComponentModel;
+using Microsoft.Maui.Dispatching;
 
 namespace Microsoft.Maui;
 
@@ -54,6 +55,48 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	}
 
 	internal PositionalViewSelector PositionalViewSelector { get; private set; }
+	readonly HandlerPublication publication = new();
+	OwnedRefresh ownedRefresh;
+	internal bool IsConnected => publication.IsConnected;
+
+	void ConnectLifetime()
+	{
+		var dispatcher = VirtualView is Controls.BindableObject bindable
+			? bindable.Dispatcher : MauiContext.Services.GetRequiredService<IDispatcher>();
+		publication.Connect(dispatcher, VirtualView.Adapter, ApplyDataInvalidation);
+		ownedRefresh ??= new OwnedRefresh(publication);
+		MapHeader(this, VirtualView);
+		MapFooter(this, VirtualView);
+	}
+
+	void DisconnectLifetime()
+	{
+		publication.Disconnect();
+		ownedRefresh?.End();
+		DisconnectProjectionObservers();
+		PositionalViewSelector = null;
+		previousSelections = Array.Empty<ItemPosition>();
+	}
+
+	internal void Publish(Action action) => publication.Post(action);
+	internal Action<Action> CapturePublisher() => publication.CapturePublisher();
+
+	public void InvalidateData() => Publish(ApplyDataInvalidation);
+
+	void ApplyDataInvalidation()
+	{
+		PositionalViewSelector?.Invalidate();
+		PlatformInvalidateData();
+	}
+
+	void BeginRefresh(Action started, Action finished)
+		=> ownedRefresh.Begin(completion =>
+		{
+			started();
+			VirtualView.Refresh(completion);
+		}, finished);
+
+	void EndRefresh() => ownedRefresh?.End();
 
 	bool ShouldShowEmptyView => !(PositionalViewSelector?.HasItems ?? false);
 
@@ -65,7 +108,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		if (handler.observedHeader is not null)
 			handler.observedHeader.PropertyChanged -= handler.GlobalChromePropertyChanged;
 
-		handler.observedHeader = virtualListView.Header as INotifyPropertyChanged;
+		handler.observedHeader = handler.IsConnected ? virtualListView.Header as INotifyPropertyChanged : null;
 		if (handler.observedHeader is not null)
 			handler.observedHeader.PropertyChanged += handler.GlobalChromePropertyChanged;
 
@@ -77,7 +120,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		if (handler.observedFooter is not null)
 			handler.observedFooter.PropertyChanged -= handler.GlobalChromePropertyChanged;
 
-		handler.observedFooter = virtualListView.Footer as INotifyPropertyChanged;
+		handler.observedFooter = handler.IsConnected ? virtualListView.Footer as INotifyPropertyChanged : null;
 		if (handler.observedFooter is not null)
 			handler.observedFooter.PropertyChanged += handler.GlobalChromePropertyChanged;
 
@@ -85,13 +128,21 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	}
 
 	public static void MapViewSelector(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler.InvalidateData();
+	{
+		if (handler.IsConnected)
+			handler.PlatformResetTemplates();
+		handler.InvalidateData();
+	}
 
 	void GlobalChromePropertyChanged(object sender, PropertyChangedEventArgs e)
 	{
 		// Controls exposes IsVisible while IView exposes Visibility.
 		if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName is "Visibility" or "IsVisible")
-			InvalidateData();
+			Publish(() =>
+			{
+				if (ReferenceEquals(sender, observedHeader) || ReferenceEquals(sender, observedFooter))
+					ApplyDataInvalidation();
+			});
 	}
 
 	void DisconnectProjectionObservers()
@@ -106,21 +157,10 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 
 	public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		if (handler.currentAdapter != null)
-			handler.currentAdapter.OnDataInvalidated -= handler.Adapter_OnDataInvalidated;
-
-		if (virtualListView?.Adapter != null)
-			virtualListView.Adapter.OnDataInvalidated += handler.Adapter_OnDataInvalidated;
-
-		handler.currentAdapter = virtualListView.Adapter;
-		handler?.InvalidateData();
-	}
-
-	IVirtualListViewAdapter currentAdapter = default;
-
-	void Adapter_OnDataInvalidated(object sender, EventArgs e)
-	{
-		InvalidateData();
+		handler.EndRefresh();
+		if (handler.IsConnected)
+			handler.publication.SetAdapter(virtualListView.Adapter);
+		handler.InvalidateData();
 	}
 
 	public bool IsItemSelected(int sectionIndex, int itemIndex)

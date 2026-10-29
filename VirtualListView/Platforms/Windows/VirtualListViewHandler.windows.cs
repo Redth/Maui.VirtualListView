@@ -44,23 +44,33 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		scrollViewer.Content = itemsRepeater;
 		itemsRepeaterScrollHost.ScrollViewer = scrollViewer;
 
-		itemsRepeaterScrollHost.Loaded += ItemsRepeaterScrollHost_Loaded;
-
 		rootLayout.Children.Add(itemsRepeaterScrollHost);
 
 		return rootLayout;
 	}
 
-	private void ItemsRepeaterScrollHost_Loaded(object sender, UI.Xaml.RoutedEventArgs e)
+	void ScrollViewerViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
 	{
-		itemsRepeaterScrollHost.Loaded -= ItemsRepeaterScrollHost_Loaded;
+		if (IsConnected)
+		{
+			UpdateVisibleElements();
+			VirtualView.Scrolled(scrollViewer.HorizontalOffset, scrollViewer.VerticalOffset);
+		}
+	}
 
-		scrollViewer?.RegisterPropertyChangedCallback(ScrollViewer.VerticalOffsetProperty, (o, dp) =>
-			VirtualView.Scrolled(scrollViewer.HorizontalOffset, scrollViewer.VerticalOffset));
+	void ItemsRepeaterLayoutUpdated(object sender, object e) => UpdateVisibleElements();
+
+	void UpdateVisibleElements()
+	{
+		if (IsConnected && elementFactory is not null)
+			foreach (var element in elementFactory.ActiveElements.ToArray())
+				element.ContentOwner.SetVisible(VisibilityHitTest(element, scrollViewer));
 	}
 
 	protected override void ConnectHandler(WGrid nativeView)
 	{
+		if (IsConnected)
+			return;
 		base.ConnectHandler(nativeView);
 
 		PositionalViewSelector = new PositionalViewSelector(VirtualView);
@@ -70,27 +80,36 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		irSource = new IrSource(MauiContext, PositionalViewSelector, VirtualView);
 
 		itemsRepeater.ItemsSource = irSource;
+		scrollViewer.ViewChanged += ScrollViewerViewChanged;
+		itemsRepeater.LayoutUpdated += ItemsRepeaterLayoutUpdated;
+		ConnectLifetime();
 	}
 
 	protected override void DisconnectHandler(WGrid nativeView)
 	{
-		DisconnectProjectionObservers();
+		DisconnectLifetime();
+		scrollViewer.ViewChanged -= ScrollViewerViewChanged;
+		itemsRepeater.LayoutUpdated -= ItemsRepeaterLayoutUpdated;
+		itemsRepeater.ItemsSource = null;
 		itemsRepeater.ItemTemplate = null;
-		elementFactory.Dispose();
+		elementFactory?.Dispose();
 		elementFactory = null;
 
-		itemsRepeater.ItemsSource = null;
 		irSource = null;
+		if (emptyView is not null)
+			rootLayout.Children.Remove(emptyView);
+		emptyView = null;
 
 		base.DisconnectHandler(nativeView);
 	}
 
-	public void InvalidateData()
+	void PlatformInvalidateData()
 	{
-		PositionalViewSelector?.Invalidate();
 		irSource?.Reset();
 		UpdateEmptyViewVisibility();
 	}
+
+	void PlatformResetTemplates() => elementFactory?.ResetTemplates();
 
 	void PlatformScrollToItem(ItemPosition itemPosition, bool animated)
 	{
@@ -116,7 +135,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 		var elem = itemsRepeater.TryGetElement(position);
 
-		if (elem is IrElementContainer contentControl)
+		if (elem is IrElementContainer contentControl && contentControl.PositionInfo is not null)
 		{
 			contentControl.PositionInfo.IsSelected = selected;
 
@@ -204,7 +223,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 			if (VisualTreeHelper.GetChild(itemsRepeater, i) is IrElementContainer irElementContainer)
 			{
 				// Is the item actually visible?
-				if (VisibilityHitTest(irElementContainer, itemsRepeater))
+				if (irElementContainer.PositionInfo is not null && VisibilityHitTest(irElementContainer, scrollViewer))
 					positions.Add(irElementContainer.PositionInfo);
 			}
 		}

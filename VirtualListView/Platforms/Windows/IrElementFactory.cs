@@ -1,129 +1,73 @@
-﻿using Microsoft.Maui.Controls;
-using Microsoft.Maui.Platform;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.Maui;
 
 internal class IrElementFactory : IElementFactory, IDisposable
 {
-	public IrElementFactory(IMauiContext context, PositionalViewSelector positionalViewSelector, VirtualListViewHandler handler)
+	readonly IMauiContext context;
+	readonly PositionalViewSelector selector;
+	readonly VirtualListViewHandler handler;
+	readonly HashSet<IrElementContainer> active = new();
+	readonly ReusableViewPool<IrElementContainer> pool = new(container => container.ContentOwner.Release());
+	bool disposed;
+
+	public IrElementFactory(IMauiContext context, PositionalViewSelector selector, VirtualListViewHandler handler)
 	{
-		MauiContext = context;
-		PositionalViewSelector = positionalViewSelector;
-		Handler = handler;
+		this.context = context;
+		this.selector = selector;
+		this.handler = handler;
 	}
 
-	readonly object lockObj = new object();
-	protected readonly IMauiContext MauiContext;
+	internal IEnumerable<IrElementContainer> ActiveElements => active;
 
-	protected readonly PositionalViewSelector PositionalViewSelector;
-	protected readonly VirtualListViewHandler Handler;
-
-	internal record IrRecycledElement(string reuseId, UIElement element);
-
-	Dictionary<string, Queue<IrElementContainer>> recycledElements = new();
-
-
-	IrElementContainer GetRecycledElement(string reuseId)
+	public UIElement GetElement(ElementFactoryGetArgs args)
 	{
-		lock (lockObj)
+		ObjectDisposedException.ThrowIf(disposed, this);
+		if (args.Data is not IrDataWrapper wrapper || wrapper.position is not PositionInfo info)
+			throw new InvalidOperationException("The ItemsRepeater requested an invalid VirtualListView row.");
+
+		var reuseId = selector.ViewSelector.GetReuseId(info, wrapper.data);
+		var container = pool.Take(reuseId) ?? new IrElementContainer(context, reuseId, selector);
+		active.Add(container);
+		info.IsSelected = info.Kind == PositionKind.Item && handler.IsItemSelected(info.SectionIndex, info.ItemIndex);
+		container.IsRecycled = false;
+		try { container.ContentOwner.Bind(info, wrapper.data); }
+		catch
 		{
-			if (!recycledElements.TryGetValue(reuseId, out var queue))
-			{
-				queue = new Queue<IrElementContainer>();
-				recycledElements[reuseId] = queue;
-			}
-
-			if (queue.TryDequeue(out var element))
-				return element;
+			active.Remove(container);
+			container.ContentOwner.Release();
+			throw;
 		}
-
-		return null;
+		return container;
 	}
 
-	void AddRecycledElement(IrElementContainer element)
+	public void RecycleElement(ElementFactoryRecycleArgs args)
 	{
-		var reuseId = element.ReuseId;
-
-		lock (lockObj)
-		{
-			if (!recycledElements.TryGetValue(reuseId, out var queue))
-			{
-				queue = new Queue<IrElementContainer>();
-				recycledElements[reuseId] = queue;
-			}
-
-			queue.Enqueue(element);
-		}
+		if (args.Element is not IrElementContainer container || !active.Remove(container))
+			return;
+		container.IsRecycled = true;
+		container.ContentOwner.Unbind();
+		if (disposed)
+			container.ContentOwner.Release();
+		else
+			pool.Return(container.ReuseId, container, active.Count);
 	}
 
-
-	public UIElement GetElement(UI.Xaml.ElementFactoryGetArgs args)
-	{
-		if (args.Data is IrDataWrapper dataWrapper)
-		{
-			var info = dataWrapper.position;
-			if (info == null)
-				return null;
-
-			var data = dataWrapper.data;
-			var reuseId = PositionalViewSelector.ViewSelector?.GetReuseId(info, data);
-
-			var container = GetRecycledElement(reuseId)
-				?? new IrElementContainer(MauiContext, reuseId, PositionalViewSelector);
-
-			// The template selector doesn't infer selected properly
-			// so we need to ask the listview which tracks selections about the state
-			info.IsSelected = info.Kind == PositionKind.Item
-				&& (Handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false);
-
-
-			if (container.NeedsView)
-			{
-				var virtualView = PositionalViewSelector.ViewSelector?.CreateView(info, data);
-				container.SetupView(virtualView);
-			}
-
-			container.UpdatePosition(info);
-			container.IsRecycled = false;
-
-			PositionalViewSelector.ViewSelector?.RecycleView(info, data, container.VirtualView);
-			PositionalViewSelector.ViewSelector?.ViewAttached(info, container.VirtualView);
-
-			return container;
-		}
-
-		return null;
-	}
-
-	public void RecycleElement(UI.Xaml.ElementFactoryRecycleArgs args)
-	{
-		if (args.Element is IrElementContainer container && container != null)
-		{
-			container.IsRecycled = true;
-
-			PositionalViewSelector.ViewSelector.ViewDetached(container.PositionInfo, container.VirtualView);
-
-			AddRecycledElement(container);
-		}
-	}
-
-	public void Reset()
-	{
-		lock (lockObj)
-			recycledElements.Clear();
-	}
+	public void ResetTemplates() => pool.Clear();
 
 	public void Dispose()
 	{
-		lock (lockObj)
-			recycledElements.Clear();
+		if (disposed)
+			return;
+		disposed = true;
+		var containers = active.ToArray();
+		active.Clear();
+		foreach (var container in containers)
+		{
+			container.IsRecycled = true;
+			container.ContentOwner.Release();
+		}
+		pool.Dispose();
 	}
 }

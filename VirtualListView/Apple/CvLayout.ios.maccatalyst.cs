@@ -9,11 +9,11 @@ internal class CvLayout : UICollectionViewFlowLayout
 {
 	public CvLayout(VirtualListViewHandler handler) : base()
 	{
-		Handler = handler;
+		Handler = new WeakReference<VirtualListViewHandler>(handler);
 		isiOS11 = UIDevice.CurrentDevice.CheckSystemVersion(11, 0);
 	}
 
-	readonly VirtualListViewHandler Handler;
+	readonly WeakReference<VirtualListViewHandler> Handler;
 
 	readonly bool isiOS11;
 
@@ -21,8 +21,10 @@ internal class CvLayout : UICollectionViewFlowLayout
 	public override UICollectionViewLayoutAttributes LayoutAttributesForItem(NSIndexPath path)
 	{
 		var layoutAttributes = base.LayoutAttributesForItem(path);
+		if (!Handler.TryGetTarget(out var handler) || !handler.IsConnected)
+			return layoutAttributes;
 
-		if (Handler.VirtualView.Orientation == ListOrientation.Vertical)
+		if (handler.VirtualView.Orientation == ListOrientation.Vertical)
 		{
 			var x = SectionInset.Left;
 

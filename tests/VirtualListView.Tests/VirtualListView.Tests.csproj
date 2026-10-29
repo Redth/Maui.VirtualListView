@@ -15,6 +15,7 @@
 		<!-- Compile the real portable sources without requiring native MAUI workloads. -->
 		<Compile Include="../../VirtualListView/*.cs;../../VirtualListView/Adapters/*.cs;../../VirtualListView/Controls/*.cs"
 		         Link="Production/%(RecursiveDir)%(Filename)%(Extension)" />
+		<Compile Include="../../VirtualListView/Platforms/Android/RvRecycledViewPool.cs" Link="Production/RvRecycledViewPool.cs" />
 		<Using Include="Microsoft.Extensions.DependencyInjection" />
 		<Using Include="Microsoft.Maui" />
 		<Using Include="Microsoft.Maui.Controls" />

@@ -15,6 +15,7 @@ internal class IrElementContainer : ContentControl
 		MauiContext = context;
 		ReuseId = reuseId;
 		PositionalViewSelector = positionalViewSelector;
+		ContentOwner = new RetainedView(positionalViewSelector.VirtualListView, SetupView, () => Content = null);
 
 		if (positionalViewSelector.VirtualListView.Orientation == ListOrientation.Vertical)
 		{
@@ -32,7 +33,8 @@ internal class IrElementContainer : ContentControl
 	public readonly IMauiContext MauiContext;
 	public readonly PositionalViewSelector PositionalViewSelector;
 
-	public PositionInfo PositionInfo { get; private set; }
+	public PositionInfo PositionInfo => ContentOwner.Position;
+	internal RetainedView ContentOwner { get; }
 
 	bool isRecycled = false;
 
@@ -51,21 +53,15 @@ internal class IrElementContainer : ContentControl
 	public bool NeedsView
 		=> VirtualView is null || VirtualView.Handler is null;
 
-	public IView VirtualView { get; private set; }
+	public IView VirtualView => ContentOwner.View;
 
 	public void SetupView(IView view)
 	{
-		if (VirtualView is null || VirtualView.Handler is null)
-		{
-            Content = view.ToPlatform(MauiContext);
-            VirtualView = view;
-        }
+		Content = view.ToPlatform(MauiContext);
 	}
 
 	public void UpdatePosition(PositionInfo positionInfo)
 	{
-        PositionInfo = positionInfo;
-
         if (VirtualView is IPositionInfo viewWithPositionInfo)
             viewWithPositionInfo.Update(PositionInfo);
     }
@@ -75,7 +71,7 @@ internal class IrElementContainer : ContentControl
 		base.OnTapped(e);
 
 		// Don't select non-item positions
-		if ((PositionInfo?.Kind ?? PositionKind.Header) != PositionKind.Item)
+		if (IsRecycled || (PositionInfo?.Kind ?? PositionKind.Header) != PositionKind.Item)
 			return;
 
 		if (PositionInfo != null)
