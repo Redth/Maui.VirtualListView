@@ -13,6 +13,7 @@ internal class CvDataSource : UICollectionViewDataSource
 	}
 
 	VirtualListViewHandler Handler { get; }
+	readonly NativeViewRegistry<CvCell> cells = new();
 
 	readonly ReusableIdManager itemIdManager = new ReusableIdManager("Item");
 	readonly ReusableIdManager globalIdManager = new ReusableIdManager("Global");
@@ -34,7 +35,8 @@ internal class CvDataSource : UICollectionViewDataSource
 		{
 			data = Handler?.PositionalViewSelector?.Adapter?.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
 			
-			var reuseId = Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info, data);
+			var reuseId = info.Kind is PositionKind.Header or PositionKind.Footer
+				? info.Kind.ToString() : Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info, data);
 
 			nativeReuseId = info.Kind switch
 			{
@@ -51,38 +53,26 @@ internal class CvDataSource : UICollectionViewDataSource
 		if (nativeCell is not CvCell cell)
 			return (UICollectionViewCell)nativeCell;
 		
-		cell.SetTapHandlerCallback(TapCellHandler);
-		cell.Handler = Handler;
-		cell.IndexPath = new WeakReference<NSIndexPath>(indexPath);
-
-		cell.ReuseCallback = new WeakReference<Action<IView>>((rv) =>
-		{
-			if (info is not null && (cell.VirtualView?.TryGetTarget(out var cellView) ?? false))
-				Handler?.VirtualView?.ViewSelector?.ViewDetached(info, cellView);
-		});
-
 		if (info is not null)
 		{
+			var track = cell.Content is null;
+			cell.SetTapHandlerCallback(TapCellHandler);
 			if (info.SectionIndex < 0 || info.ItemIndex < 0)
 				info.IsSelected = false;
 			else
 				info.IsSelected = Handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false;
 		
-			if (cell.NeedsView)
+			try { cell.Bind(Handler, info, data); }
+			catch
 			{
-				var view = Handler?.PositionalViewSelector?.ViewSelector?.CreateView(info, data);
-				if (view is not null)
-					cell.SetupView(view);
+				cell.Release();
+				throw;
 			}
-
-			cell.UpdatePosition(info);
-
-			if (cell.VirtualView?.TryGetTarget(out var cellVirtualView) ?? false)
-			{
-				Handler?.PositionalViewSelector?.ViewSelector?.RecycleView(info, data, cellVirtualView);
-				Handler?.VirtualView?.ViewSelector?.ViewAttached(info, cellVirtualView);
-			}
+			if (track && cell.Content is RetainedView content)
+				cells.Add(cell, content);
 		}
+		else
+			cell.Release();
 
 		return cell;
 	}
@@ -103,4 +93,15 @@ internal class CvDataSource : UICollectionViewDataSource
 	{
 		return Handler?.PositionalViewSelector?.TotalCount ?? 0;
 	}
+
+	protected override void Dispose(bool disposing)
+	{
+		if (disposing)
+			cells.Drain(cell => cell.Release());
+		base.Dispose(disposing);
+	}
+
+	internal void ResetTemplates() => cells.ForEach(cell => cell.Content?.Release());
+	internal void PruneCells() => cells.ForEach(_ => { });
+	internal void Rebind(KeyedUpdatePlan plan) => cells.ForEach(cell => Handler.RebindRetained(cell.Content, plan));
 }

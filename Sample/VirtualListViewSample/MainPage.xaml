@@ -16,6 +16,8 @@
 			<Button Text="Sectioned Adapter Demo" Clicked="Button_Clicked_2" />
 
 			<Button Text="Bindable Selected Item Demo" Clicked="Button_Clicked_4" />
+			<Button Text="Measurement Smoke" Clicked="Measurement_Clicked" />
+			<Button Text="Keyed Updates" Clicked="KeyedUpdates_Clicked" AutomationId="keyed-demo" />
 		</VerticalStackLayout>
 	</ScrollView>
 </ContentPage>

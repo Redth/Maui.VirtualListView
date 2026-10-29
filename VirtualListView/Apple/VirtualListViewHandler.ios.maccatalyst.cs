@@ -35,23 +35,6 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		collectionView.AllowsSelection = false;
 
 
-		refreshControl = new UIRefreshControl();
-		refreshControl.Enabled = VirtualView?.IsRefreshEnabled ?? false;
-		refreshControl.AddTarget(new EventHandler((s, a) =>
-		{
-			refreshControl.BeginRefreshing();
-			try
-			{
-				VirtualView?.Refresh(() => refreshControl.EndRefreshing());
-			}
-			catch
-			{
-				refreshControl.EndRefreshing();
-			}
-		}), UIControlEvent.ValueChanged);
-
-		//collectionView.AddSubview(refreshControl);
-
 		collectionView.AlwaysBounceVertical = true;
 
 		//collectionView.ContentInset = new UIEdgeInsets(0, 0, 0, 0);
@@ -63,23 +46,44 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 	protected override void ConnectHandler(UICollectionView nativeView)
 	{
+		if (IsConnected)
+			return;
 		base.ConnectHandler(nativeView);
+		layout = nativeView.CollectionViewLayout as CvLayout;
+		refreshControl = new UIRefreshControl { Enabled = VirtualView.IsRefreshEnabled };
+		refreshControl.ValueChanged += RefreshControlValueChanged;
+		if (VirtualView.IsRefreshEnabled)
+			nativeView.RefreshControl = refreshControl;
 
 		PositionalViewSelector = new PositionalViewSelector(VirtualView);
 
 		dataSource = new CvDataSource(this);
 		
 		cvdelegate = new CvDelegate(this, nativeView);
-		cvdelegate.ScrollHandler = (x, y) => VirtualView?.Scrolled(x, y);
 
 		nativeView.DataSource = dataSource;
 		nativeView.Delegate = cvdelegate;
 		
-		nativeView.ReloadData();
+		ConnectLifetime();
+	}
+
+	void RefreshControlValueChanged(object? sender, EventArgs e)
+	{
+		if (IsConnected && VirtualView.IsRefreshEnabled && refreshControl is not null)
+		{
+			BeginRefresh(() => refreshControl.BeginRefreshing(), () => refreshControl?.EndRefreshing());
+		}
 	}
 
 	protected override void DisconnectHandler(UICollectionView nativeView)
 	{
+		DisconnectLifetime();
+		nativeView.WeakDelegate = null;
+		nativeView.WeakDataSource = null;
+		nativeView.BackgroundView?.RemoveFromSuperview();
+		nativeView.BackgroundView = null;
+		nativeView.RefreshControl = null;
+
 		if (dataSource is not null)
 		{
 			dataSource.Dispose();
@@ -94,37 +98,34 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 		if (refreshControl is not null)
 		{
+			refreshControl.ValueChanged -= RefreshControlValueChanged;
 			refreshControl.RemoveFromSuperview();
 			refreshControl.Dispose();
 			refreshControl = null;
 		}
 
 
-		nativeView.Dispose();
-
-		if (layout is not null)
-		{
-			layout.Dispose();
-			layout = null;
-		}
-
+		layout = null;
 		base.DisconnectHandler(nativeView);
 	}
 
 	internal CvCell? GetCell(NSIndexPath indexPath)
 		=> dataSource?.GetCell(PlatformView, indexPath) as CvCell;
 
-	public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler?.InvalidateData();
+	internal double ContentCrossSize => layout?.CrossSize(VirtualView.Orientation) ?? 0;
 
-	public static void MapFooter(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler?.InvalidateData();
-
-	public static void MapViewSelector(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler?.InvalidateData();
+	void PlatformInvalidateContentLayout(PositionInfo position)
+	{
+		if (layout is null || PositionalViewSelector?.GetInfo(position.Position) is null)
+			return;
+		using var context = new UICollectionViewFlowLayoutInvalidationContext();
+		context.InvalidateItems(new[] { NSIndexPath.FromItemSection(position.Position, 0) });
+		layout.InvalidateLayout(context);
+	}
 
 	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
+		MapSelectedItems(handler, virtualListView);
 	}
 
 	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
@@ -139,40 +140,34 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 		var indexPath = NSIndexPath.FromItemSection(realIndex, 0);
 
-		PlatformView.ScrollToItem(indexPath, UICollectionViewScrollPosition.Top, animated);
+		PlatformView.ScrollToItem(indexPath, VirtualView.Orientation == ListOrientation.Vertical
+			? UICollectionViewScrollPosition.Top : UICollectionViewScrollPosition.Left, animated);
 	}
 
 	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
 	{
 		var realIndex = PositionalViewSelector?.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex) ?? -1;
-
 		if (realIndex < 0)
 			return;
-
-		var cell = PlatformView.CellForItem(NSIndexPath.FromItemSection(realIndex, 0));
-
-		if (cell is CvCell cvcell)
-		{
-			PlatformView.InvokeOnMainThread(() =>
-			{
-				cvcell.UpdateSelected(selected);
-			});
-		}
+		if (PlatformView.CellForItem(NSIndexPath.FromItemSection(realIndex, 0)) is CvCell cvcell)
+			cvcell.UpdateSelected(selected);
 	}
 
 	public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		if (handler.layout is not null)
+		handler.Publish(() =>
 		{
-			handler.layout.ScrollDirection = virtualListView.Orientation switch
+			if (handler.layout is not null)
 			{
-				ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
-				ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
-				_ => UICollectionViewScrollDirection.Vertical
-			};
-		}
-
-		handler.InvalidateData();
+				handler.layout.ScrollDirection = virtualListView.Orientation switch
+				{
+					ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
+					ListOrientation.Horizontal => UICollectionViewScrollDirection.Horizontal,
+					_ => UICollectionViewScrollDirection.Vertical
+				};
+				handler.layout.InvalidateLayout();
+			}
+		});
 	}
 
 	public static void MapRefreshAccentColor(VirtualListViewHandler handler, IVirtualListView virtualListView)
@@ -188,13 +183,14 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		{
 			if (isRefreshEnabled)
 			{
-				handler.PlatformView.AddSubview(handler.refreshControl);
+				handler.PlatformView.RefreshControl = handler.refreshControl;
 				handler.refreshControl.Enabled = true;
 			}
 			else
 			{
+				handler.EndRefresh();
 				handler.refreshControl.Enabled = false;
-				handler.refreshControl.RemoveFromSuperview();
+				handler.PlatformView.RefreshControl = null;
 			}
 		}
 	}
@@ -222,7 +218,6 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 			if (PlatformView.BackgroundView is not null)
 			{
 				PlatformView.BackgroundView.RemoveFromSuperview();
-				PlatformView.BackgroundView.Dispose();
 			}
 
 			if (MauiContext is not null)
@@ -242,19 +237,86 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		PlatformView.ShowsHorizontalScrollIndicator = scrollBarVisibility == ScrollBarVisibility.Always || scrollBarVisibility == ScrollBarVisibility.Default;
 	}
 
-	public void InvalidateData()
+	void PlatformInvalidateData()
 	{
-		this.PlatformView.InvokeOnMainThread(() => {
-			//layout?.InvalidateLayout();
-
-			UpdateEmptyViewVisibility();
-
-			//PlatformView?.SetNeedsLayout();
-			PlatformView?.ReloadData();
-			//PlatformView?.LayoutIfNeeded();
-		});
-		
+		dataSource?.PruneCells();
+		UpdateEmptyViewVisibility();
+		PlatformView.ReloadData();
 	}
+
+	void PlatformApplyUpdates(KeyedUpdatePlan plan)
+	{
+		dataSource?.Rebind(plan);
+		UpdateEmptyViewVisibility();
+		if (plan.Reset)
+		{
+			PlatformInvalidateData();
+			return;
+		}
+		UIView.PerformWithoutAnimation(() =>
+		{
+			PlatformView.PerformBatchUpdates(() =>
+			{
+				if (plan.Removed.Length > 0)
+					PlatformView.DeleteItems(plan.Removed.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
+				if (plan.Inserted.Length > 0)
+					PlatformView.InsertItems(plan.Inserted.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
+				foreach (var move in plan.Moved)
+					PlatformView.MoveItem(NSIndexPath.FromItemSection(move.From, 0), NSIndexPath.FromItemSection(move.To, 0));
+			}, null);
+			// Content/template changes are rebound above, including moved rows. Do not
+			// reload old-coordinate paths in the same structural UIKit transaction.
+			foreach (var index in plan.Changed)
+				if (PositionalViewSelector.GetInfo(index) is PositionInfo info)
+					PlatformInvalidateContentLayout(info);
+			PlatformView.LayoutIfNeeded();
+		});
+	}
+
+	(int Index, double Offset) PlatformVisibleAnchor()
+	{
+		if (PlatformView.Dragging || PlatformView.Decelerating)
+			return (-1, 0);
+		var vertical = VirtualView.Orientation == ListOrientation.Vertical;
+		foreach (var path in PlatformView.IndexPathsForVisibleItems.OrderBy(path => path.Item))
+		{
+			if (PositionalViewSelector.GetInfo((int)path.Item)?.Kind != PositionKind.Item)
+				continue;
+			var attributes = PlatformView.GetLayoutAttributesForItem(path);
+			if (attributes is not null)
+				return ((int)path.Item, vertical
+					? attributes.Frame.Y - PlatformView.ContentOffset.Y - PlatformView.AdjustedContentInset.Top
+					: attributes.Frame.X - PlatformView.ContentOffset.X - PlatformView.AdjustedContentInset.Left);
+		}
+		return (-1, 0);
+	}
+
+	void PlatformAfterLayout(Action action)
+	{
+		PlatformView.LayoutIfNeeded();
+		if (!DispatchContentLayout(action))
+			throw new InvalidOperationException("The owning dispatcher rejected anchor restoration.");
+	}
+
+	bool PlatformRestoreAnchor(int index, double offset)
+	{
+		PlatformView.LayoutIfNeeded();
+		var attributes = PlatformView.GetLayoutAttributesForItem(NSIndexPath.FromItemSection(index, 0));
+		if (attributes is null)
+			return false;
+		var inset = PlatformView.AdjustedContentInset;
+		var current = PlatformView.ContentOffset;
+		if (VirtualView.Orientation == ListOrientation.Vertical)
+			current.Y = (nfloat)Math.Clamp(attributes.Frame.Y - offset - inset.Top, -inset.Top,
+				Math.Max(-inset.Top, PlatformView.ContentSize.Height - PlatformView.Bounds.Height + inset.Bottom));
+		else
+			current.X = (nfloat)Math.Clamp(attributes.Frame.X - offset - inset.Left, -inset.Left,
+				Math.Max(-inset.Left, PlatformView.ContentSize.Width - PlatformView.Bounds.Width + inset.Right));
+		PlatformView.SetContentOffset(current, false);
+		return true;
+	}
+
+	void PlatformResetTemplates() => dataSource?.ResetTemplates();
 	
 	public IReadOnlyList<IPositionInfo> FindVisiblePositions()
 	{
@@ -262,8 +324,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 			
 		foreach (var cell in PlatformView.VisibleCells)
 		{
-			if (cell is CvCell cvCell)
-				positions.Add(cvCell.PositionInfo);
+			if (cell is CvCell cvCell && cvCell.PositionInfo is PositionInfo position)
+				positions.Add(position);
 		}
 
 		return positions;

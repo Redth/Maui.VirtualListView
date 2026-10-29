@@ -18,7 +18,85 @@ Controls used on each platform:
   - Android: RecyclerView
   - WinAppSDK: ItemsRepeater + ScrollHost with IElementFactory
 
+### Variable content sizing
+
+The native collection owns scrolling and row placement. Retained MAUI content is
+measured with a finite cross-axis constraint (width for vertical lists, height for
+horizontal lists), then arranged at the size accepted by the native row. MAUI
+counts the root `Margin` and nested padding; do not add those margins again in a
+native row wrapper. Android converts logical units to pixels at that boundary.
+Orientation changes retain RecyclerView's existing native layout parameters,
+including its ViewHolder association, instead of replacing that native state.
+
+Content `MeasureInvalidated` notifications are coalesced on the owning dispatcher.
+Text, font, style, viewport and orientation changes can remeasure compatible
+content without replacing its MAUI tree or resetting the data source. Each slot
+keeps only its latest compatible measurement; global header/footer content has
+its own measurement, not the first data row's size.
+
+The sample's **Measurement Smoke** page contains short/long wrapping rows,
+multiline global header/footer, root margins and nested padding. Toggle width,
+orientation, text expansion, font size and 0/1/60 rows, then scroll forward/back
+and resize or rotate the window/device. In vertical mode check every `END`
+marker, both padding levels and the 12-by-6 root margins. In horizontal mode
+check variable row widths, finite viewport height and retained orientation
+changes; content taller than that viewport still needs an application-appropriate
+height or template. Repeat on iOS, Mac Catalyst, Android at multiple densities,
+and Windows. Portable sizing tests and native reference builds do **not** prove
+native text rendering, lifecycle behavior or scrolling performance.
+
 ## Setup
+
+The library and sample target .NET 10 on Android, iOS, Mac Catalyst, and Windows.
+The portable library and regression tests also target `net10.0`.
+`global.json` selects stable SDK **10.0.403** (with patch-only roll-forward and no
+preview SDKs), and `Directory.Build.props` pins all MAUI packages to **10.0.120**.
+The unused `Microsoft.Maui.Controls.Compatibility` dependency is no longer needed.
+
+Install the SDK from [the .NET downloads](https://dotnet.microsoft.com/download/dotnet/10.0),
+then install the matching stable workload set from the repository root:
+
+```sh
+# macOS: Android, iOS, and Mac Catalyst
+dotnet workload install maui --version "$(dotnet --version)"
+```
+
+On Windows, use `dotnet workload install maui-windows --version 10.0.403` for
+WinUI builds (or `maui` when also developing Android). This workload set uses
+Android SDK 36.1 and JDK 21, and requires Xcode 27.1 for iOS. Use a Mac with the
+matching Xcode for Apple sample builds, and Windows for the WinUI sample.
+The sample keeps Android API 21 and Windows 10 version 1809 as its deployment
+minima. The current .NET 10 Apple workload requires iOS 15.0 and Mac Catalyst
+17.0, so those sample minima replace 14.2 and 14.0 respectively. Android target SDK
+selection now follows the installed .NET 10 Android workload instead of an old
+manifest override.
+The iOS sample adopts the scene-based app lifecycle required by Xcode 27;
+Mac Catalyst already uses its custom scene delegate.
+
+Build one sample target at a time so MSBuild does not require the other hosts'
+toolchains:
+
+```sh
+dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj -c Release -p:TargetFrameworks=net10.0-android -p:AndroidPackageFormats=apk
+dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj -c Release -p:TargetFrameworks=net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64 -p:EnableCodeSigning=false
+dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj -c Release -p:TargetFrameworks=net10.0-maccatalyst -p:RuntimeIdentifier=maccatalyst-arm64 -p:EnableCodeSigning=false
+```
+
+On Windows:
+
+```powershell
+dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj -c Release -p:TargetFrameworks=net10.0-windows10.0.19041 -p:RuntimeIdentifier=win-x64 -p:WindowsPackageType=None
+```
+
+CI runs the portable tests without native workloads, builds the libraries and
+samples on their native hosts, and combines all five library targets and the
+Windows resource index into one NuGet package. CI checks the package contents
+and selected version, keeping branch builds separate from release versions.
+The Apple jobs use the `xcode-27` hosted image with stable Xcode
+27.1 selected explicitly; that runner image is currently in public preview.
+Pull requests and branch pushes produce unsigned package artifacts without
+accessing signing secrets. Published releases require package signing before
+the release-only NuGet publish job can run.
 
 To add the Virtual List View control to your project, you need to add `.UseVirtualListView()` to your app builder:
 
@@ -38,7 +116,7 @@ To add the Virtual List View control to your project, you need to add `.UseVirtu
 
 Instead of starting with a typical C# collection such as `ObservableCollection`, the VirtualListView takes the adapter approach that is common to iOS and Android has the concept of grouping built in (called Sections).
 
-This pattern is optimal since it allows for easily creating adapters backed by direct access data stores such as databases.  Instead of trying to load data from the actual datastore, and trying to deal with cache invalidation for an in memory collection you can write your adapter directly against any type of storage.
+Adapters can present data prepared from any storage system, but their synchronous methods run in native count, bind, template-selection, and layout paths. Keep these methods cheap and indexed: no SQL/HTTP, blocking waits, full-source enumeration, or business ordering. UI virtualization recycles views; it does not make synchronous storage access nonblocking or bound the amount of data you retain.
 
 To create an adapter for the VirtualListView, you need to implement the following interface:
 
@@ -75,6 +153,129 @@ var adapter = new VirtualListViewAdapter<string>(
 	});
 ```
 
+### `SnapshotAdapter`: optional keyed updates
+
+Existing `IVirtualListViewAdapter` implementations still work unchanged. For
+incremental updates, use `SnapshotAdapter` or implement the optional
+`ISnapshotVirtualListViewAdapter`. Prepare resident data outside native callbacks:
+
+```csharp
+var adapter = new SnapshotAdapter(new VirtualListViewSnapshot(0, new[]
+{
+	new SnapshotSection("inbox", 0, "Inbox", new[]
+	{
+		new SnapshotItem("message-42", 0, new MessageRow("Original text"))
+	})
+}));
+listView.Adapter = adapter;
+
+// Keep the occurrence key; increase its content revision to rebind and resize.
+adapter.Submit(new VirtualListViewSnapshot(1, new[]
+{
+	new SnapshotSection("inbox", 0, "Inbox", new[]
+	{
+		new SnapshotItem("message-41", 0, new MessageRow("Prepended text")),
+		new SnapshotItem("message-42", 1, new MessageRow("Updated, longer text"))
+	})
+}));
+// MessageRow is an application-defined immutable presentation model.
+```
+
+Snapshot constructors copy collections and order; they do not deep-clone payload
+objects. Keep payloads immutable, or confine their `INotifyPropertyChanged`
+mutations to the owning UI dispatcher. Increase an item's content revision when
+its displayed content or size changes; increase a section's content revision when
+its header/footer data changes. Snapshot revisions must strictly increase.
+Negative/decreasing revisions, duplicate section/occurrence keys, invalid
+notification indices/counts, and projected count overflow throw explicitly.
+
+Identity is `(row kind, section occurrence key, item occurrence key)`, compared
+by string value, never by row index or an unchecked native hash. A repeated item
+within one section needs distinct occurrence keys. The same item key in another
+section is a different occurrence, so a transfer between sections is a
+remove/insert, not the same selected presentation. Chrome has its own row kinds
+and cannot be selected. Source/connection generations separately reject late
+callbacks and pending anchor restores.
+
+Each event carries its captured snapshot in `SnapshotInvalidatedEventArgs`.
+`SnapshotAdapter.Submit` can run on a worker; the handler accepts the exact
+immutable input, projection, selection mapping, and native notifications in one
+ordered UI transaction. It retains every intermediate edit, including reentrant
+submissions. Native reads use the handler's accepted snapshot, not an adapter's
+newer submitted state. Custom snapshot sources must serialize their event stream
+and send the exact captured input in those event arguments. Plain
+`OnDataInvalidated` remains an explicit reset fallback.
+
+When resolving a selected `ItemPosition` in a callback, use the control's
+`AcceptedSnapshot` and its section/item indices. It is the snapshot backing that
+control, whereas `adapter.CaptureSnapshot()` may already contain a newer worker
+submission. `AcceptedSnapshot` is null for legacy adapters or a disconnected
+control.
+
+Small edits use native insert/remove/move notifications on Android, collection
+add/remove/move/replace notifications on Windows, and one unanimated UIKit batch.
+Apple always uses **native section 0**, with item paths from the flat projection,
+including global and section headers/footers. Same-key content revisions rebind
+compatible retained templates and invalidate geometry, including for moved rows.
+Unchanged bound content only updates its position/selection metadata when its
+template stays compatible. No offscreen MAUI view tree is built to find identity
+or anchors; Android stable native IDs remain disabled rather than hashing keys.
+
+Resets are intentional for initial connection, legacy/custom adapters that do
+not opt in, explicit `InvalidateData`, template/chrome mapping changes,
+`Submit(snapshot, reset: true)` for a wholesale query replacement, and plans
+requiring more than 128 sequential row edits. A reset on the same adapter still
+maps surviving keys; a new adapter starts a new source generation and clears an
+old keyed selection. A cache wrapper that only implements the legacy interface
+also uses reset. Query/reset revisions still increase; an explicit query reset
+may restart per-row content revisions.
+
+Keyed selection is mapped back to the existing public `ItemPosition`,
+`SelectedItem`, and `SelectedItems` API. Inserts and reorders keep the selected
+occurrences; deleting a key removes its selection instead of selecting whatever
+now occupies its old index. Legacy adapters keep their position-based behavior.
+Membership and reconciliation use sets/dictionaries, not a scan of all selected
+items for every visible row.
+
+Before structural updates and supported content/viewport layout corrections, the
+handler captures a visible item key and its offset relative to the viewport.
+After native layout it restores that key; if deleted, it tries the next surviving
+old item, then the previous one, at the same relative offset (clamped at scroll
+limits). Rapid transactions share the pending keyed baseline rather than
+mistaking a not-yet-laid-out native index for its new item. New touch/wheel/key or
+programmatic scrolling supersedes pending restoration; source replacement and
+disconnect invalidate it. UIKit/Windows offsets are logical units, Android
+offsets are native pixels. This is not a saved absolute scroll offset. Native
+self-sizing convergence and platform scroll/input behavior still need device
+checks; these contracts are not performance certification.
+
+Snapshots, keyed projection, and lookup dictionaries use O(N) identity/data
+metadata. Diff preparation uses O(N log N + N * K) time, where K is at most 128
+small edits before reset; intermediate Windows notification arrays have the same
+bounded edit cost. This is a simple resident-snapshot path, not a million-row
+database differ. Size metadata stays per retained native slot, not per source
+item.
+Every queued snapshot also retains its metadata until accepted; producers should
+stay within their UI publication/memory budget rather than enqueue an unbounded
+stream.
+
+The sample's **Keyed Updates** page has deterministic prepend, insert, remove
+visible row, reorder, same-key content expansion, section swap, three immediate
+edits, scroll-to-middle, and resize controls. Select rows, scroll into a section,
+record the top visible key/offset, then exercise each action. Check selection
+labels and every section/global boundary. Delete the anchor and selected rows,
+scroll again immediately after an edit, and repeat on all native targets.
+
+An API 35 Android emulator smoke run exercised prepend, insert, reorder, section
+swap, three immediate edits, same-key text expansion, deletion of the visible
+anchor, resize, and deletion of a selected item. The tracked full row stayed at
+the same native-pixel position (0 px delta) through the structural edits; after
+anchor deletion the next surviving row took its place. Selection retained
+`row-004` while the deleted selected key left it. This is a bounded functional
+check, not a frame-time benchmark or iOS/Windows runtime certification. The
+existing ObservableCollection demo also passed selected-row removal, append,
+scroll-to-new-row, and new-row removal on that emulator.
+
 ### `ObservableCollectionAdapter`
 
 Many developers are accustomed to using `ObservableCollection`.  While I recommend against using this if possible, there is a built in adapter that takes in an `ObservableCollection<TItem>` instance to help map it to the adapter pattern:
@@ -89,105 +290,95 @@ var adapter = new ObservableCollectionAdapter<string>(items);
 items.Add("Item 3");
 ```
 
-When using this adapter, the adapter will automatically invalidate itself (by calling `this.InvalidateData()` when the collection changes via the `CollectionView.CollectionChanged` event).
+Add/remove/replace/move notifications produce captured immutable snapshots and
+use the incremental path. Each inserted occurrence gets its own generated key,
+including repeated references to the same model; moving that occurrence retains
+its key. Replacing/removing and reinserting it creates a new occurrence. No domain
+ID is forced onto existing models. `Clear`/Reset and explicit `InvalidateData`
+use reset and start new occurrence keys. Collection edits must be serialized;
+mutating one `ObservableCollection` concurrently is not supported.
+
+Item `PropertyChanged` is not a structural collection edit: normal bound MAUI
+content handles it and retained layout reacts to measurement changes. The adapter
+does not add per-item subscriptions or keep removed models alive. Dispose the
+adapter to detach its collection subscription. Custom subclasses that change the
+flat-list data shape must also override `CaptureSnapshot` consistently, or use a
+legacy custom adapter for position-only/reset behavior.
 
 
 ### Custom Adapter
 
 For many scenarios, it is ideal to create your own adapter implementation.  You can implement the `IVirtualListViewAdapter` directly, or subclass `VirtualListViewAdapterBase<TSection, TItem>`.
 
-Here's an example of a custom adapter for a flat list (no sections/grouping).  Notice that we cache commonly used data such as `ItemsForSection` and we will reset the cache anytime the data is invalidated:
+For a database-backed flat list, asynchronously prepare a bounded window outside the adapter, then publish its resident array and invalidate on the UI thread. The example uses your application's `ItemInfo` model and repository; `ReadWindowAsync` is an application-defined asynchronous query with stable ordering and a maximum result size, not a VirtualListView API.
 
 ```csharp
-public class SQLiteAdapter : VirtualListViewAdapterBase<object, ItemInfo>
+public sealed class WindowAdapter : VirtualListViewAdapterBase<object, ItemInfo>
 {
-	public SQLiteAdapter() : base()
-	{
-		Db = new Database(...);
-	}
+	ItemInfo[] items = Array.Empty<ItemInfo>();
 
-	public Database Db { get; }
-
-	int? cachedItemCount = null;
-
-	// No sections/grouping, so disregard the sectionIndex
 	public override int GetNumberOfItemsInSection(int sectionIndex)
-		=> cachedItemCount ??= Db.ExecuteScalar<int>("SELECT COUNT(Id) FROM Items");
+		=> items.Length;
 
-	public override string GetItem(int sectionIndex, int itemIndex)
-		=> Db.FindWithQuery<ItemInfo>("SELECT * FROM Items ORDER BY Id LIMIT 1 OFFSET ?", itemIndex);
+	public override ItemInfo GetItem(int sectionIndex, int itemIndex)
+		=> items[itemIndex];
 
-	public override void InvalidateData()
+	// Call on the UI thread; do not mutate a published snapshot.
+	public void Publish(IEnumerable<ItemInfo> preparedItems)
 	{
-		// Clear our item count cache
-		// Also do this any time we may insert or delete data 
-		cachedItemCount = null;
+		items = preparedItems.ToArray();
+		base.InvalidateData();
+	}
+}
+
+// In your page/view model, outside all native callbacks:
+var adapter = new WindowAdapter();
+listView.Adapter = adapter;
+var prepared = await repository.ReadWindowAsync(offset: 0, limit: 250, cancellationToken);
+await MainThread.InvokeOnMainThreadAsync(() => adapter.Publish(prepared));
+```
+
+Counts and item indices describe only the published window, not a fictitious database-wide count whose records would need synchronous fetching. Paging, seek semantics, filtering, cancellation, stale-result rejection, errors, and selection/scroll restoration belong to the application. Publish a new window only if its query/source generation is still current. Do not start loads from `GetItem`, count getters, template selectors, or measure callbacks. Use a genuinely asynchronous storage API; if the storage library is synchronous, perform the bounded query off the UI thread before publication.
+
+For grouped data, prepare bounded section summaries and item arrays together. The same snapshot must supply section counts, item counts, and indexed data:
+
+```csharp
+public sealed record PreparedSection(GroupInfo Group, ItemInfo[] Items);
+
+public sealed class SectionWindowAdapter : VirtualListViewAdapterBase<GroupInfo, ItemInfo>
+{
+	PreparedSection[] sections = Array.Empty<PreparedSection>();
+
+	public override int GetNumberOfSections() => sections.Length;
+
+	public override int GetNumberOfItemsInSection(int sectionIndex)
+		=> sections[sectionIndex].Items.Length;
+
+	public override GroupInfo GetSection(int sectionIndex)
+		=> sections[sectionIndex].Group;
+
+	public override ItemInfo GetItem(int sectionIndex, int itemIndex)
+		=> sections[sectionIndex].Items[itemIndex];
+
+	public void Publish(IEnumerable<PreparedSection> preparedSections)
+	{
+		sections = preparedSections
+			.Select(section => new PreparedSection(section.Group, section.Items.ToArray()))
+			.ToArray();
 		base.InvalidateData();
 	}
 }
 ```
 
-Here's an example of a more sophisticated adapter with grouping/sections. Again, notice we cache Section count and Item count per section:
+The repository should enforce bounds on both sections and items before publication. Keep item/group model revisions consistent with the snapshot as well; do not concurrently mutate it during native reads. Publish mutable source changes on the control's owning UI dispatcher. `ObservableCollectionAdapter` forwards collection notifications on the caller's thread, so its mutations follow the same rule.
 
-```csharp
-public class SQLiteSectionedAdapter : VirtualListViewAdapterBase<GroupInfo, ItemInfo>
-{
-	public SQLiteSectionedAdapter() : base()
-	{
-		Db = new Database(...);
-	}
+The handler serializes native invalidations on that owning dispatcher and drops queued notifications from an old adapter or disconnected handler. This is a native-view safety boundary, **not** synchronization for your source: dispatching an event does not make concurrent edits to a backing list safe. Use immutable prepared data or serialize publication and native reads on the same dispatcher.
 
-	public Database Db { get; }
+`CachingVirtualListViewAdapter` caches section objects and counts, not items or database queries. It clears all metadata caches when it or its wrapped source invalidates, and forwards one notification without recursively invalidating the source. Dispose the wrapper when you are finished with it to detach its source subscription; disposal does **not** dispose the shared source adapter.
 
-	Dictionary<int, GroupInfo> cachedSectionSummaries = new ();
+For legacy adapters, the control captures section counts/chrome once per accepted invalidation in O(sections) time and memory, without materializing items or views. The optional snapshot path additionally retains O(N) identity metadata as described above. Total count and item-to-position lookup are O(1); position-to-section lookup is O(log sections). After changing custom adapter data or custom selector chrome rules, invalidate the adapter. Replacing the adapter, templates, header/footer, or visibility flags refreshes the projection automatically. Changes to a header/footer's own visibility are observed when the view implements `INotifyPropertyChanged` (as MAUI controls do); custom non-notifying views must explicitly invalidate.
 
-	int? cachedNumberOfSections = null;
-
-	public int GetNumberOfSections()
-		=> cachedNumberOfSections ??= Db.ExecuteScalar<int>("SELECT DISTINCT COUNT(GroupId) FROM Items");
-
-	// No sections/grouping, so disregard the sectionIndex
-	public override int GetNumberOfItemsInSection(int sectionIndex)
-		=> cachedItemCount ??= Db.ExecuteScalar<int>("SELECT COUNT(Id) FROM Items");
-
-	public GroupInfo GetSection(int sectionIndex)
-	{
-		if (cachedSectionSummaries.ContainsKey(sectionIndex))
-			return cachedSectionSummaries[sectionIndex];
-
-		var sql = @"
-				SELECT DISTINCT g.GroupId, g.GroupName, Count(i.Id) as ItemCount
-				FROM Items g
-					INNER JOIN Items i ON i.GroupId = g.GroupId
-				GROUP BY g.GroupId
-				ORDER BY g.GroupName
-				LIMIT 1 OFFSET ?
-		";
-
-		var groupInfo = Db.FindWithQuery<GroupInfo>(sql, sectionIndex);
-
-		if (groupInfo != null)
-			cachedSectionSummaries.Add(sectionIndex, groupInfo);
-
-		return groupInfo;
-	}
-
-	public override string GetItem(int sectionIndex, int itemIndex)
-		=> Db.FindWithQuery<ItemInfo>("SELECT * FROM Items WHERE GroupId=? ORDER BY Id LIMIT 1 OFFSET ?", sectionIndex, itemIndex);
-
-	public override void InvalidateData()
-	{
-		// Clear our caches
-		// Also do this any time we may insert or delete data 
-		cachedItemCount = null;
-		cachedNumberOfSections.Clear();
-
-		base.InvalidateData();
-	}
-}
-```
-
-
+Adapter counts must be nonnegative and the projected total, including chrome, must fit in an `int`. Invalid counts or overflow throw before replacing the previous projection; they are not converted into valid-looking rows.
 
 ## Templates
 
@@ -205,6 +396,18 @@ In addition, it's possible to use Template Selectors which allow you to use diff
 Template selectors are available for:
  - Section Headers and Footers
  - Items
+
+Return stable `DataTemplate` instances from selectors; do not create a new template for every item. Compatibility uses template instance identity without private MAUI reflection. Global headers and footers use the supplied view's identity, so replacing a header with another instance of the same type replaces the displayed content.
+
+### Retained content and cleanup
+
+A native slot keeps its compatible MAUI tree and child handlers through ordinary rebinds. Binding updates position and selection before creating native child handlers. Temporary disappearance only changes visibility: it does not remove logical ownership or clear the retained tree's binding context. `IVirtualListViewSelector.ViewAttached` and `ViewDetached` describe actual display, not template creation or final destruction.
+
+True recycling clears item binding/position state while retaining compatible content. Replacing an incompatible template, evicting pooled content, or disconnecting the handler detaches logical/native ownership and disconnects the owned child tree. Android and Windows pools keep at most two spare trees per type, with a total spare budget based on the visible/active slots (minimum four). Native Apple slots remain owned by UIKit; retired slots are pruned and all tracked content is released at teardown.
+
+The application still owns supplied `GlobalHeader`, `GlobalFooter`, `EmptyView`, and adapters. The handler removes them from its native hosts but does not dispose their handlers or services. Supplied views keep their explicit binding contexts; otherwise they inherit the list's context through public MAUI logical-child APIs.
+
+Refresh completion is owned by the refresh that started it. It runs on the owning dispatcher, completes at most once, and cannot stop a later refresh after source replacement or reconnect. Disabling refresh or disconnecting ends the current indicator. Synchronous refresh failures end the indicator and propagate rather than being silently swallowed.
 
 
 For Item template selectors, sublcass the `AdapterItemDataTemplateSelector`:
@@ -298,7 +501,9 @@ You can also set the `RefreshAccentColor` to change the color of the refresh ind
 
 ## Empty View
 
-If your adapter has <= 1 section and no items, an empty view can be displayed automatically:
+If no section contains data items, an empty view can be displayed automatically, even when there are multiple sections. An empty first section does not hide data in later sections.
+
+Chrome follows the same projection on all platforms: no adapter or zero sections produces no rows; empty sections retain configured section headers/footers; the global header requires at least one data item; the global footer requires at least one projected section row (data or section chrome). Chrome alone does not suppress the empty view. Global chrome must also be present, enabled by `IsHeaderVisible`/`IsFooterVisible`, and have `Visibility.Visible`.
 
 ```xaml
 <vlv:VirtualListView.EmptyView>
@@ -324,3 +529,7 @@ Looking ahead, there are a few goals:
 Some current non-goals but considerations for even later:
 - Grid / Column support
 - Sticky section headers
+
+## Portable regression tests
+
+Run `dotnet test tests/VirtualListView.Tests/VirtualListView.Tests.csproj --configuration Release` with the .NET 10 SDK selected by `global.json`. The project compiles the actual portable production sources against the same MAUI 10 packages as the library and sample; it does not require native MAUI workloads or replace the projection/cache logic with test implementations. CI runs this command separately from native builds. It covers projection boundaries, empty groups/chrome, invalidation, wrapped-source events, and large indexed lookups. Native boundary doubles in this suite are not device/runtime proof; native handler compilation and device behavior still require their platform toolchains.

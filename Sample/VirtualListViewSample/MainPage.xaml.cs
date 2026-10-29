@@ -28,4 +28,14 @@ public partial class MainPage : ContentPage, ISafeAreaView
 	{
 		Navigation.PushAsync(new BindableSelectedItemPage());
 	}
+
+	private void Measurement_Clicked(object sender, EventArgs e)
+	{
+		Navigation.PushAsync(new MeasurementPage());
+	}
+
+	private void KeyedUpdates_Clicked(object sender, EventArgs e)
+	{
+		Navigation.PushAsync(new KeyedUpdatesPage());
+	}
 }

@@ -6,52 +6,171 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PACKAGE_VERSION: ${{ github.event_name == 'release' && github.ref_name || format('0.999.0-ci{0}', github.run_id) }}
+  DOTNET_NOLOGO: true
+  # Keep GitInfo metadata without replacing the version selected for this run.
+  GitVersion: 'false'
+
 jobs:
-  build:
-    name: Build
-    env:
-      NUPKG_MAJOR: 0.999
-      CODESIGN_PFX: ${{ secrets.CODESIGN_PFX }}
+  portable-tests:
+    name: Portable source regression tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
+    - run: dotnet test tests/VirtualListView.Tests/VirtualListView.Tests.csproj --configuration Release
+
+  native-windows:
+    name: Windows library and sample
     runs-on: windows-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
-
-    - name: Setup MAUI
+        global-json-file: global.json
+    - name: Install SDK-matched MAUI workloads
       shell: pwsh
-      run: |
-        & dotnet workload install maui ios android maccatalyst
+      run: dotnet workload install maui-windows --version (dotnet --version)
+    - name: Build Windows library
+      run: dotnet build VirtualListView/VirtualListView.csproj --configuration Release -p:TargetFrameworks=net10.0-windows10.0.19041 -p:PackageVersion=$env:PACKAGE_VERSION
+    - name: Build Windows sample
+      run: dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj --configuration Release -p:TargetFrameworks=net10.0-windows10.0.19041 -p:RuntimeIdentifier=win-x64 -p:WindowsPackageType=None -p:PackageVersion=$env:PACKAGE_VERSION
+    - uses: actions/upload-artifact@v4
+      with:
+        name: library-windows
+        path: VirtualListView/bin/Release/net10.0-windows10.0.19041/
+        if-no-files-found: error
 
-    - name: Build
-      run: dotnet build --configuration Release
-   # - name: Test
-   #   run: dotnet test --configuration Release
-    - name: Package NuGets
-      shell: pwsh
+  native-macos:
+    name: Android and Apple libraries and samples
+    # This workload set requires Xcode 27.1; macos-latest still has Xcode 26.
+    runs-on: xcode-27
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
+    - uses: actions/setup-java@v4
+      with:
+        distribution: microsoft
+        java-version: '21'
+    - name: Install SDK-matched MAUI workloads
+      run: dotnet workload install maui --version "$(dotnet --version)"
+    - name: Install Android SDK dependencies
+      run: dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj -f net10.0-android -t:InstallAndroidDependencies -p:TargetFrameworks=net10.0-android -p:AcceptAndroidSDKLicenses=true -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME"
+    - name: Build portable, Android and Apple libraries
+      run: dotnet build VirtualListView/VirtualListView.csproj --configuration Release -p:PackageVersion="$PACKAGE_VERSION"
+    - name: Build Android sample APK
+      run: dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj --configuration Release -p:TargetFrameworks=net10.0-android -p:AndroidPackageFormats=apk -p:PackageVersion="$PACKAGE_VERSION"
+    - name: Build iOS simulator sample
+      run: dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj --configuration Release -p:TargetFrameworks=net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64 -p:EnableCodeSigning=false -p:PackageVersion="$PACKAGE_VERSION"
+    - name: Build Mac Catalyst sample
+      run: dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj --configuration Release -p:TargetFrameworks=net10.0-maccatalyst -p:RuntimeIdentifier=maccatalyst-arm64 -p:EnableCodeSigning=false -p:PackageVersion="$PACKAGE_VERSION"
+    - uses: actions/upload-artifact@v4
+      with:
+        name: library-macos
+        path: VirtualListView/bin/Release/
+        if-no-files-found: error
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Android
+        path: Sample/VirtualListViewSample/bin/Release/net10.0-android/*-Signed.apk
+        if-no-files-found: error
+
+  package:
+    name: Pack all five library targets
+    needs: [portable-tests, native-windows, native-macos]
+    runs-on: xcode-27
+    env:
+      LIBRARY_TARGETS: net10.0;net10.0-android;net10.0-ios;net10.0-maccatalyst;net10.0-windows10.0.19041
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
+    - run: dotnet workload install maui --version "$(dotnet --version)"
+    - uses: actions/download-artifact@v4
+      with:
+        name: library-macos
+        path: VirtualListView/bin/Release/
+    - uses: actions/download-artifact@v4
+      with:
+        name: library-windows
+        path: VirtualListView/bin/Release/net10.0-windows10.0.19041/
+    - name: Restore package metadata for all targets
+      run: dotnet restore VirtualListView/VirtualListView.csproj -p:TargetFrameworks="${LIBRARY_TARGETS//;/%3B}" -p:EnableWindowsTargeting=true -p:PackageVersion="$PACKAGE_VERSION"
+    - name: Pack previously built native outputs
+      run: dotnet pack VirtualListView/VirtualListView.csproj --no-build --configuration Release --output artifacts -p:TargetFrameworks="${LIBRARY_TARGETS//;/%3B}" -p:EnableWindowsTargeting=true -p:PackageVersion="$PACKAGE_VERSION"
+    - name: Check package targets, resources and version
       run: |
-        $VERSION="$env:NUPKG_MAJOR-ci$env:GITHUB_RUN_ID"
-        if ($env:GITHUB_EVENT_NAME -eq "release") {
-          $VERSION = $env:GITHUB_REF.Substring($env:GITHUB_REF.LastIndexOf('/') + 1)
+        python3 - <<'PY'
+        import os
+        from pathlib import Path
+        from zipfile import ZipFile
+        package, = Path("artifacts").glob("*.nupkg")
+        expected = f"Redth.Maui.VirtualListView.{os.environ['PACKAGE_VERSION']}.nupkg"
+        assert package.name == expected, (package.name, expected)
+        with ZipFile(package) as archive:
+            targets = [name.split("/")[1] for name in archive.namelist()
+                       if name.startswith("lib/") and name.endswith("/VirtualListView.dll")]
+            windows = next(target for target in targets if target.startswith("net10.0-windows"))
+            assert f"lib/{windows}/VirtualListView.pri" in archive.namelist()
+        assert len(targets) == 5, targets
+        for target in ("net10.0", "net10.0-android", "net10.0-ios", "net10.0-maccatalyst", "net10.0-windows"):
+            assert any(name == target if target == "net10.0" else name.startswith(target) for name in targets), targets
+        print("Packaged targets:", ", ".join(sorted(targets)))
+        PY
+    - uses: actions/upload-artifact@v4
+      with:
+        name: UnsignedNuGet
+        path: artifacts/*.nupkg
+        if-no-files-found: error
+
+  build:
+    name: Build
+    needs: package
+    runs-on: windows-latest
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: UnsignedNuGet
+        path: artifacts
+    - uses: NuGet/setup-nuget@v2
+      if: github.event_name == 'release'
+    - name: Sign release NuGets
+      if: github.event_name == 'release'
+      shell: pwsh
+      env:
+        CODESIGN_PFX: ${{ secrets.CODESIGN_PFX }}
+      run: |
+        if ([string]::IsNullOrWhiteSpace($env:CODESIGN_PFX)) {
+          throw "CODESIGN_PFX is required to sign a release."
         }
-        echo "::set-output name=pkgverci::$VERSION"
-        echo "PACKAGE VERSION: $VERSION"
-        
-        New-Item -ItemType Directory -Force -Path .\artifacts
-        dotnet pack --output ./artifacts --configuration Release -p:PackageVersion=$VERSION ./VirtualListView/VirtualListView.csproj
-        $pfxPath = Join-Path -Path $pwd -ChildPath "codesigncert.pfx"
-        [IO.File]::WriteAllBytes("$pfxPath", [System.Convert]::FromBase64String($env:CODESIGN_PFX))
-        nuget sign .\artifacts\*.nupkg -CertificatePath $pfxPath -Timestamper http://timestamp.entrust.net/TSS/RFC3161sha2TS
-        
-    - name: Artifacts
-      uses: actions/upload-artifact@v1
+        $pfxPath = Join-Path $env:RUNNER_TEMP "codesigncert.pfx"
+        try {
+          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:CODESIGN_PFX))
+          nuget sign .\artifacts\*.nupkg -CertificatePath $pfxPath -Timestamper http://timestamp.entrust.net/TSS/RFC3161sha2TS
+          if ($LASTEXITCODE -ne 0) { throw "NuGet signing failed." }
+        } finally {
+          if (Test-Path $pfxPath) { Remove-Item $pfxPath }
+        }
+    - uses: actions/upload-artifact@v4
       with:
         name: NuGet
-        path: ./artifacts
+        path: artifacts/*.nupkg
+        if-no-files-found: error
 
   publish:
     name: Publish
@@ -59,10 +178,15 @@ jobs:
     runs-on: windows-latest
     if: github.event_name == 'release'
     steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v1
-        with:
-          name: NuGet
-      - name: Push NuGet
-        run: |
-          dotnet nuget push NuGet\*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_ORG_API_KEY }}
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
+    - uses: actions/download-artifact@v4
+      with:
+        name: NuGet
+        path: NuGet
+    - name: Push NuGet
+      env:
+        NUGET_ORG_API_KEY: ${{ secrets.NUGET_ORG_API_KEY }}
+      run: dotnet nuget push NuGet\*.nupkg --source https://api.nuget.org/v3/index.json --api-key $env:NUGET_ORG_API_KEY

@@ -21,6 +21,19 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty AdapterProperty =
 		BindableProperty.Create(nameof(Adapter), typeof(IVirtualListViewAdapter), typeof(VirtualListView), default);
 
+	/// <summary>The snapshot currently accepted by this control; null for legacy or disconnected sources.</summary>
+	public VirtualListViewSnapshot? AcceptedSnapshot
+	{
+		get
+		{
+#if ANDROID || IOS || MACCATALYST || WINDOWS
+			return (Handler as VirtualListViewHandler)?.AcceptedSnapshot;
+#else
+			return null;
+#endif
+		}
+	}
+
 
 	public IView? GlobalHeader
 	{
@@ -29,7 +42,8 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	}
 
 	public static readonly BindableProperty GlobalHeaderProperty =
-		BindableProperty.Create(nameof(GlobalHeader), typeof(IView), typeof(VirtualListView), default);
+		BindableProperty.Create(nameof(GlobalHeader), typeof(IView), typeof(VirtualListView), default,
+			propertyChanged: (view, oldValue, _) => SuppliedViewChanged(view, oldValue, PositionKind.Header));
 
 	public bool IsHeaderVisible
 	{
@@ -47,7 +61,14 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	}
 
 	public static readonly BindableProperty GlobalFooterProperty =
-		BindableProperty.Create(nameof(GlobalFooter), typeof(IView), typeof(VirtualListView), default);
+		BindableProperty.Create(nameof(GlobalFooter), typeof(IView), typeof(VirtualListView), default,
+			propertyChanged: (view, oldValue, _) => SuppliedViewChanged(view, oldValue, PositionKind.Footer));
+
+	static void SuppliedViewChanged(BindableObject bindable, object oldValue, PositionKind kind)
+	{
+		if (bindable is VirtualListView owner && oldValue is IView view)
+			RetainedView.ReleaseSupplied(owner, view, kind);
+	}
 
 
 	public bool IsFooterVisible
@@ -152,12 +173,20 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 
 	void IVirtualListView.Refresh(Action completionCallback)
 	{
+		var requested = false;
 		if (RefreshCommand != null && RefreshCommand.CanExecute(null))
 		{
+			requested = true;
 			RefreshCommand.Execute(completionCallback);
 		}
 
-		OnRefresh?.Invoke(this, new RefreshEventArgs(completionCallback));
+		if (OnRefresh is not null)
+		{
+			requested = true;
+			OnRefresh.Invoke(this, new RefreshEventArgs(completionCallback));
+		}
+		if (!requested)
+			completionCallback();
 	}
 
 	public ICommand? RefreshCommand
@@ -210,10 +239,10 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 				if (bobj is VirtualListView virtualListView)
 				{
 					if (oldValue is IView oldView)
-						virtualListView.RemoveLogicalChild(oldView);
+						virtualListView.RemoveLogicalView(oldView);
 
 					if (newValue is IView newView)
-						virtualListView.AddLogicalChild(newView);
+						virtualListView.AddLogicalView(newView);
 				}
 			});
 
@@ -224,6 +253,29 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 
 	public IView? Header => GlobalHeader;
 	public IView? Footer => GlobalFooter;
+
+	protected override void OnPropertyChanged(string? propertyName = null)
+	{
+		base.OnPropertyChanged(propertyName);
+
+		switch (propertyName)
+		{
+			case nameof(GlobalHeader):
+				OnPropertyChanged(nameof(IVirtualListView.Header));
+				break;
+			case nameof(GlobalFooter):
+				OnPropertyChanged(nameof(IVirtualListView.Footer));
+				break;
+			case nameof(ItemTemplate):
+			case nameof(ItemTemplateSelector):
+			case nameof(SectionHeaderTemplate):
+			case nameof(SectionHeaderTemplateSelector):
+			case nameof(SectionFooterTemplate):
+			case nameof(SectionFooterTemplateSelector):
+				OnPropertyChanged(nameof(IVirtualListView.ViewSelector));
+				break;
+		}
+	}
 
 	public event EventHandler<ScrolledEventArgs> OnScrolled;
 
@@ -360,14 +412,9 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 
 	public void RecycleView(PositionInfo position, object? data, IView view)
 	{
-		if (view is View controlsView)
+		if (position.Kind is not (PositionKind.Header or PositionKind.Footer) && view is BindableObject controlsView)
 		{
-			// Use the listview's binding context if
-			// there's no data
-			// this may happen for global header/footer for instance
-			controlsView.SetValue(
-				View.BindingContextProperty,
-				data ?? this.BindingContext);
+			controlsView.SetValue(BindingContextProperty, data);
 		}
 	}
 
@@ -387,17 +434,17 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 					(SectionFooterTemplateSelector?.SelectTemplate(data, position.SectionIndex)
 						?? SectionFooterTemplate)?.GetDataTemplateId() ?? "0",
 			PositionKind.Header =>
-				"GLOBAL_HEADER_" + (Header?.GetType()?.FullName ?? "NIL"),
+				"GLOBAL_HEADER_" + Header.GetStableIdentity(),
 			PositionKind.Footer =>
-				"GLOBAL_FOOTER_" + (Footer?.GetType()?.FullName ?? "NIL"),
+				"GLOBAL_FOOTER_" + Footer.GetStableIdentity(),
 			_ => "UNKNOWN"
 		};
 
 	public void ViewDetached(PositionInfo position, IView view)
-		=> this.RemoveLogicalChild(view);
+	{ }
 
 	public void ViewAttached(PositionInfo position, IView view)
-		=> this.AddLogicalChild(view);
+	{ }
 
 	void RaiseSelectedItemsChanged(ItemPosition[] previousSelection, ItemPosition[] newSelection)
 		=> this.OnSelectedItemsChanged?.Invoke(this, new SelectedItemsChangedEventArgs(previousSelection, newSelection));

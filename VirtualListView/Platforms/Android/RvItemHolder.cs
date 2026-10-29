@@ -7,17 +7,28 @@ namespace Microsoft.Maui;
 internal class RvItemHolder : RecyclerView.ViewHolder
 {
 	public RvViewContainer ViewContainer { get; private set; }
-	public PositionInfo PositionInfo { get; private set; }
+	public PositionInfo PositionInfo => Content.Position;
+	internal RetainedView Content { get; }
+	internal RvAdapter.RvViewHolderClickListener ClickListener { get; set; }
+	bool released;
 
-	public RvItemHolder(IMauiContext mauiContext, ListOrientation orientation)
-		: base(new RvViewContainer(mauiContext)
-		{
-			LayoutParameters = new RecyclerView.LayoutParams(
-				orientation == ListOrientation.Vertical ? ViewGroup.LayoutParams.MatchParent : ViewGroup.LayoutParams.WrapContent,
-				orientation == ListOrientation.Vertical ? ViewGroup.LayoutParams.WrapContent : ViewGroup.LayoutParams.MatchParent)
-		})
+	public RvItemHolder(VirtualListViewHandler handler)
+		: base(new RvViewContainer(handler))
 	{
 		ViewContainer = ItemView as RvViewContainer;
+		var container = new WeakReference<RvViewContainer>(ViewContainer);
+		Content = new RetainedView(handler.VirtualView,
+			view =>
+			{
+				if (!container.TryGetTarget(out var host))
+					throw new InvalidOperationException("The Android content host is no longer available.");
+				host.SetupView(view);
+			},
+			() =>
+			{
+				if (container.TryGetTarget(out var host))
+					host.ClearView();
+			});
 	}
 
 	public IView VirtualView
@@ -33,17 +44,24 @@ internal class RvItemHolder : RecyclerView.ViewHolder
 
 	public void UpdatePosition(PositionInfo positionInfo)
 	{
-		PositionInfo = positionInfo;
 		ViewContainer.UpdatePosition(positionInfo);
 	}
 
-	//public void Update(PositionInfo positionInfo, IView newView)
-	//{
-	//	PositionInfo = positionInfo;
+	internal void Release()
+	{
+		if (released)
+			return;
+		released = true;
+		ItemView.SetOnClickListener(null);
+		ClickListener?.Dispose();
+		ClickListener = null;
+		Content.Release();
+	}
 
-	//	if (newView is IPositionInfo viewWithPositionInfo)
-	//		viewWithPositionInfo.Update(PositionInfo);
-
- //       ViewContainer.SwapView(newView);
- //   }
+	protected override void Dispose(bool disposing)
+	{
+		if (disposing)
+			Release();
+		base.Dispose(disposing);
+	}
 }
