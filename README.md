@@ -34,16 +34,31 @@ content without replacing its MAUI tree or resetting the data source. Each slot
 keeps only its latest compatible measurement; global header/footer content has
 its own measurement, not the first data row's size.
 
+On iOS and Mac Catalyst, content-only updates use UIKit's preferred-size
+invalidation context rather than a structural batch or a generic item
+invalidation. This preserves each row's own size when another row grows or
+shrinks. Unrealized rows are measured when UIKit displays them.
+
 The sample's **Measurement Smoke** page contains short/long wrapping rows,
 multiline global header/footer, root margins and nested padding. Toggle width,
-orientation, text expansion, font size and 0/1/60 rows, then scroll forward/back
-and resize or rotate the window/device. In vertical mode check every `END`
+orientation, text expansion, nested **Child visibility**, font size and 0/1/60
+rows, then scroll forward/back and resize or rotate the window/device. In
+vertical mode check every `END`
 marker, both padding levels and the 12-by-6 root margins. In horizontal mode
 check variable row widths, finite viewport height and retained orientation
 changes; content taller than that viewport still needs an application-appropriate
 height or template. Repeat on iOS, Mac Catalyst, Android at multiple densities,
 and Windows. Portable sizing tests and native reference builds do **not** prove
 native text rendering, lifecycle behavior or scrolling performance.
+
+For child visibility, expand and collapse row 0 repeatedly without refreshing
+the adapter: `END DETAILS` must appear only while expanded, row 0 must return
+to its original height, and unchanged neighbors must retain their own heights.
+The **Targeted Item Refresh** page's **First row** button selects and scrolls
+to row 0 for repeated long/short text and template changes. Check selection
+and unchanged neighbors after both growth and collapse. With no selection,
+refresh the offscreen item, then use **Offscreen row** to display section 1 /
+item 10 and check its updated text and geometry.
 
 ## Setup
 
