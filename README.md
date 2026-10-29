@@ -496,6 +496,12 @@ Adapter counts must be nonnegative and the projected total, including chrome, mu
 
 DataTemplates are available for Items along with an Item Template Selector (which is a custom class based on the adapter pattern to select templates).
 
+When both `ItemTemplate` and `ItemTemplateSelector` are null, items use a retained
+`Label` bound to the item itself (its text representation; null items show no
+text). Setting or clearing either property refreshes the templates. This default
+does not hide invalid custom templates or selectors: a configured selector must
+return a valid view-producing template, or fall back to an explicit `ItemTemplate`.
+
 Different templates can be specified for:
  - Global Header
  - Global Footer
@@ -518,6 +524,15 @@ A native slot keeps its compatible MAUI tree and child handlers through ordinary
 True recycling clears item binding/position state while retaining compatible content. Replacing an incompatible template, evicting pooled content, or disconnecting the handler detaches logical/native ownership and disconnects the owned child tree. Android and Windows pools keep at most two spare trees per type, with a total spare budget based on the visible/active slots (minimum four). Native Apple slots remain owned by UIKit; retired slots are pruned and all tracked content is released at teardown.
 
 The application still owns supplied `GlobalHeader`, `GlobalFooter`, `EmptyView`, and adapters. The handler removes them from its native hosts but does not dispose their handlers or services. Supplied views keep their explicit binding contexts; otherwise they inherit the list's context through public MAUI logical-child APIs.
+
+On Windows, teardown clears the repeater source and replaces its factory with an
+empty native template before disposing retained content; WinUI does not accept a
+null native `ItemTemplate`. For native lifecycle regression checks, push and pop a
+page containing a populated list repeatedly, both with a template and with neither
+template property set. Also detach/reconnect the list's handler and reopen the
+page, checking that rows render again. In applications using CommunityToolkit.Maui,
+repeat popup open/close with the same configurations and normal automatic handler
+disconnection. Portable tests do not exercise WinUI navigation or popup teardown.
 
 Refresh completion is owned by the refresh that started it. It runs on the owning dispatcher, completes at most once, and cannot stop a later refresh after source replacement or reconnect. Disabling refresh or disconnecting ends the current indicator. Synchronous refresh failures end the indicator and propagate rather than being silently swallowed.
 
