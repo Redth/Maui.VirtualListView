@@ -43,4 +43,9 @@ public partial class MainPage : ContentPage, ISafeAreaView
 	{
 		Navigation.PushAsync(new ItemRefreshPage());
 	}
+
+	private void Paging_Clicked(object sender, EventArgs e)
+	{
+		Navigation.PushAsync(new PagingPage());
+	}
 }

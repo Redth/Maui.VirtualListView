@@ -58,6 +58,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		{
 			UpdateVisibleElements();
 			VirtualView.Scrolled(scrollViewer.HorizontalOffset, scrollViewer.VerticalOffset);
+			ScheduleRemainingItemsThresholdCheck();
 		}
 	}
 
@@ -67,7 +68,10 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		var completion = afterLayout;
 		afterLayout = null;
 		completion?.Invoke();
+		RemainingItemsLayoutCompleted();
 	}
+
+	void PlatformRequestRemainingItemsLayout() => itemsRepeater.InvalidateMeasure();
 
 	void UpdateVisibleElements()
 	{
@@ -109,7 +113,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		scrollViewer.RemoveHandler(UIElement.KeyDownEvent, new KeyEventHandler(ScrollKeyDown));
 		itemsRepeater.LayoutUpdated -= ItemsRepeaterLayoutUpdated;
 		itemsRepeater.ItemsSource = null;
-		itemsRepeater.ItemTemplate = null;
+		// WinUI rejects a null ItemTemplate, even after ItemsSource is cleared.
+		itemsRepeater.ItemTemplate = new Microsoft.UI.Xaml.DataTemplate();
 		elementFactory?.Dispose();
 		elementFactory = null;
 

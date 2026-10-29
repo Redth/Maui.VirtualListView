@@ -34,16 +34,31 @@ content without replacing its MAUI tree or resetting the data source. Each slot
 keeps only its latest compatible measurement; global header/footer content has
 its own measurement, not the first data row's size.
 
+On iOS and Mac Catalyst, content-only updates use UIKit's preferred-size
+invalidation context rather than a structural batch or a generic item
+invalidation. This preserves each row's own size when another row grows or
+shrinks. Unrealized rows are measured when UIKit displays them.
+
 The sample's **Measurement Smoke** page contains short/long wrapping rows,
 multiline global header/footer, root margins and nested padding. Toggle width,
-orientation, text expansion, font size and 0/1/60 rows, then scroll forward/back
-and resize or rotate the window/device. In vertical mode check every `END`
+orientation, text expansion, nested **Child visibility**, font size and 0/1/60
+rows, then scroll forward/back and resize or rotate the window/device. In
+vertical mode check every `END`
 marker, both padding levels and the 12-by-6 root margins. In horizontal mode
 check variable row widths, finite viewport height and retained orientation
 changes; content taller than that viewport still needs an application-appropriate
 height or template. Repeat on iOS, Mac Catalyst, Android at multiple densities,
 and Windows. Portable sizing tests and native reference builds do **not** prove
 native text rendering, lifecycle behavior or scrolling performance.
+
+For child visibility, expand and collapse row 0 repeatedly without refreshing
+the adapter: `END DETAILS` must appear only while expanded, row 0 must return
+to its original height, and unchanged neighbors must retain their own heights.
+The **Targeted Item Refresh** page's **First row** button selects and scrolls
+to row 0 for repeated long/short text and template changes. Check selection
+and unchanged neighbors after both growth and collapse. With no selection,
+refresh the offscreen item, then use **Offscreen row** to display section 1 /
+item 10 and check its updated text and geometry.
 
 ## Setup
 
@@ -481,6 +496,12 @@ Adapter counts must be nonnegative and the projected total, including chrome, mu
 
 DataTemplates are available for Items along with an Item Template Selector (which is a custom class based on the adapter pattern to select templates).
 
+When both `ItemTemplate` and `ItemTemplateSelector` are null, items use a retained
+`Label` bound to the item itself (its text representation; null items show no
+text). Setting or clearing either property refreshes the templates. This default
+does not hide invalid custom templates or selectors: a configured selector must
+return a valid view-producing template, or fall back to an explicit `ItemTemplate`.
+
 Different templates can be specified for:
  - Global Header
  - Global Footer
@@ -503,6 +524,15 @@ A native slot keeps its compatible MAUI tree and child handlers through ordinary
 True recycling clears item binding/position state while retaining compatible content. Replacing an incompatible template, evicting pooled content, or disconnecting the handler detaches logical/native ownership and disconnects the owned child tree. Android and Windows pools keep at most two spare trees per type, with a total spare budget based on the visible/active slots (minimum four). Native Apple slots remain owned by UIKit; retired slots are pruned and all tracked content is released at teardown.
 
 The application still owns supplied `GlobalHeader`, `GlobalFooter`, `EmptyView`, and adapters. The handler removes them from its native hosts but does not dispose their handlers or services. Supplied views keep their explicit binding contexts; otherwise they inherit the list's context through public MAUI logical-child APIs.
+
+On Windows, teardown clears the repeater source and replaces its factory with an
+empty native template before disposing retained content; WinUI does not accept a
+null native `ItemTemplate`. For native lifecycle regression checks, push and pop a
+page containing a populated list repeatedly, both with a template and with neither
+template property set. Also detach/reconnect the list's handler and reopen the
+page, checking that rows render again. In applications using CommunityToolkit.Maui,
+repeat popup open/close with the same configurations and normal automatic handler
+disconnection. Portable tests do not exercise WinUI navigation or popup teardown.
 
 Refresh completion is owned by the refresh that started it. It runs on the owning dispatcher, completes at most once, and cannot stop a later refresh after source replacement or reconnect. Disabling refresh or disconnecting ends the current indicator. Synchronous refresh failures end the indicator and propagate rather than being silently swallowed.
 
@@ -666,6 +696,64 @@ automatically.
 ## Scrolled
 
 Scrolled notifications can be observed with `ScrolledCommand` which will pass a `ScrolledEventArgs` parameter, or the `OnScrolled` event with a parameter of the same type.  The event args contain the X/Y position scrolled.
+
+## Near-end notifications and paging
+
+Set `RemainingItemsThreshold` to receive `RemainingItemsThresholdReached`, or
+bind `RemainingItemsThresholdReachedCommand` (no command parameter). The default
+`-1` disables notifications; `0` means the last loaded data item is visible;
+positive values notify when that many or fewer loaded data items remain after
+the furthest visible item. Values below `-1` are rejected.
+
+```xml
+<vlv:VirtualListView
+    Adapter="{Binding Adapter}"
+    RemainingItemsThreshold="3"
+    RemainingItemsThresholdReachedCommand="{Binding LoadNextPageCommand}" />
+```
+
+Only **data items across all sections** count. Global and section headers/footers,
+empty sections, native flat row numbers and scroll pixels do not count. The check
+uses the control's accepted projection and visible item coordinates, in either
+orientation. `FindVisiblePositions()` exposes those coordinates for custom
+application behavior; filter `Kind == PositionKind.Item` and do not assume the
+returned positions are sorted.
+
+Checks run after native layout/scroll callbacks on the owning UI dispatcher.
+A nonempty initial list can notify after layout without any scroll gesture,
+including when it fits inside the viewport. An empty list, or a viewport with
+only headers/footers, has no visible data item and does not request a first page:
+the application must load that explicitly.
+
+Notifications are latched, not sent for every scroll callback. They re-arm when
+the viewport leaves the threshold and returns, when accepted data-item counts
+grow (so a short appended page can trigger again without scrolling), when the
+threshold changes, or when the adapter/connection is replaced. Content-only
+updates, same-count resets and removals do not by themselves re-arm. Seeing only
+chrome does not re-arm. After failure or a page that adds no data, staying near
+the same end does not automatically retry; provide an explicit retry action.
+Changing `-1` back to an enabled threshold explicitly re-arms, even if the data
+has not changed.
+
+This is a **notification**, not a paging engine. There is no `CanLoadMore` or
+control-owned in-flight state. The command's `CanExecute(null)` is honored, but a
+rejected command is not automatically retried when it later becomes executable.
+The command runs before the event; use one surface for loading, not both.
+Neither awaits asynchronous work. Applications must guard concurrent requests,
+handle cancellation/stale query results, display errors, and publish resident
+data safely. Disable the threshold (`-1`) while loading or paused and at
+end-of-data. Only re-enable after releasing the in-flight guard and publishing a
+successful page; an empty page that still claims more results should pause for
+explicit retry, not toggle the threshold in an automatic loop.
+
+The sample's **Paging** page (`Sample/VirtualListViewSample/PagingPage.cs`) uses
+delayed synthetic pages and a `SnapshotAdapter`, with UI-thread publication,
+one in-flight request, generation/cancellation guards, loading/error/end states,
+Restart and explicit Retry. Its first page has three rows; the next request fails
+once, and the request after thirteen loaded rows returns one empty nonterminal
+page. Both pause until Retry. Subsequent pages reach 43 rows and disable the
+threshold. Try resizing, navigating away during a request, restarting while
+loading, and scrolling through global/section chrome on each native target.
 
 
 ## Future

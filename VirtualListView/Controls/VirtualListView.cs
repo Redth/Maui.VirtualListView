@@ -6,6 +6,13 @@ namespace Microsoft.Maui.Controls;
 
 public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector
 {
+	static readonly DataTemplate defaultItemTemplate = new(() =>
+	{
+		var label = new Label();
+		label.SetBinding(Label.TextProperty, ".");
+		return label;
+	});
+
 	public static readonly BindableProperty PositionInfoProperty = BindableProperty.CreateAttached(
 		nameof(PositionInfo),
 		typeof(PositionInfo),
@@ -321,6 +328,38 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		set => SetValue(ScrolledCommandProperty, value);
 	}
 
+	public static readonly BindableProperty RemainingItemsThresholdProperty =
+		BindableProperty.Create(nameof(RemainingItemsThreshold), typeof(int), typeof(VirtualListView), -1,
+			validateValue: (_, value) =>
+			{
+				ArgumentOutOfRangeException.ThrowIfLessThan((int)value, -1, nameof(RemainingItemsThreshold));
+				return true;
+			});
+
+	public int RemainingItemsThreshold
+	{
+		get => (int)GetValue(RemainingItemsThresholdProperty);
+		set => SetValue(RemainingItemsThresholdProperty, value);
+	}
+
+	public static readonly BindableProperty RemainingItemsThresholdReachedCommandProperty =
+		BindableProperty.Create(nameof(RemainingItemsThresholdReachedCommand), typeof(ICommand), typeof(VirtualListView), default);
+
+	public ICommand? RemainingItemsThresholdReachedCommand
+	{
+		get => (ICommand)GetValue(RemainingItemsThresholdReachedCommandProperty);
+		set => SetValue(RemainingItemsThresholdReachedCommandProperty, value);
+	}
+
+	public event EventHandler? RemainingItemsThresholdReached;
+
+	void IVirtualListView.SendRemainingItemsThresholdReached()
+	{
+		if (RemainingItemsThresholdReachedCommand?.CanExecute(null) == true)
+			RemainingItemsThresholdReachedCommand.Execute(null);
+		RemainingItemsThresholdReached?.Invoke(this, EventArgs.Empty);
+	}
+
 	public static readonly BindableProperty SelectedItemsProperty =
 		BindableProperty.Create(nameof(SelectedItems), typeof(IList<ItemPosition>), typeof(VirtualListView), Array.Empty<ItemPosition>(),
 			propertyChanged: (bindableObj, oldValue, newValue) =>
@@ -437,12 +476,14 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public bool SectionHasFooter(int sectionIndex)
 		=> SectionFooterTemplateSelector != null || SectionFooterTemplate != null;
 
+	DataTemplate? ItemTemplateOrDefault => ItemTemplate ?? (ItemTemplateSelector is null ? defaultItemTemplate : null);
+
 	public IView? CreateView(PositionInfo position, object? data)
 		=> position.Kind switch
 		{
 			PositionKind.Item =>
 				ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)?.CreateContent() as View
-					?? ItemTemplate?.CreateContent() as View,
+					?? ItemTemplateOrDefault?.CreateContent() as View,
 			PositionKind.SectionHeader =>
 				SectionHeaderTemplateSelector?.SelectTemplate(data, position.SectionIndex)?.CreateContent() as View
 					?? SectionHeaderTemplate?.CreateContent() as View,
@@ -472,7 +513,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 			PositionKind.Item =>
 				"ITEM_" +
 					(ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)
-						?? ItemTemplate)?.GetDataTemplateId() ?? "0",
+						?? ItemTemplateOrDefault)?.GetDataTemplateId() ?? "0",
 			PositionKind.SectionHeader =>
 				"SECTION_HEADER_" +
 					(SectionHeaderTemplateSelector?.SelectTemplate(data, position.SectionIndex)

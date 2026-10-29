@@ -29,7 +29,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		layout.MinimumInteritemSpacing = 0f;
 		layout.MinimumLineSpacing = 0f;
 
-		var collectionView = new UICollectionView(CGRect.Empty, layout);
+		var collectionView = new LayoutCollectionView(layout, RemainingItemsLayoutCompleted);
 		//collectionView.ContentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentBehavior.Never;
 		collectionView.AllowsMultipleSelection = false;
 		collectionView.AllowsSelection = false;
@@ -43,6 +43,17 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 		return collectionView;
 	}
+
+	sealed class LayoutCollectionView(UICollectionViewLayout layout, Action completed) : UICollectionView(CGRect.Empty, layout)
+	{
+		public override void LayoutSubviews()
+		{
+			base.LayoutSubviews();
+			completed();
+		}
+	}
+
+	void PlatformRequestRemainingItemsLayout() => PlatformView.SetNeedsLayout();
 
 	protected override void ConnectHandler(UICollectionView nativeView)
 	{
@@ -119,6 +130,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		if (layout is null || PositionalViewSelector?.GetInfo(position.Position) is null)
 			return;
 		using var path = NSIndexPath.FromItemSection(position.Position, 0);
+		// UIKit asks unrealized cells for their preferred size when displaying them.
 		if (PlatformView.CellForItem(path) is not CvCell cell)
 			return;
 		using var original = layout.LayoutAttributesForItem(path);
@@ -129,6 +141,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		if (Math.Abs(preferred.Frame.Width - original.Frame.Width) < tolerance
 			&& Math.Abs(preferred.Frame.Height - original.Frame.Height) < tolerance)
 			return;
+		// Preserve flow layout's per-item self-sizing state, including shrink deltas.
 		using var context = layout.GetInvalidationContext(preferred, original);
 		layout.InvalidateLayout(context);
 	}
@@ -268,6 +281,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		}
 		UIView.PerformWithoutAnimation(() =>
 		{
+			// Even an empty structural transaction resets UIKit's self-sizing estimates.
 			var structural = plan.Removed.Length > 0 || plan.Inserted.Length > 0 || plan.Moved.Length > 0;
 			if (structural)
 				dataSource?.State.Apply(PositionalViewSelector, acceptedRows,

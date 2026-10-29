@@ -19,6 +19,7 @@
 			<Button Text="Measurement Smoke" Clicked="Measurement_Clicked" />
 			<Button Text="Keyed Updates" Clicked="KeyedUpdates_Clicked" AutomationId="keyed-demo" />
 			<Button Text="Targeted Item Refresh" Clicked="ItemRefresh_Clicked" AutomationId="item-refresh-demo" />
+			<Button Text="Paging" Clicked="Paging_Clicked" AutomationId="paging-demo" />
 		</VerticalStackLayout>
 	</ScrollView>
 </ContentPage>
