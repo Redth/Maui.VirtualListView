@@ -14,7 +14,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	RvAdapter adapter;
 	RecyclerView recyclerView;
 	LinearLayoutManager layoutManager;
-	Android.Views.View emptyView;
+	global::Android.Views.View emptyView;
 	SrlRefreshListener refreshListener;
 	RvScrollListener scrollListener;
 	RvRecycledViewPool recycledViewPool;
@@ -135,7 +135,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		var first = layoutManager.FindFirstVisibleItemPosition();
 		var last = layoutManager.FindLastVisibleItemPosition();
 		for (var p = Math.Max(0, first); p <= last; p++)
-			if (PositionalViewSelector.GetInfo(p)?.Kind == PositionKind.Item && layoutManager.FindViewByPosition(p) is Android.Views.View view)
+			if (PositionalViewSelector.GetInfo(p)?.Kind == PositionKind.Item && layoutManager.FindViewByPosition(p) is global::Android.Views.View view)
 				return (p, VirtualView.Orientation == ListOrientation.Vertical
 					? layoutManager.GetDecoratedTop(view) - recyclerView.PaddingTop
 					: layoutManager.GetDecoratedLeft(view) - recyclerView.PaddingLeft);
@@ -151,7 +151,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	bool PlatformRestoreAnchor(int index, double offset)
 	{
 		var pixels = checked((int)Math.Round(offset));
-		if (layoutManager.FindViewByPosition(index) is not Android.Views.View view)
+		if (layoutManager.FindViewByPosition(index) is not global::Android.Views.View view)
 		{
 			layoutManager.ScrollToPositionWithOffset(index, pixels);
 			return false;
@@ -310,7 +310,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	sealed class InputRecyclerView : RecyclerView
 	{
 		readonly Action scrollIntent;
-		public InputRecyclerView(Android.Content.Context context, Action scrollIntent) : base(context)
+		public InputRecyclerView(global::Android.Content.Context context, Action scrollIntent) : base(context)
 			=> this.scrollIntent = scrollIntent;
 
 		public override bool DispatchGenericMotionEvent(MotionEvent e)

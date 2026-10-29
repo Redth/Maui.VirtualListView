@@ -1,4 +1,4 @@
-﻿using AView = Android.Views.View;
+using AView = global::Android.Views.View;
 namespace Microsoft.Maui;
 
 internal partial class RvAdapter

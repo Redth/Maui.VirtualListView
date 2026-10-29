@@ -1,9 +1,9 @@
-﻿using AView = Android.Views.View;
+﻿using AView = global::Android.Views.View;
 using Microsoft.Maui.Platform;
 
 namespace Microsoft.Maui;
 
-sealed class RvViewContainer : Android.Widget.FrameLayout
+sealed class RvViewContainer : global::Android.Widget.FrameLayout
 {
 	readonly VirtualListViewHandler handler;
 	RetainedContentLayout contentLayout;
@@ -48,7 +48,7 @@ sealed class RvViewContainer : Android.Widget.FrameLayout
 		}
 		var axis = handler.VirtualView.Orientation;
 		var crossSpec = axis == ListOrientation.Vertical ? widthMeasureSpec : heightMeasureSpec;
-		if (MeasureSpec.GetMode(crossSpec) == Android.Views.MeasureSpecMode.Unspecified)
+		if (MeasureSpec.GetMode(crossSpec) == global::Android.Views.MeasureSpecMode.Unspecified)
 			throw new InvalidOperationException("RecyclerView must provide a finite cross-axis measure spec.");
 		var density = Context.Resources.DisplayMetrics.Density;
 		var cross = MeasureSpec.GetSize(crossSpec) / (double)density;

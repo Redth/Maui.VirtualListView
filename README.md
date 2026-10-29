@@ -45,6 +45,53 @@ native text rendering, lifecycle behavior or scrolling performance.
 
 ## Setup
 
+The library and sample target .NET 10 on Android, iOS, Mac Catalyst, and Windows.
+The portable library and regression tests also target `net10.0`.
+`global.json` selects stable SDK **10.0.403** (with patch-only roll-forward and no
+preview SDKs), and `Directory.Build.props` pins all MAUI packages to **10.0.120**.
+The unused `Microsoft.Maui.Controls.Compatibility` dependency is no longer needed.
+
+Install the SDK from [the .NET downloads](https://dotnet.microsoft.com/download/dotnet/10.0),
+then install the matching stable workload set from the repository root:
+
+```sh
+# macOS: Android, iOS, and Mac Catalyst
+dotnet workload install maui --version "$(dotnet --version)"
+```
+
+On Windows, use `dotnet workload install maui-windows --version 10.0.403` for
+WinUI builds (or `maui` when also developing Android). This workload set uses
+Android SDK 36.1 and JDK 21, and requires Xcode 27.1 for iOS. Use a Mac with the
+matching Xcode for Apple sample builds, and Windows for the WinUI sample.
+The sample keeps Android API 21 and Windows 10 version 1809 as its deployment
+minima. The current .NET 10 Apple workload requires iOS and Mac Catalyst 15.0,
+so those sample minima replace 14.2 and 14.0 respectively. Android target SDK
+selection now follows the installed .NET 10 Android workload instead of an old
+manifest override.
+
+Build one sample target at a time so MSBuild does not require the other hosts'
+toolchains:
+
+```sh
+dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj -c Release -p:TargetFrameworks=net10.0-android -p:AndroidPackageFormats=apk
+dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj -c Release -p:TargetFrameworks=net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64 -p:EnableCodeSigning=false
+dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj -c Release -p:TargetFrameworks=net10.0-maccatalyst -p:RuntimeIdentifier=maccatalyst-arm64 -p:EnableCodeSigning=false
+```
+
+On Windows:
+
+```powershell
+dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj -c Release -p:TargetFrameworks=net10.0-windows10.0.19041 -p:RuntimeIdentifier=win-x64 -p:WindowsPackageType=None
+```
+
+CI runs the portable tests without native workloads, builds the libraries and
+samples on their native hosts, and combines all five library targets into one
+NuGet package. The Apple jobs use the `xcode-27` hosted image with stable Xcode
+27.1 selected explicitly; that runner image is currently in public preview.
+Pull requests and branch pushes produce unsigned package artifacts without
+accessing signing secrets. Published releases require package signing before
+the release-only NuGet publish job can run.
+
 To add the Virtual List View control to your project, you need to add `.UseVirtualListView()` to your app builder:
 
 ```csharp
@@ -479,4 +526,4 @@ Some current non-goals but considerations for even later:
 
 ## Portable regression tests
 
-Run `dotnet test tests/VirtualListView.Tests/VirtualListView.Tests.csproj --configuration Release` with .NET 8. The project compiles the actual portable production sources against MAUI 8 packages; it does not require native MAUI workloads or replace the projection/cache logic with test implementations. CI runs this command separately from native builds. It covers projection boundaries, empty groups/chrome, invalidation, wrapped-source events, and large indexed lookups. Native handler compilation and device behavior still require their platform toolchains.
+Run `dotnet test tests/VirtualListView.Tests/VirtualListView.Tests.csproj --configuration Release` with the .NET 10 SDK selected by `global.json`. The project compiles the actual portable production sources against the same MAUI 10 packages as the library and sample; it does not require native MAUI workloads or replace the projection/cache logic with test implementations. CI runs this command separately from native builds. It covers projection boundaries, empty groups/chrome, invalidation, wrapped-source events, and large indexed lookups. Native boundary doubles in this suite are not device/runtime proof; native handler compilation and device behavior still require their platform toolchains.
