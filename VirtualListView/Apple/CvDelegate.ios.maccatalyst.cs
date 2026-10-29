@@ -52,6 +52,7 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 			if (scrollView.Dragging || scrollView.Decelerating)
 				Handler.RecordScrollIntent();
 			Handler.VirtualView.Scrolled(scrollView.ContentOffset.X, scrollView.ContentOffset.Y);
+			Handler.ScheduleRemainingItemsThresholdCheck();
 		}
 	}
 
