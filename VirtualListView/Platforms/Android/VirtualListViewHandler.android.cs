@@ -18,11 +18,12 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	SrlRefreshListener refreshListener;
 	RvScrollListener scrollListener;
 	RvRecycledViewPool recycledViewPool;
+	Action afterLayout;
 
 	protected override FrameLayout CreatePlatformView()
 	{
 		rootLayout = new FrameLayout(Context);
-		recyclerView = new RecyclerView(Context);
+		recyclerView = new InputRecyclerView(Context, RecordScrollIntent);
 		swipeRefreshLayout = new SwipeRefreshLayout(Context);
 		swipeRefreshLayout.AddView(recyclerView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
 		rootLayout.AddView(swipeRefreshLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
@@ -57,12 +58,17 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 			var y = Context.FromPixels(dy);
 			
 			if (IsConnected)
+			{
+				if (rv.ScrollState != RecyclerView.ScrollStateIdle)
+					RecordScrollIntent();
 				VirtualView?.Scrolled(x, y);
-		});
+			}
+		}, RecordScrollIntent);
 		recyclerView.AddOnScrollListener(scrollListener);
 
 		recyclerView.SetLayoutManager(layoutManager);
 		recyclerView.SetAdapter(adapter);
+		recyclerView.ViewTreeObserver.GlobalLayout += RecyclerLayoutCompleted;
 		recyclerView.LayoutParameters = new ViewGroup.LayoutParams(
 			ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
 		ConnectLifetime();
@@ -71,6 +77,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	protected override void DisconnectHandler(FrameLayout nativeView)
 	{
 		DisconnectLifetime();
+		recyclerView.ViewTreeObserver.GlobalLayout -= RecyclerLayoutCompleted;
+		afterLayout = null;
 		swipeRefreshLayout.SetOnRefreshListener(null);
 		refreshListener?.Dispose();
 		refreshListener = null;
@@ -100,6 +108,70 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		adapter?.NotifyDataSetChanged();
 	}
 
+	void PlatformApplyUpdates(KeyedUpdatePlan plan)
+	{
+		adapter.Reset();
+		adapter.Rebind(plan);
+		UpdateEmptyViewVisibility();
+		if (plan.Reset)
+		{
+			adapter.NotifyDataSetChanged();
+			return;
+		}
+		foreach (var edit in plan.Edits)
+			switch (edit.Kind)
+			{
+				case RowEditKind.Insert: adapter.NotifyItemInserted(edit.Index); break;
+				case RowEditKind.Remove: adapter.NotifyItemRemoved(edit.Index); break;
+				case RowEditKind.Move: adapter.NotifyItemMoved(edit.From, edit.Index); break;
+				case RowEditKind.Replace: adapter.NotifyItemChanged(edit.Index); break;
+			}
+	}
+
+	(int Index, double Offset) PlatformVisibleAnchor()
+	{
+		if (recyclerView.ScrollState != RecyclerView.ScrollStateIdle)
+			return (-1, 0);
+		var first = layoutManager.FindFirstVisibleItemPosition();
+		var last = layoutManager.FindLastVisibleItemPosition();
+		for (var p = Math.Max(0, first); p <= last; p++)
+			if (PositionalViewSelector.GetInfo(p)?.Kind == PositionKind.Item && layoutManager.FindViewByPosition(p) is Android.Views.View view)
+				return (p, VirtualView.Orientation == ListOrientation.Vertical
+					? layoutManager.GetDecoratedTop(view) - recyclerView.PaddingTop
+					: layoutManager.GetDecoratedLeft(view) - recyclerView.PaddingLeft);
+		return (-1, 0);
+	}
+
+	void PlatformAfterLayout(Action action)
+	{
+		afterLayout = action;
+		recyclerView.RequestLayout();
+	}
+
+	bool PlatformRestoreAnchor(int index, double offset)
+	{
+		var pixels = checked((int)Math.Round(offset));
+		if (layoutManager.FindViewByPosition(index) is not Android.Views.View view)
+		{
+			layoutManager.ScrollToPositionWithOffset(index, pixels);
+			return false;
+		}
+		// ScrollToPositionWithOffset only records intent for a later layout. For an
+		// already realized anchor, finish the correction now before releasing it.
+		var vertical = VirtualView.Orientation == ListOrientation.Vertical;
+		var current = vertical ? layoutManager.GetDecoratedTop(view) - recyclerView.PaddingTop
+			: layoutManager.GetDecoratedLeft(view) - recyclerView.PaddingLeft;
+		recyclerView.ScrollBy(vertical ? 0 : current - pixels, vertical ? current - pixels : 0);
+		return true;
+	}
+
+	void RecyclerLayoutCompleted(object sender, EventArgs e)
+	{
+		var completion = afterLayout;
+		afterLayout = null;
+		completion?.Invoke();
+	}
+
 	void PlatformResetTemplates() => adapter?.ResetTemplates();
 	void PlatformInvalidateContentLayout(PositionInfo position) => adapter?.InvalidateContentLayout(position);
 
@@ -114,7 +186,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	}
 
 	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
-	{ }
+		=> MapSelectedItems(handler, virtualListView);
 
 	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object parameter)
 		=> handler.InvalidateData();
@@ -233,5 +305,26 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		}
 
 		return positions;
+	}
+
+	sealed class InputRecyclerView : RecyclerView
+	{
+		readonly Action scrollIntent;
+		public InputRecyclerView(Android.Content.Context context, Action scrollIntent) : base(context)
+			=> this.scrollIntent = scrollIntent;
+
+		public override bool DispatchGenericMotionEvent(MotionEvent e)
+		{
+			if (e.ActionMasked == MotionEventActions.Scroll)
+				scrollIntent();
+			return base.DispatchGenericMotionEvent(e);
+		}
+
+		public override bool DispatchKeyEvent(KeyEvent e)
+		{
+			if (e.Action == KeyEventActions.Down)
+				scrollIntent();
+			return base.DispatchKeyEvent(e);
+		}
 	}
 }

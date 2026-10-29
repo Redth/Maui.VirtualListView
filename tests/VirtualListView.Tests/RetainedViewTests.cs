@@ -57,6 +57,39 @@ public class RetainedViewTests
 	}
 
 	[Fact]
+	public void SameContentPositionUpdateDoesNotRebindOrChangeVisibility()
+	{
+		var selector = new TestSelector();
+		var owner = new TestListView { Selector = selector };
+		using var slot = CreateSlot(owner);
+		var data = new object();
+		slot.Bind(Item(0, true), data);
+		slot.SetVisible(true);
+		var view = Assert.IsType<TrackedView>(slot.View);
+		var context = view.BindingContext;
+		Assert.True(slot.TryUpdatePosition(Item(7, false), data));
+		Assert.Equal(7, view.ItemIndex);
+		Assert.False(view.IsSelected);
+		Assert.Same(context, view.BindingContext);
+		Assert.Equal(1, selector.Attached);
+		Assert.Equal(0, selector.Detached);
+	}
+
+	[Fact]
+	public void SameObjectRebindClearsOldBindingStateBeforeItIsAssignedAgain()
+	{
+		var owner = new TestListView { ItemTemplate = new DataTemplate(() => new TrackedView()) };
+		using var slot = CreateSlot(owner);
+		var data = new object();
+		slot.Bind(Item(0, true), data);
+		var contexts = new List<object>();
+		((BindableObject)slot.View).BindingContextChanged += (sender, _) => contexts.Add(((BindableObject)sender).BindingContext);
+		slot.Bind(Item(1, false), data);
+		Assert.Equal(new[] { null, data }, contexts);
+		Assert.False(((IPositionInfo)slot.View).IsSelected);
+	}
+
+	[Fact]
 	public void VisibilityDoesNotReleaseLogicalOwnershipBindingOrRequiredCallbacks()
 	{
 		var selector = new TestSelector();

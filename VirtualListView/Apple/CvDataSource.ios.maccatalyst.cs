@@ -103,4 +103,5 @@ internal class CvDataSource : UICollectionViewDataSource
 
 	internal void ResetTemplates() => cells.ForEach(cell => cell.Content?.Release());
 	internal void PruneCells() => cells.ForEach(_ => { });
+	internal void Rebind(KeyedUpdatePlan plan) => cells.ForEach(cell => Handler.RebindRetained(cell.Content, plan));
 }

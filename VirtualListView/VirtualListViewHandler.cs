@@ -32,9 +32,10 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 
 	public static void MapScrollToItem(VirtualListViewHandler handler, IVirtualListView view, object parameter)
 	{
+		handler.RecordScrollIntent();
 		if (parameter is ItemPosition itemPosition)
 		{
-			handler.PlatformScrollToItem(itemPosition, true);
+			handler.Publish(() => handler.PlatformScrollToItem(itemPosition, true));
 		}
 		else if (parameter is object[] parameters)
 		{
@@ -44,7 +45,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 				if (parameters?[1] is bool a)
 					animated = a;
 
-				handler.PlatformScrollToItem(p, animated);
+				handler.Publish(() => handler.PlatformScrollToItem(p, animated));
 			}
 		}
 	}
@@ -65,7 +66,8 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		var dispatcher = VirtualView is Controls.BindableObject bindable
 			? bindable.Dispatcher : MauiContext.Services.GetRequiredService<IDispatcher>();
 		contentDispatcher = dispatcher;
-		publication.Connect(dispatcher, VirtualView.Adapter, ApplyDataInvalidation);
+		acceptedSource = VirtualView.Adapter;
+		publication.Connect(dispatcher, VirtualView.Adapter, ApplyDataInvalidation, ApplySnapshot);
 		ownedRefresh ??= new OwnedRefresh(publication);
 		MapHeader(this, VirtualView);
 		MapFooter(this, VirtualView);
@@ -79,6 +81,11 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		DisconnectProjectionObservers();
 		PositionalViewSelector = null;
 		previousSelections = Array.Empty<ItemPosition>();
+		selectedPositions.Clear();
+		acceptedRows = null;
+		acceptedSource = null;
+		pendingAnchor = null;
+		anchorState.Invalidate();
 	}
 
 	internal void Publish(Action action) => publication.Post(action);
@@ -94,15 +101,143 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	internal void InvalidateContentLayout(PositionInfo position) => Publish(() =>
 	{
 		if (PositionalViewSelector?.GetInfo(position.Position) is not null)
-			PlatformInvalidateContentLayout(position);
+			PreserveAnchorDuring(() => PlatformInvalidateContentLayout(position));
 	});
 
 	public void InvalidateData() => Publish(ApplyDataInvalidation);
 
 	void ApplyDataInvalidation()
 	{
-		PositionalViewSelector?.Invalidate();
+		if (VirtualView.Adapter is ISnapshotVirtualListViewAdapter snapshots)
+		{
+			ApplySnapshot(acceptedRows?.Snapshot ?? snapshots.CaptureSnapshot(), true);
+			return;
+		}
+		acceptedRows = null;
+		anchorState.Invalidate();
+		PositionalViewSelector?.Accept(new PositionalViewSelector(VirtualView));
 		PlatformInvalidateData();
+	}
+
+	KeyedRows acceptedRows;
+	internal VirtualListViewSnapshot AcceptedSnapshot => acceptedRows?.Snapshot;
+	IVirtualListViewAdapter acceptedSource;
+	KeyedAnchor pendingAnchor;
+	Size? arrangedSize;
+	readonly KeyedAnchorState anchorState = new();
+	internal void RecordScrollIntent()
+	{
+		anchorState.Supersede();
+		pendingAnchor = null;
+	}
+
+	KeyedAnchor CaptureAnchor()
+	{
+		// Native layout may still show the previous transaction. Keep its keyed
+		// baseline across ordered edits/corrections until restoration completes.
+		var visible = PlatformVisibleAnchor();
+		return anchorState.Capture(acceptedRows, visible.Index, visible.Offset, pendingAnchor);
+	}
+
+	void RestoreAnchor(KeyedAnchor anchor)
+	{
+		if (anchor is null)
+			return;
+		pendingAnchor = anchor;
+		var publish = CapturePublisher();
+		var attempts = 0;
+		void Restore()
+		{
+			var index = anchorState.Resolve(anchor, acceptedRows);
+			if (index >= 0 && !PlatformRestoreAnchor(index, anchor.Offset))
+			{
+				if (++attempts >= 3)
+					throw new InvalidOperationException("The native layout could not restore the accepted keyed anchor.");
+				PlatformAfterLayout(() => publish(Restore));
+				return;
+			}
+			if (ReferenceEquals(pendingAnchor, anchor))
+				pendingAnchor = null;
+		}
+		PlatformAfterLayout(() => publish(Restore));
+	}
+
+	internal void PreserveAnchorDuring(Action update)
+	{
+		var anchor = CaptureAnchor();
+		update();
+		RestoreAnchor(anchor);
+	}
+
+	public override void PlatformArrange(Rect frame)
+	{
+		var changed = arrangedSize != frame.Size;
+		arrangedSize = frame.Size;
+		if (IsConnected && changed)
+			PreserveAnchorDuring(() => base.PlatformArrange(frame));
+		else
+			base.PlatformArrange(frame);
+	}
+
+	void ApplySnapshot(VirtualListViewSnapshot snapshot, bool reset)
+	{
+		var before = acceptedRows;
+		if (before is not null && !ReferenceEquals(before.Snapshot, snapshot))
+			SnapshotValidation.Validate(before.Snapshot, snapshot, reset);
+		else if (before is not null && !reset)
+			return;
+		var nextProjection = new PositionalViewSelector(VirtualView, snapshot);
+		var after = new KeyedRows(nextProjection, snapshot);
+		var plan = new KeyedUpdatePlan(before, after, reset);
+		var anchor = CaptureAnchor();
+		var selection = before?.ReconcileSelection(previousSelections, after);
+		PositionalViewSelector.Accept(nextProjection);
+		acceptedRows = after;
+		if (selection is not null)
+		{
+			previousSelections = selection;
+			selectedPositions = selection.ToHashSet();
+			if (VirtualView.SelectionMode == SelectionMode.Single)
+				VirtualView.SelectedItem = selection.Length == 0 ? null : selection[0];
+			else
+				VirtualView.SelectedItems = selection;
+		}
+		PlatformApplyUpdates(plan);
+		RestoreAnchor(anchor);
+	}
+
+	internal void BindRetained(RetainedView content, PositionInfo info, object data, PresentationKey? key = null)
+	{
+		info.IsSelected = info.Kind == PositionKind.Item && IsItemSelected(info.SectionIndex, info.ItemIndex);
+		content.Bind(info, data);
+		content.Key = key ?? (acceptedRows is not null && info.Position >= 0 && info.Position < acceptedRows.Rows.Length
+			? acceptedRows.Rows[info.Position].Key : null);
+	}
+
+	internal void RebindRetained(RetainedView content, KeyedUpdatePlan plan)
+	{
+		if (content?.Position is not PositionInfo old)
+			return;
+		var key = content.Key;
+		if (key is null && plan.Before is not null && old.Position >= 0 && old.Position < plan.Before.Rows.Length)
+			key = plan.Before.Rows[old.Position].Key;
+		if (key is not null && plan.After.Indices.TryGetValue(key.Value, out var index))
+		{
+			var row = plan.After.Rows[index];
+			row.Position.IsSelected = row.Key.Kind == PositionKind.Item
+				&& IsItemSelected(row.Position.SectionIndex, row.Position.ItemIndex);
+			if (plan.Before is not null && plan.Before.Indices.TryGetValue(key.Value, out var oldIndex)
+				&& plan.Before.Rows[oldIndex].Revision == row.Revision
+				&& ReferenceEquals(plan.Before.Rows[oldIndex].Data, row.Data)
+				&& content.TryUpdatePosition(row.Position, row.Data))
+			{
+				content.Key = row.Key;
+				return;
+			}
+			BindRetained(content, row.Position, row.Data, row.Key);
+		}
+		else
+			content.Unbind();
 	}
 
 	void BeginRefresh(Action started, Action finished)
@@ -174,6 +309,20 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
 		handler.EndRefresh();
+		if (!ReferenceEquals(handler.acceptedSource, virtualListView.Adapter))
+		{
+			if (handler.acceptedRows is not null)
+			{
+				handler.previousSelections = Array.Empty<ItemPosition>();
+				handler.selectedPositions.Clear();
+				virtualListView.SelectedItems = Array.Empty<ItemPosition>();
+				virtualListView.SelectedItem = null;
+			}
+			handler.acceptedRows = null;
+			handler.acceptedSource = virtualListView.Adapter;
+			handler.pendingAnchor = null;
+			handler.anchorState.Invalidate();
+		}
 		if (handler.IsConnected)
 			handler.publication.SetAdapter(virtualListView.Adapter);
 		handler.InvalidateData();
@@ -187,16 +336,22 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		if (VirtualView.SelectionMode == SelectionMode.None)
 			return false;
 
-		return previousSelections.Contains(new ItemPosition(sectionIndex, itemIndex));
+		return selectedPositions.Contains(new ItemPosition(sectionIndex, itemIndex));
 	}
 
 	ItemPosition[] previousSelections = Array.Empty<ItemPosition>();
+	HashSet<ItemPosition> selectedPositions = new();
 
 	public static void MapSelectedItems(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
 		if (handler is null)
 			return;
 
+		handler.Publish(() => handler.ApplySelectedItems(virtualListView));
+	}
+
+	void ApplySelectedItems(IVirtualListView virtualListView)
+	{
 		var newSelections = virtualListView?.SelectedItems ?? Array.Empty<ItemPosition>();
 
 		if (virtualListView.SelectionMode == SelectionMode.None)
@@ -205,21 +360,24 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 			newSelections = newSelections.Take(1).ToArray();
 
 		// First deselect any previously selected items that aren't in the new set
-		foreach (var itemPosition in handler.previousSelections)
+		var nextSet = newSelections.Where(position =>
+			PositionalViewSelector.GetPosition(position.SectionIndex, position.ItemIndex) >= 0).ToHashSet();
+		foreach (var itemPosition in previousSelections)
 		{
-			if (!newSelections.Contains(itemPosition))
-				handler.PlatformUpdateItemSelection(itemPosition, false);
+			if (!nextSet.Contains(itemPosition))
+				PlatformUpdateItemSelection(itemPosition, false);
 		}
 
 		// Set all the new state selected to true
-		foreach (var itemPosition in newSelections)
+		foreach (var itemPosition in nextSet)
 		{
-			if (!handler.previousSelections.Contains(itemPosition))
-				handler.PlatformUpdateItemSelection(itemPosition, true);
+			if (!selectedPositions.Contains(itemPosition))
+				PlatformUpdateItemSelection(itemPosition, true);
 		}
 
 		// Keep track of the new state for next time it changes
-		handler.previousSelections = newSelections.ToArray();
+		previousSelections = nextSet.ToArray();
+		selectedPositions = nextSet;
 	}
 
 	public static void MapIsHeaderVisible(VirtualListViewHandler handler, IVirtualListView virtualListView)

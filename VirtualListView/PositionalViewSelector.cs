@@ -5,15 +5,24 @@ namespace Microsoft.Maui;
 internal class PositionalViewSelector
 {
 	public readonly IVirtualListView VirtualListView;
-	public IVirtualListViewAdapter Adapter => VirtualListView?.Adapter;
+	public IVirtualListViewAdapter Adapter => acceptedAdapter ?? VirtualListView?.Adapter;
 	public IVirtualListViewSelector ViewSelector => VirtualListView?.ViewSelector;
 
+	IVirtualListViewAdapter acceptedAdapter;
 	Projection projection;
 
-	public PositionalViewSelector(IVirtualListView virtualListView)
+	public PositionalViewSelector(IVirtualListView virtualListView, IVirtualListViewAdapter acceptedAdapter = null)
 	{
 		VirtualListView = virtualListView;
+		this.acceptedAdapter = acceptedAdapter
+			?? (virtualListView.Adapter as ISnapshotVirtualListViewAdapter)?.CaptureSnapshot();
 		Invalidate();
+	}
+
+	internal void Accept(PositionalViewSelector next)
+	{
+		acceptedAdapter = next.acceptedAdapter;
+		projection = next.projection;
 	}
 
 	public int TotalCount => projection.TotalCount;

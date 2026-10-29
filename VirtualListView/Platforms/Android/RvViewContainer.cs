@@ -85,7 +85,7 @@ sealed class RvViewContainer : Android.Widget.FrameLayout
 		contentLayout = new RetainedContentLayout(view, handler.DispatchContentLayout, _ =>
 		{
 			if (weakSelf.TryGetTarget(out var container) && container.handler.IsConnected)
-				container.RequestLayout();
+				container.handler.Publish(() => container.handler.PreserveAnchorDuring(container.RequestLayout));
 		});
     }
 

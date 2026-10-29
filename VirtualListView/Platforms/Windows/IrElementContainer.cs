@@ -84,7 +84,7 @@ internal class IrElementContainer : Panel
 		contentLayout = new RetainedContentLayout(view, handler.DispatchContentLayout, _ =>
 		{
 			if (weakSelf.TryGetTarget(out var container) && container.handler.IsConnected && !container.IsRecycled)
-				container.InvalidateMeasure();
+				container.handler.Publish(() => container.handler.PreserveAnchorDuring(container.InvalidateMeasure));
 		});
 	}
 
@@ -104,7 +104,8 @@ internal class IrElementContainer : Panel
 	void ContainerTapped(object sender, TappedRoutedEventArgs e)
 	{
 		// Don't select non-item positions
-		if (IsRecycled || (PositionInfo?.Kind ?? PositionKind.Header) != PositionKind.Item)
+		if (IsRecycled || !handler.IsConnected || handler.VirtualView.SelectionMode == SelectionMode.None
+			|| (PositionInfo?.Kind ?? PositionKind.Header) != PositionKind.Item)
 			return;
 
 		if (PositionInfo != null)

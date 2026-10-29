@@ -13,13 +13,15 @@ internal sealed class HandlerPublication
 	IVirtualListViewAdapter? adapter;
 	EventHandler? invalidated;
 	Action? invalidate;
+	Action<VirtualListViewSnapshot, bool>? acceptSnapshot;
 	long generation;
 	long scheduledDrain;
 	long nextDrain;
 
 	public bool IsConnected { get { lock (sync) return dispatcher is not null; } }
 
-	public void Connect(IDispatcher owningDispatcher, IVirtualListViewAdapter? source, Action onInvalidated)
+	public void Connect(IDispatcher owningDispatcher, IVirtualListViewAdapter? source, Action onInvalidated,
+		Action<VirtualListViewSnapshot, bool>? onSnapshot = null)
 	{
 		if (IsConnected)
 			return;
@@ -28,6 +30,7 @@ internal sealed class HandlerPublication
 		{
 			dispatcher = owningDispatcher;
 			invalidate = onInvalidated;
+			acceptSnapshot = onSnapshot;
 			generation++;
 		}
 		SetAdapter(source);
@@ -48,9 +51,43 @@ internal sealed class HandlerPublication
 			pending.Clear();
 		}
 		adapter = source;
-		invalidated = (_, _) => Post(epoch, () => invalidate?.Invoke());
+		var snapshotAccepted = false;
+		invalidated = (_, args) =>
+		{
+			lock (sync)
+				if (dispatcher is null || epoch != generation)
+					return;
+			if (source is ISnapshotVirtualListViewAdapter snapshots && acceptSnapshot is not null)
+			{
+				var snapshot = (args as SnapshotInvalidatedEventArgs)?.Snapshot ?? snapshots.CaptureSnapshot();
+				var reset = (args as SnapshotInvalidatedEventArgs)?.Reset ?? true;
+				Post(epoch, () =>
+				{
+					snapshotAccepted = true;
+					acceptSnapshot?.Invoke(snapshot, reset);
+				});
+			}
+			else
+				Post(epoch, () => invalidate?.Invoke());
+		};
 		if (IsConnected && adapter is not null)
+		{
 			adapter.OnDataInvalidated += invalidated;
+			if (adapter is ISnapshotVirtualListViewAdapter snapshots && acceptSnapshot is not null)
+			{
+				var snapshot = snapshots.CaptureSnapshot();
+				Post(epoch, () =>
+				{
+					// A subscription-time event already carries a complete snapshot.
+					// Never apply an older initial capture after that ordered event.
+					if (!snapshotAccepted)
+					{
+						snapshotAccepted = true;
+						acceptSnapshot?.Invoke(snapshot, true);
+					}
+				});
+			}
+		}
 	}
 
 	public void Disconnect()
@@ -60,6 +97,7 @@ internal sealed class HandlerPublication
 			generation++;
 			dispatcher = null;
 			invalidate = null;
+			acceptSnapshot = null;
 			pending.Clear();
 			// A previously scheduled drain can still run, but cannot own the new queue.
 			scheduledDrain = 0;

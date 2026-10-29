@@ -10,6 +10,7 @@ using WRect = Windows.Foundation.Rect;
 using Microsoft.Maui.Platform;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Input;
 
 namespace Microsoft.Maui;
 
@@ -23,6 +24,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	WStackLayout layout;
 	WGrid rootLayout;
 	WFrameworkElement emptyView;
+	Action afterLayout;
 
 	Orientation NativeOrientation =>
 		VirtualView.Orientation switch
@@ -59,7 +61,13 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		}
 	}
 
-	void ItemsRepeaterLayoutUpdated(object sender, object e) => UpdateVisibleElements();
+	void ItemsRepeaterLayoutUpdated(object sender, object e)
+	{
+		UpdateVisibleElements();
+		var completion = afterLayout;
+		afterLayout = null;
+		completion?.Invoke();
+	}
 
 	void UpdateVisibleElements()
 	{
@@ -82,6 +90,10 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 		itemsRepeater.ItemsSource = irSource;
 		scrollViewer.ViewChanged += ScrollViewerViewChanged;
+		scrollViewer.DirectManipulationStarted += ScrollManipulationStarted;
+		scrollViewer.AddHandler(UIElement.PointerWheelChangedEvent, new PointerEventHandler(ScrollPointerWheelChanged), true);
+		scrollViewer.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(ScrollPointerWheelChanged), true);
+		scrollViewer.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(ScrollKeyDown), true);
 		itemsRepeater.LayoutUpdated += ItemsRepeaterLayoutUpdated;
 		ConnectLifetime();
 	}
@@ -89,7 +101,12 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	protected override void DisconnectHandler(WGrid nativeView)
 	{
 		DisconnectLifetime();
+		afterLayout = null;
 		scrollViewer.ViewChanged -= ScrollViewerViewChanged;
+		scrollViewer.DirectManipulationStarted -= ScrollManipulationStarted;
+		scrollViewer.RemoveHandler(UIElement.PointerWheelChangedEvent, new PointerEventHandler(ScrollPointerWheelChanged));
+		scrollViewer.RemoveHandler(UIElement.PointerPressedEvent, new PointerEventHandler(ScrollPointerWheelChanged));
+		scrollViewer.RemoveHandler(UIElement.KeyDownEvent, new KeyEventHandler(ScrollKeyDown));
 		itemsRepeater.LayoutUpdated -= ItemsRepeaterLayoutUpdated;
 		itemsRepeater.ItemsSource = null;
 		itemsRepeater.ItemTemplate = null;
@@ -108,6 +125,58 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	{
 		irSource?.Reset();
 		UpdateEmptyViewVisibility();
+	}
+
+	void ScrollManipulationStarted(object sender, object e) => RecordScrollIntent();
+	void ScrollPointerWheelChanged(object sender, PointerRoutedEventArgs e) => RecordScrollIntent();
+	void ScrollKeyDown(object sender, KeyRoutedEventArgs e) => RecordScrollIntent();
+
+	void PlatformApplyUpdates(KeyedUpdatePlan plan)
+	{
+		irSource.Apply(plan);
+		elementFactory.Rebind(plan);
+		UpdateEmptyViewVisibility();
+	}
+
+	(int Index, double Offset) PlatformVisibleAnchor()
+	{
+		var vertical = VirtualView.Orientation == ListOrientation.Vertical;
+		foreach (var container in elementFactory.ActiveElements
+			.Where(element => element.PositionInfo?.Kind == PositionKind.Item && VisibilityHitTest(element, scrollViewer))
+			.OrderBy(element => element.PositionInfo.Position))
+		{
+			var point = container.TransformToVisual(scrollViewer).TransformPoint(new global::Windows.Foundation.Point());
+			return (container.PositionInfo.Position, vertical ? point.Y : point.X);
+		}
+		return (-1, 0);
+	}
+
+	void PlatformAfterLayout(Action action)
+	{
+		afterLayout = action;
+		itemsRepeater.InvalidateMeasure();
+	}
+
+	bool PlatformRestoreAnchor(int index, double offset)
+	{
+		var element = itemsRepeater.GetOrCreateElement(index);
+		itemsRepeater.UpdateLayout();
+		var point = element.TransformToVisual(scrollViewer).TransformPoint(new global::Windows.Foundation.Point());
+		if (VirtualView.Orientation == ListOrientation.Vertical)
+		{
+			var target = Math.Clamp(scrollViewer.VerticalOffset + point.Y - offset, 0, scrollViewer.ScrollableHeight);
+			if (Math.Abs(scrollViewer.VerticalOffset - target) < 0.5)
+				return true;
+			scrollViewer.ChangeView(null, target, null, true);
+		}
+		else
+		{
+			var target = Math.Clamp(scrollViewer.HorizontalOffset + point.X - offset, 0, scrollViewer.ScrollableWidth);
+			if (Math.Abs(scrollViewer.HorizontalOffset - target) < 0.5)
+				return true;
+			scrollViewer.ChangeView(target, null, null, true);
+		}
+		return false;
 	}
 
 	void PlatformResetTemplates() => elementFactory?.ResetTemplates();
@@ -133,7 +202,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	}
 
 	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
-	{ }
+		=> MapSelectedItems(handler, virtualListView);
 
 	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
 	{

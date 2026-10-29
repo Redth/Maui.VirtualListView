@@ -21,6 +21,19 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty AdapterProperty =
 		BindableProperty.Create(nameof(Adapter), typeof(IVirtualListViewAdapter), typeof(VirtualListView), default);
 
+	/// <summary>The snapshot currently accepted by this control; null for legacy or disconnected sources.</summary>
+	public VirtualListViewSnapshot? AcceptedSnapshot
+	{
+		get
+		{
+#if ANDROID || IOS || MACCATALYST || WINDOWS
+			return (Handler as VirtualListViewHandler)?.AcceptedSnapshot;
+#else
+			return null;
+#endif
+		}
+	}
+
 
 	public IView? GlobalHeader
 	{

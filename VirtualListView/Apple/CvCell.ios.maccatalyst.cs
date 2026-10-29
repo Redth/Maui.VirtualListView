@@ -68,7 +68,8 @@ internal class CvCell : UICollectionViewCell
 
 	void InvokeTap()
 	{
-		if (Handler?.IsConnected == true && PositionInfo?.Kind == PositionKind.Item)
+		if (Handler?.IsConnected == true && Handler.VirtualView.SelectionMode != SelectionMode.None
+			&& PositionInfo?.Kind == PositionKind.Item)
 		{
 			TapHandler.Invoke(this);
 		}
@@ -134,7 +135,7 @@ internal class CvCell : UICollectionViewCell
 						cell.ClearView();
 				});
 		}
-		Content.Bind(position, data);
+		handler.BindRetained(Content, position, data);
 		SetNeedsLayout();
 	}
 

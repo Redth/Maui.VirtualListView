@@ -78,7 +78,7 @@ internal partial class RvAdapter : RecyclerView.Adapter
 		{
 			itemHolder.ViewContainer.UpdateOrientation();
 			var data = positionalViewSelector.Adapter.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
-			itemHolder.Content.Bind(info, data);
+			handler.BindRetained(itemHolder.Content, info, data);
 		}
 	}
 
@@ -122,7 +122,8 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 		viewHolder.ClickListener = new RvViewHolderClickListener(viewHolder, rvh =>
 		{
-			if (!handler.IsConnected || rvh.PositionInfo == null || rvh.PositionInfo.Kind != PositionKind.Item)
+			if (!handler.IsConnected || handler.VirtualView.SelectionMode == SelectionMode.None
+				|| rvh.PositionInfo == null || rvh.PositionInfo.Kind != PositionKind.Item)
 				return;
 
 			var p = new ItemPosition(rvh.PositionInfo.SectionIndex, rvh.PositionInfo.ItemIndex);
@@ -150,6 +151,7 @@ internal partial class RvAdapter : RecyclerView.Adapter
 	}
 
 	internal void ResetTemplates() => holders.ForEach(holder => holder.Content.Release());
+	internal void Rebind(KeyedUpdatePlan plan) => holders.ForEach(holder => handler.RebindRetained(holder.Content, plan));
 	internal void UpdateOrientation() => holders.ForEach(holder => holder.ViewContainer.UpdateOrientation());
 
 	internal void InvalidateContentLayout(PositionInfo position)

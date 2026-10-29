@@ -48,8 +48,14 @@ internal class CvDelegate : UICollectionViewDelegateFlowLayout
 	public override void Scrolled(UIScrollView scrollView)
 	{
 		if (Handler.IsConnected)
+		{
+			if (scrollView.Dragging || scrollView.Decelerating)
+				Handler.RecordScrollIntent();
 			Handler.VirtualView.Scrolled(scrollView.ContentOffset.X, scrollView.ContentOffset.Y);
+		}
 	}
+
+	public override void DraggingStarted(UIScrollView scrollView) => Handler.RecordScrollIntent();
 
 	public override void WillDisplayCell(UICollectionView collectionView, UICollectionViewCell cell, NSIndexPath indexPath)
 	{

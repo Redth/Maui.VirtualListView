@@ -18,16 +18,71 @@ class IrSource : IReadOnlyList<IrDataWrapper>, INotifyCollectionChanged
 
 	readonly PositionalViewSelector PositionalViewSelector;
 	readonly IVirtualListView VirtualListView;
+	KeyedRow[] rows;
+	KeyedRows acceptedRows;
 
 	public event NotifyCollectionChangedEventHandler CollectionChanged;
 
 	public void Reset()
 	{
+		rows = null;
+		acceptedRows = null;
 		CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
 	}
 
+	IrDataWrapper Wrap(KeyedRow row) => new(Context, row.Position, row.Data, PositionalViewSelector, VirtualListView, row.Key);
+	KeyedRow CurrentRow(KeyedRow row) => acceptedRows is not null && acceptedRows.Indices.TryGetValue(row.Key, out var index)
+		? acceptedRows.Rows[index] : row;
+
+	internal void Apply(KeyedUpdatePlan plan)
+	{
+		acceptedRows = plan.After;
+		if (plan.Reset)
+		{
+			rows = plan.After.Rows;
+			CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+			return;
+		}
+		rows = plan.Before.Rows;
+		foreach (var edit in plan.Edits)
+		{
+			var next = rows.ToList();
+			NotifyCollectionChangedEventArgs notification;
+			switch (edit.Kind)
+			{
+				case RowEditKind.Insert:
+					var inserted = plan.After.Rows[edit.Index];
+					next.Insert(edit.Index, inserted);
+					notification = new(NotifyCollectionChangedAction.Add, Wrap(inserted), edit.Index);
+					break;
+				case RowEditKind.Remove:
+					var removed = next[edit.Index];
+					next.RemoveAt(edit.Index);
+					notification = new(NotifyCollectionChangedAction.Remove, Wrap(removed), edit.Index);
+					break;
+				case RowEditKind.Move:
+					var moved = next[edit.From];
+					next.RemoveAt(edit.From);
+					next.Insert(edit.Index, moved);
+					notification = new(NotifyCollectionChangedAction.Move, Wrap(CurrentRow(moved)), edit.Index, edit.From);
+					break;
+				case RowEditKind.Replace:
+					var old = next[edit.Index];
+					var replacement = plan.After.Rows[edit.Index];
+					next[edit.Index] = replacement;
+					notification = new(NotifyCollectionChangedAction.Replace, Wrap(replacement), Wrap(old), edit.Index);
+					break;
+				default:
+					throw new InvalidOperationException("Unknown row edit.");
+			}
+			rows = next.ToArray();
+			CollectionChanged?.Invoke(this, notification);
+		}
+		rows = plan.After.Rows;
+	}
+
 	public int Count
-		=> PositionalViewSelector?.TotalCount ?? 0;
+		=> rows?.Length ?? PositionalViewSelector?.TotalCount ?? 0;
 
 	public bool IsReadOnly
 		=> true;
@@ -36,6 +91,8 @@ class IrSource : IReadOnlyList<IrDataWrapper>, INotifyCollectionChanged
 	{
 		get
 		{
+			if (rows is not null)
+				return Wrap(CurrentRow(rows[index]));
 			var info = PositionalViewSelector?.GetInfo(index);
 
 			if (info == null)
@@ -90,11 +147,12 @@ class IrSource : IReadOnlyList<IrDataWrapper>, INotifyCollectionChanged
 
 	public IEnumerator<IrDataWrapper> GetEnumerator()
 	{
-		throw new NotImplementedException();
+		for (var index = 0; index < Count; index++)
+			yield return this[index];
 	}
 
 	IEnumerator IEnumerable.GetEnumerator()
 	{
-		throw new NotImplementedException();
+		return GetEnumerator();
 	}
 }

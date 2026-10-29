@@ -33,7 +33,7 @@ internal class IrElementFactory : IElementFactory, IDisposable
 		container.UpdateOrientation();
 		info.IsSelected = info.Kind == PositionKind.Item && handler.IsItemSelected(info.SectionIndex, info.ItemIndex);
 		container.IsRecycled = false;
-		try { container.ContentOwner.Bind(info, wrapper.data); }
+		try { handler.BindRetained(container.ContentOwner, info, wrapper.data, wrapper.key); }
 		catch
 		{
 			active.Remove(container);
@@ -56,6 +56,11 @@ internal class IrElementFactory : IElementFactory, IDisposable
 	}
 
 	public void ResetTemplates() => pool.Clear();
+	internal void Rebind(KeyedUpdatePlan plan)
+	{
+		foreach (var container in active.ToArray())
+			handler.RebindRetained(container.ContentOwner, plan);
+	}
 
 	public void Dispose()
 	{

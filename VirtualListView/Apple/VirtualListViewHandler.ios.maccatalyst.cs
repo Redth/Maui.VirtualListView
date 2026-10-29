@@ -125,6 +125,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
+		MapSelectedItems(handler, virtualListView);
 	}
 
 	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object? parameter)
@@ -139,19 +140,17 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 		var indexPath = NSIndexPath.FromItemSection(realIndex, 0);
 
-		PlatformView.ScrollToItem(indexPath, UICollectionViewScrollPosition.Top, animated);
+		PlatformView.ScrollToItem(indexPath, VirtualView.Orientation == ListOrientation.Vertical
+			? UICollectionViewScrollPosition.Top : UICollectionViewScrollPosition.Left, animated);
 	}
 
 	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
 	{
-		Publish(() =>
-		{
-			var realIndex = PositionalViewSelector?.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex) ?? -1;
-			if (realIndex < 0)
-				return;
-			if (PlatformView.CellForItem(NSIndexPath.FromItemSection(realIndex, 0)) is CvCell cvcell)
-				cvcell.UpdateSelected(selected);
-		});
+		var realIndex = PositionalViewSelector?.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex) ?? -1;
+		if (realIndex < 0)
+			return;
+		if (PlatformView.CellForItem(NSIndexPath.FromItemSection(realIndex, 0)) is CvCell cvcell)
+			cvcell.UpdateSelected(selected);
 	}
 
 	public static void MapOrientation(VirtualListViewHandler handler, IVirtualListView virtualListView)
@@ -243,6 +242,78 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		dataSource?.PruneCells();
 		UpdateEmptyViewVisibility();
 		PlatformView.ReloadData();
+	}
+
+	void PlatformApplyUpdates(KeyedUpdatePlan plan)
+	{
+		dataSource?.Rebind(plan);
+		UpdateEmptyViewVisibility();
+		if (plan.Reset)
+		{
+			PlatformInvalidateData();
+			return;
+		}
+		UIView.PerformWithoutAnimation(() =>
+		{
+			PlatformView.PerformBatchUpdates(() =>
+			{
+				if (plan.Removed.Length > 0)
+					PlatformView.DeleteItems(plan.Removed.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
+				if (plan.Inserted.Length > 0)
+					PlatformView.InsertItems(plan.Inserted.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
+				foreach (var move in plan.Moved)
+					PlatformView.MoveItem(NSIndexPath.FromItemSection(move.From, 0), NSIndexPath.FromItemSection(move.To, 0));
+			}, null);
+			// Content/template changes are rebound above, including moved rows. Do not
+			// reload old-coordinate paths in the same structural UIKit transaction.
+			foreach (var index in plan.Changed)
+				if (PositionalViewSelector.GetInfo(index) is PositionInfo info)
+					PlatformInvalidateContentLayout(info);
+			PlatformView.LayoutIfNeeded();
+		});
+	}
+
+	(int Index, double Offset) PlatformVisibleAnchor()
+	{
+		if (PlatformView.Dragging || PlatformView.Decelerating)
+			return (-1, 0);
+		var vertical = VirtualView.Orientation == ListOrientation.Vertical;
+		foreach (var path in PlatformView.IndexPathsForVisibleItems.OrderBy(path => path.Item))
+		{
+			if (PositionalViewSelector.GetInfo((int)path.Item)?.Kind != PositionKind.Item)
+				continue;
+			var attributes = PlatformView.GetLayoutAttributesForItem(path);
+			if (attributes is not null)
+				return ((int)path.Item, vertical
+					? attributes.Frame.Y - PlatformView.ContentOffset.Y - PlatformView.AdjustedContentInset.Top
+					: attributes.Frame.X - PlatformView.ContentOffset.X - PlatformView.AdjustedContentInset.Left);
+		}
+		return (-1, 0);
+	}
+
+	void PlatformAfterLayout(Action action)
+	{
+		PlatformView.LayoutIfNeeded();
+		if (!DispatchContentLayout(action))
+			throw new InvalidOperationException("The owning dispatcher rejected anchor restoration.");
+	}
+
+	bool PlatformRestoreAnchor(int index, double offset)
+	{
+		PlatformView.LayoutIfNeeded();
+		var attributes = PlatformView.GetLayoutAttributesForItem(NSIndexPath.FromItemSection(index, 0));
+		if (attributes is null)
+			return false;
+		var inset = PlatformView.AdjustedContentInset;
+		var current = PlatformView.ContentOffset;
+		if (VirtualView.Orientation == ListOrientation.Vertical)
+			current.Y = (nfloat)Math.Clamp(attributes.Frame.Y - offset - inset.Top, -inset.Top,
+				Math.Max(-inset.Top, PlatformView.ContentSize.Height - PlatformView.Bounds.Height + inset.Bottom));
+		else
+			current.X = (nfloat)Math.Clamp(attributes.Frame.X - offset - inset.Left, -inset.Left,
+				Math.Max(-inset.Left, PlatformView.ContentSize.Width - PlatformView.Bounds.Width + inset.Right));
+		PlatformView.SetContentOffset(current, false);
+		return true;
 	}
 
 	void PlatformResetTemplates() => dataSource?.ResetTemplates();

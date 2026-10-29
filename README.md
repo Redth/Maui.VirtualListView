@@ -100,6 +100,129 @@ var adapter = new VirtualListViewAdapter<string>(
 	});
 ```
 
+### `SnapshotAdapter`: optional keyed updates
+
+Existing `IVirtualListViewAdapter` implementations still work unchanged. For
+incremental updates, use `SnapshotAdapter` or implement the optional
+`ISnapshotVirtualListViewAdapter`. Prepare resident data outside native callbacks:
+
+```csharp
+var adapter = new SnapshotAdapter(new VirtualListViewSnapshot(0, new[]
+{
+	new SnapshotSection("inbox", 0, "Inbox", new[]
+	{
+		new SnapshotItem("message-42", 0, new MessageRow("Original text"))
+	})
+}));
+listView.Adapter = adapter;
+
+// Keep the occurrence key; increase its content revision to rebind and resize.
+adapter.Submit(new VirtualListViewSnapshot(1, new[]
+{
+	new SnapshotSection("inbox", 0, "Inbox", new[]
+	{
+		new SnapshotItem("message-41", 0, new MessageRow("Prepended text")),
+		new SnapshotItem("message-42", 1, new MessageRow("Updated, longer text"))
+	})
+}));
+// MessageRow is an application-defined immutable presentation model.
+```
+
+Snapshot constructors copy collections and order; they do not deep-clone payload
+objects. Keep payloads immutable, or confine their `INotifyPropertyChanged`
+mutations to the owning UI dispatcher. Increase an item's content revision when
+its displayed content or size changes; increase a section's content revision when
+its header/footer data changes. Snapshot revisions must strictly increase.
+Negative/decreasing revisions, duplicate section/occurrence keys, invalid
+notification indices/counts, and projected count overflow throw explicitly.
+
+Identity is `(row kind, section occurrence key, item occurrence key)`, compared
+by string value, never by row index or an unchecked native hash. A repeated item
+within one section needs distinct occurrence keys. The same item key in another
+section is a different occurrence, so a transfer between sections is a
+remove/insert, not the same selected presentation. Chrome has its own row kinds
+and cannot be selected. Source/connection generations separately reject late
+callbacks and pending anchor restores.
+
+Each event carries its captured snapshot in `SnapshotInvalidatedEventArgs`.
+`SnapshotAdapter.Submit` can run on a worker; the handler accepts the exact
+immutable input, projection, selection mapping, and native notifications in one
+ordered UI transaction. It retains every intermediate edit, including reentrant
+submissions. Native reads use the handler's accepted snapshot, not an adapter's
+newer submitted state. Custom snapshot sources must serialize their event stream
+and send the exact captured input in those event arguments. Plain
+`OnDataInvalidated` remains an explicit reset fallback.
+
+When resolving a selected `ItemPosition` in a callback, use the control's
+`AcceptedSnapshot` and its section/item indices. It is the snapshot backing that
+control, whereas `adapter.CaptureSnapshot()` may already contain a newer worker
+submission. `AcceptedSnapshot` is null for legacy adapters or a disconnected
+control.
+
+Small edits use native insert/remove/move notifications on Android, collection
+add/remove/move/replace notifications on Windows, and one unanimated UIKit batch.
+Apple always uses **native section 0**, with item paths from the flat projection,
+including global and section headers/footers. Same-key content revisions rebind
+compatible retained templates and invalidate geometry, including for moved rows.
+Unchanged bound content only updates its position/selection metadata when its
+template stays compatible. No offscreen MAUI view tree is built to find identity
+or anchors; Android stable native IDs remain disabled rather than hashing keys.
+
+Resets are intentional for initial connection, legacy/custom adapters that do
+not opt in, explicit `InvalidateData`, template/chrome mapping changes,
+`Submit(snapshot, reset: true)` for a wholesale query replacement, and plans
+requiring more than 128 sequential row edits. A reset on the same adapter still
+maps surviving keys; a new adapter starts a new source generation and clears an
+old keyed selection. A cache wrapper that only implements the legacy interface
+also uses reset. Query/reset revisions still increase; an explicit query reset
+may restart per-row content revisions.
+
+Keyed selection is mapped back to the existing public `ItemPosition`,
+`SelectedItem`, and `SelectedItems` API. Inserts and reorders keep the selected
+occurrences; deleting a key removes its selection instead of selecting whatever
+now occupies its old index. Legacy adapters keep their position-based behavior.
+Membership and reconciliation use sets/dictionaries, not a scan of all selected
+items for every visible row.
+
+Before structural updates and supported content/viewport layout corrections, the
+handler captures a visible item key and its offset relative to the viewport.
+After native layout it restores that key; if deleted, it tries the next surviving
+old item, then the previous one, at the same relative offset (clamped at scroll
+limits). Rapid transactions share the pending keyed baseline rather than
+mistaking a not-yet-laid-out native index for its new item. New touch/wheel/key or
+programmatic scrolling supersedes pending restoration; source replacement and
+disconnect invalidate it. UIKit/Windows offsets are logical units, Android
+offsets are native pixels. This is not a saved absolute scroll offset. Native
+self-sizing convergence and platform scroll/input behavior still need device
+checks; these contracts are not performance certification.
+
+Snapshots, keyed projection, and lookup dictionaries use O(N) identity/data
+metadata. Diff preparation uses O(N log N + N * K) time, where K is at most 128
+small edits before reset; intermediate Windows notification arrays have the same
+bounded edit cost. This is a simple resident-snapshot path, not a million-row
+database differ. Size metadata stays per retained native slot, not per source
+item.
+Every queued snapshot also retains its metadata until accepted; producers should
+stay within their UI publication/memory budget rather than enqueue an unbounded
+stream.
+
+The sample's **Keyed Updates** page has deterministic prepend, insert, remove
+visible row, reorder, same-key content expansion, section swap, three immediate
+edits, scroll-to-middle, and resize controls. Select rows, scroll into a section,
+record the top visible key/offset, then exercise each action. Check selection
+labels and every section/global boundary. Delete the anchor and selected rows,
+scroll again immediately after an edit, and repeat on all native targets.
+
+An API 35 Android emulator smoke run exercised prepend, insert, reorder, section
+swap, three immediate edits, same-key text expansion, deletion of the visible
+anchor, resize, and deletion of a selected item. The tracked full row stayed at
+the same native-pixel position (0 px delta) through the structural edits; after
+anchor deletion the next surviving row took its place. Selection retained
+`row-004` while the deleted selected key left it. This is a bounded functional
+check, not a frame-time benchmark or iOS/Windows runtime certification. The
+existing ObservableCollection demo also passed selected-row removal, append,
+scroll-to-new-row, and new-row removal on that emulator.
+
 ### `ObservableCollectionAdapter`
 
 Many developers are accustomed to using `ObservableCollection`.  While I recommend against using this if possible, there is a built in adapter that takes in an `ObservableCollection<TItem>` instance to help map it to the adapter pattern:
@@ -114,7 +237,20 @@ var adapter = new ObservableCollectionAdapter<string>(items);
 items.Add("Item 3");
 ```
 
-When using this adapter, the adapter will automatically invalidate itself (by calling `this.InvalidateData()` when the collection changes via the `CollectionView.CollectionChanged` event).
+Add/remove/replace/move notifications produce captured immutable snapshots and
+use the incremental path. Each inserted occurrence gets its own generated key,
+including repeated references to the same model; moving that occurrence retains
+its key. Replacing/removing and reinserting it creates a new occurrence. No domain
+ID is forced onto existing models. `Clear`/Reset and explicit `InvalidateData`
+use reset and start new occurrence keys. Collection edits must be serialized;
+mutating one `ObservableCollection` concurrently is not supported.
+
+Item `PropertyChanged` is not a structural collection edit: normal bound MAUI
+content handles it and retained layout reacts to measurement changes. The adapter
+does not add per-item subscriptions or keep removed models alive. Dispose the
+adapter to detach its collection subscription. Custom subclasses that change the
+flat-list data shape must also override `CaptureSnapshot` consistently, or use a
+legacy custom adapter for position-only/reset behavior.
 
 
 ### Custom Adapter
@@ -187,7 +323,7 @@ The handler serializes native invalidations on that owning dispatcher and drops 
 
 `CachingVirtualListViewAdapter` caches section objects and counts, not items or database queries. It clears all metadata caches when it or its wrapped source invalidates, and forwards one notification without recursively invalidating the source. Dispose the wrapper when you are finished with it to detach its source subscription; disposal does **not** dispose the shared source adapter.
 
-The control captures section counts/chrome once per accepted invalidation in O(sections) time and memory, without materializing items or views. Total count and item-to-position lookup are O(1); position-to-section lookup is O(log sections). After changing custom adapter data or custom selector chrome rules, invalidate the adapter. Replacing the adapter, templates, header/footer, or visibility flags refreshes the projection automatically. Changes to a header/footer's own visibility are observed when the view implements `INotifyPropertyChanged` (as MAUI controls do); custom non-notifying views must explicitly invalidate.
+For legacy adapters, the control captures section counts/chrome once per accepted invalidation in O(sections) time and memory, without materializing items or views. The optional snapshot path additionally retains O(N) identity metadata as described above. Total count and item-to-position lookup are O(1); position-to-section lookup is O(log sections). After changing custom adapter data or custom selector chrome rules, invalidate the adapter. Replacing the adapter, templates, header/footer, or visibility flags refreshes the projection automatically. Changes to a header/footer's own visibility are observed when the view implements `INotifyPropertyChanged` (as MAUI controls do); custom non-notifying views must explicitly invalidate.
 
 Adapter counts must be nonnegative and the projected total, including chrome, must fit in an `int`. Invalid counts or overflow throw before replacing the previous projection; they are not converted into valid-looking rows.
 

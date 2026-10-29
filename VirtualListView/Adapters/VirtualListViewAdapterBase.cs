@@ -13,8 +13,10 @@ public abstract class VirtualListViewAdapterBase<TSection, TItem> : IVirtualList
 
 	public virtual void InvalidateData()
 	{
-		OnDataInvalidated?.Invoke(this, EventArgs.Empty);
+		RaiseDataInvalidated(EventArgs.Empty);
 	}
+
+	protected void RaiseDataInvalidated(EventArgs args) => OnDataInvalidated?.Invoke(this, args);
 
 	public abstract TItem GetItem(int sectionIndex, int itemIndex);
 

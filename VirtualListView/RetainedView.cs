@@ -26,6 +26,18 @@ internal sealed class RetainedView : IDisposable
 
 	public IView? View { get; private set; }
 	public PositionInfo? Position { get; private set; }
+	internal PresentationKey? Key { get; set; }
+
+	internal bool TryUpdatePosition(PositionInfo position, object? data)
+	{
+		if (View is null || !ReferenceEquals(selector, owner.ViewSelector) || kind != position.Kind
+			|| reuseId != owner.ViewSelector.GetReuseId(position, data))
+			return false;
+		Position = position;
+		if (View is IPositionInfo viewPosition)
+			viewPosition.Update(position);
+		return true;
+	}
 
 	internal static void ReleaseSupplied(IVirtualListView owner, IView view, PositionKind kind)
 	{
@@ -42,6 +54,8 @@ internal sealed class RetainedView : IDisposable
 		var wasVisible = visible;
 		var created = false;
 		SetVisible(false);
+		if (ownsView && View is BindableObject previousBinding)
+			previousBinding.BindingContext = null;
 		if (View is not null && (!ReferenceEquals(selector, nextSelector) || reuseId != nextId || kind != position.Kind
 			|| (supplied && !ReferenceEquals(View, suppliedView))))
 			Release();
@@ -101,6 +115,7 @@ internal sealed class RetainedView : IDisposable
 	{
 		SetVisible(false);
 		Position = null;
+		Key = null;
 		if (ownsView && View is BindableObject bindable)
 			bindable.BindingContext = null;
 		if (View is IPositionInfo position)
@@ -113,6 +128,7 @@ internal sealed class RetainedView : IDisposable
 		var view = View;
 		View = null;
 		Position = null;
+		Key = null;
 		selector = null;
 		reuseId = null;
 		kind = null;
