@@ -30,13 +30,27 @@ public sealed class ItemRefreshPage : ContentPage
 		refresh.Clicked += (_, _) => RefreshSelected(false);
 		var template = new Button { Text = "Toggle selected template", AutomationId = "refresh-template" };
 		template.Clicked += (_, _) => RefreshSelected(true);
+		var first = new Button { Text = "First row", AutomationId = "refresh-first" };
+		first.Clicked += (_, _) =>
+		{
+			list.ClearSelectedItems();
+			list.SelectItem(new ItemPosition(0, 0));
+			list.ScrollToItem(new ItemPosition(0, 0), false);
+		};
+		var offscreen = new Button { Text = "Offscreen row", AutomationId = "refresh-offscreen" };
+		offscreen.Clicked += (_, _) =>
+		{
+			list.ClearSelectedItems();
+			list.ScrollToItem(new ItemPosition(1, 10), false);
+		};
 		var controls = new VerticalStackLayout
 		{
 			Children =
 			{
 				new Label { Text = "With no selection, updates section 1 / item 10. Scroll there after an offscreen update.", Padding = 8 },
 				refresh,
-				template
+				template,
+				new HorizontalStackLayout { Children = { first, offscreen } }
 			}
 		};
 		var grid = new Grid { RowDefinitions = { new RowDefinition(GridLength.Auto), new RowDefinition(GridLength.Star) } };

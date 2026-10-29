@@ -118,8 +118,20 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	{
 		if (layout is null || PositionalViewSelector?.GetInfo(position.Position) is null)
 			return;
-		using var context = new UICollectionViewFlowLayoutInvalidationContext();
-		context.InvalidateItems(new[] { NSIndexPath.FromItemSection(position.Position, 0) });
+		using var path = NSIndexPath.FromItemSection(position.Position, 0);
+		// UIKit asks unrealized cells for their preferred size when displaying them.
+		if (PlatformView.CellForItem(path) is not CvCell cell)
+			return;
+		using var original = layout.LayoutAttributesForItem(path);
+		if (original is null)
+			return;
+		using var preferred = cell.PreferredLayoutAttributesFittingAttributes(original);
+		var tolerance = 0.5 / Math.Max(1, PlatformView.TraitCollection.DisplayScale);
+		if (Math.Abs(preferred.Frame.Width - original.Frame.Width) < tolerance
+			&& Math.Abs(preferred.Frame.Height - original.Frame.Height) < tolerance)
+			return;
+		// Preserve flow layout's per-item self-sizing state, including shrink deltas.
+		using var context = layout.GetInvalidationContext(preferred, original);
 		layout.InvalidateLayout(context);
 	}
 
@@ -255,15 +267,17 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		}
 		UIView.PerformWithoutAnimation(() =>
 		{
-			PlatformView.PerformBatchUpdates(() =>
-			{
-				if (plan.Removed.Length > 0)
-					PlatformView.DeleteItems(plan.Removed.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
-				if (plan.Inserted.Length > 0)
-					PlatformView.InsertItems(plan.Inserted.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
-				foreach (var move in plan.Moved)
-					PlatformView.MoveItem(NSIndexPath.FromItemSection(move.From, 0), NSIndexPath.FromItemSection(move.To, 0));
-			}, null);
+			// Even an empty structural transaction resets UIKit's self-sizing estimates.
+			if (plan.Removed.Length > 0 || plan.Inserted.Length > 0 || plan.Moved.Length > 0)
+				PlatformView.PerformBatchUpdates(() =>
+				{
+					if (plan.Removed.Length > 0)
+						PlatformView.DeleteItems(plan.Removed.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
+					if (plan.Inserted.Length > 0)
+						PlatformView.InsertItems(plan.Inserted.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
+					foreach (var move in plan.Moved)
+						PlatformView.MoveItem(NSIndexPath.FromItemSection(move.From, 0), NSIndexPath.FromItemSection(move.To, 0));
+				}, null);
 			// Content/template changes are rebound above, including moved rows. Do not
 			// reload old-coordinate paths in the same structural UIKit transaction.
 			foreach (var index in plan.Changed)
