@@ -6,6 +6,13 @@ namespace Microsoft.Maui.Controls;
 
 public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector
 {
+	static readonly DataTemplate defaultItemTemplate = new(() =>
+	{
+		var label = new Label();
+		label.SetBinding(Label.TextProperty, ".");
+		return label;
+	});
+
 	public static readonly BindableProperty PositionInfoProperty = BindableProperty.CreateAttached(
 		nameof(PositionInfo),
 		typeof(PositionInfo),
@@ -446,12 +453,14 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public bool SectionHasFooter(int sectionIndex)
 		=> SectionFooterTemplateSelector != null || SectionFooterTemplate != null;
 
+	DataTemplate? ItemTemplateOrDefault => ItemTemplate ?? (ItemTemplateSelector is null ? defaultItemTemplate : null);
+
 	public IView? CreateView(PositionInfo position, object? data)
 		=> position.Kind switch
 		{
 			PositionKind.Item =>
 				ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)?.CreateContent() as View
-					?? ItemTemplate?.CreateContent() as View,
+					?? ItemTemplateOrDefault?.CreateContent() as View,
 			PositionKind.SectionHeader =>
 				SectionHeaderTemplateSelector?.SelectTemplate(data, position.SectionIndex)?.CreateContent() as View
 					?? SectionHeaderTemplate?.CreateContent() as View,
@@ -479,7 +488,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 			PositionKind.Item =>
 				"ITEM_" +
 					(ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)
-						?? ItemTemplate)?.GetDataTemplateId() ?? "0",
+						?? ItemTemplateOrDefault)?.GetDataTemplateId() ?? "0",
 			PositionKind.SectionHeader =>
 				"SECTION_HEADER_" +
 					(SectionHeaderTemplateSelector?.SelectTemplate(data, position.SectionIndex)

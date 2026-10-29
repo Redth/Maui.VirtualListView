@@ -113,7 +113,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		scrollViewer.RemoveHandler(UIElement.KeyDownEvent, new KeyEventHandler(ScrollKeyDown));
 		itemsRepeater.LayoutUpdated -= ItemsRepeaterLayoutUpdated;
 		itemsRepeater.ItemsSource = null;
-		itemsRepeater.ItemTemplate = null;
+		// WinUI rejects a null ItemTemplate, even after ItemsSource is cleared.
+		itemsRepeater.ItemTemplate = new Microsoft.UI.Xaml.DataTemplate();
 		elementFactory?.Dispose();
 		elementFactory = null;
 
