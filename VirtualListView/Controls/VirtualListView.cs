@@ -6,6 +6,13 @@ namespace Microsoft.Maui.Controls;
 
 public partial class VirtualListView : View, IVirtualListView, IVirtualListViewSelector
 {
+	static readonly DataTemplate defaultItemTemplate = new(() =>
+	{
+		var label = new Label();
+		label.SetBinding(Label.TextProperty, ".");
+		return label;
+	});
+
 	public static readonly BindableProperty PositionInfoProperty = BindableProperty.CreateAttached(
 		nameof(PositionInfo),
 		typeof(PositionInfo),
@@ -54,6 +61,16 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty IsHeaderVisibleProperty =
 		BindableProperty.Create(nameof(IsHeaderVisible), typeof(bool), typeof(VirtualListView), true);
 
+	/// <summary>Allow a visible global header when there are no data items.</summary>
+	public bool ShowHeaderWhenEmpty
+	{
+		get => (bool)GetValue(ShowHeaderWhenEmptyProperty);
+		set => SetValue(ShowHeaderWhenEmptyProperty, value);
+	}
+
+	public static readonly BindableProperty ShowHeaderWhenEmptyProperty =
+		BindableProperty.Create(nameof(ShowHeaderWhenEmpty), typeof(bool), typeof(VirtualListView), false);
+
 	public IView? GlobalFooter
 	{
 		get => (IView)GetValue(GlobalFooterProperty);
@@ -79,6 +96,16 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 
 	public static readonly BindableProperty IsFooterVisibleProperty =
 		BindableProperty.Create(nameof(IsFooterVisible), typeof(bool), typeof(VirtualListView), true);
+
+	/// <summary>Allow a visible global footer when there are no data items.</summary>
+	public bool ShowFooterWhenEmpty
+	{
+		get => (bool)GetValue(ShowFooterWhenEmptyProperty);
+		set => SetValue(ShowFooterWhenEmptyProperty, value);
+	}
+
+	public static readonly BindableProperty ShowFooterWhenEmptyProperty =
+		BindableProperty.Create(nameof(ShowFooterWhenEmpty), typeof(bool), typeof(VirtualListView), false);
 
 
 	public DataTemplate? ItemTemplate
@@ -248,7 +275,10 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 				if (bobj is VirtualListView virtualListView)
 				{
 					if (oldValue is IView oldView)
+					{
+						RetainedView.ReleaseSupplied(virtualListView, oldView, PositionKind.EmptyView);
 						virtualListView.RemoveLogicalView(oldView);
+					}
 
 					if (newValue is IView newView)
 						virtualListView.AddLogicalView(newView);
@@ -305,6 +335,38 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	{
 		get => (ICommand)GetValue(ScrolledCommandProperty);
 		set => SetValue(ScrolledCommandProperty, value);
+	}
+
+	public static readonly BindableProperty RemainingItemsThresholdProperty =
+		BindableProperty.Create(nameof(RemainingItemsThreshold), typeof(int), typeof(VirtualListView), -1,
+			validateValue: (_, value) =>
+			{
+				ArgumentOutOfRangeException.ThrowIfLessThan((int)value, -1, nameof(RemainingItemsThreshold));
+				return true;
+			});
+
+	public int RemainingItemsThreshold
+	{
+		get => (int)GetValue(RemainingItemsThresholdProperty);
+		set => SetValue(RemainingItemsThresholdProperty, value);
+	}
+
+	public static readonly BindableProperty RemainingItemsThresholdReachedCommandProperty =
+		BindableProperty.Create(nameof(RemainingItemsThresholdReachedCommand), typeof(ICommand), typeof(VirtualListView), default);
+
+	public ICommand? RemainingItemsThresholdReachedCommand
+	{
+		get => (ICommand)GetValue(RemainingItemsThresholdReachedCommandProperty);
+		set => SetValue(RemainingItemsThresholdReachedCommandProperty, value);
+	}
+
+	public event EventHandler? RemainingItemsThresholdReached;
+
+	void IVirtualListView.SendRemainingItemsThresholdReached()
+	{
+		if (RemainingItemsThresholdReachedCommand?.CanExecute(null) == true)
+			RemainingItemsThresholdReachedCommand.Execute(null);
+		RemainingItemsThresholdReached?.Invoke(this, EventArgs.Empty);
 	}
 
 	public static readonly BindableProperty SelectedItemsProperty =
@@ -423,12 +485,14 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public bool SectionHasFooter(int sectionIndex)
 		=> SectionFooterTemplateSelector != null || SectionFooterTemplate != null;
 
+	DataTemplate? ItemTemplateOrDefault => ItemTemplate ?? (ItemTemplateSelector is null ? defaultItemTemplate : null);
+
 	public IView? CreateView(PositionInfo position, object? data)
 		=> position.Kind switch
 		{
 			PositionKind.Item =>
 				ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)?.CreateContent() as View
-					?? ItemTemplate?.CreateContent() as View,
+					?? ItemTemplateOrDefault?.CreateContent() as View,
 			PositionKind.SectionHeader =>
 				SectionHeaderTemplateSelector?.SelectTemplate(data, position.SectionIndex)?.CreateContent() as View
 					?? SectionHeaderTemplate?.CreateContent() as View,
@@ -439,12 +503,14 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 				GlobalHeader,
 			PositionKind.Footer =>
 				GlobalFooter,
+			PositionKind.EmptyView =>
+				EmptyView,
 			_ => default
 		};
 
 	public void RecycleView(PositionInfo position, object? data, IView view)
 	{
-		if (position.Kind is not (PositionKind.Header or PositionKind.Footer) && view is BindableObject controlsView)
+		if (position.Kind is not (PositionKind.Header or PositionKind.Footer or PositionKind.EmptyView) && view is BindableObject controlsView)
 		{
 			controlsView.SetValue(BindingContextProperty, data);
 		}
@@ -456,7 +522,7 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 			PositionKind.Item =>
 				"ITEM_" +
 					(ItemTemplateSelector?.SelectTemplate(data, position.SectionIndex, position.ItemIndex)
-						?? ItemTemplate)?.GetDataTemplateId() ?? "0",
+						?? ItemTemplateOrDefault)?.GetDataTemplateId() ?? "0",
 			PositionKind.SectionHeader =>
 				"SECTION_HEADER_" +
 					(SectionHeaderTemplateSelector?.SelectTemplate(data, position.SectionIndex)
@@ -469,6 +535,8 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 				"GLOBAL_HEADER_" + Header.GetStableIdentity(),
 			PositionKind.Footer =>
 				"GLOBAL_FOOTER_" + Footer.GetStableIdentity(),
+			PositionKind.EmptyView =>
+				"EMPTY_VIEW_" + EmptyView.GetStableIdentity(),
 			_ => "UNKNOWN"
 		};
 

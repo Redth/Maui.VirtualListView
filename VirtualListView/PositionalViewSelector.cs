@@ -19,6 +19,13 @@ internal class PositionalViewSelector
 		Invalidate();
 	}
 
+	internal PositionalViewSelector(PositionalViewSelector source)
+	{
+		VirtualListView = source.VirtualListView;
+		acceptedAdapter = source.acceptedAdapter;
+		projection = source.projection;
+	}
+
 	internal void Accept(PositionalViewSelector next)
 	{
 		acceptedAdapter = next.acceptedAdapter;
@@ -26,9 +33,11 @@ internal class PositionalViewSelector
 	}
 
 	public int TotalCount => projection.TotalCount;
+	public int DataItemCount => projection.ItemCount;
 	public bool HasItems => projection.HasItems;
 	public bool HasGlobalHeader => projection.HasGlobalHeader;
 	public bool HasGlobalFooter => projection.HasGlobalFooter;
+	public bool HasInlineEmptyView => projection.HasInlineEmptyView;
 
 	// Publish only complete metadata. Native count/bind/seek calls never rescan the source.
 	public void Invalidate()
@@ -38,17 +47,15 @@ internal class PositionalViewSelector
 	{
 		var next = CreateProjection();
 		if (projection.TotalCount != next.TotalCount || projection.HasGlobalHeader != next.HasGlobalHeader
-			|| projection.HasGlobalFooter != next.HasGlobalFooter || !projection.Sections.SequenceEqual(next.Sections))
+			|| projection.HasGlobalFooter != next.HasGlobalFooter || projection.HasInlineEmptyView != next.HasInlineEmptyView
+			|| !projection.Sections.SequenceEqual(next.Sections))
 			throw new InvalidOperationException("Item refresh cannot change counts or chrome. Publish structural changes with InvalidateData first.");
 	}
 
 	Projection CreateProjection()
 	{
 		var adapter = Adapter;
-		if (adapter is null)
-			return new Projection(Array.Empty<Section>(), false, false, false, 0);
-
-		var sectionCount = adapter.GetNumberOfSections();
+		var sectionCount = adapter?.GetNumberOfSections() ?? 0;
 		if (sectionCount < 0)
 			throw new InvalidOperationException("The adapter returned a negative section count.");
 
@@ -56,6 +63,7 @@ internal class PositionalViewSelector
 		var selector = ViewSelector;
 		var hasItems = false;
 		var position = 0;
+		var itemCount = 0;
 		for (var s = 0; s < sections.Length; s++)
 		{
 			var count = adapter.GetNumberOfItemsInSection(s);
@@ -65,19 +73,35 @@ internal class PositionalViewSelector
 			var hasHeader = selector?.SectionHasHeader(s) ?? false;
 			var hasFooter = selector?.SectionHasFooter(s) ?? false;
 			var end = checked(position + count + (hasHeader ? 1 : 0) + (hasFooter ? 1 : 0));
-			sections[s] = new Section(position, end, count, hasHeader, hasFooter);
+			sections[s] = new Section(position, end, count, hasHeader, hasFooter, itemCount);
 			position = end;
+			itemCount = checked(itemCount + count);
 			hasItems |= count > 0;
 		}
 
-		// Preserve empty-group chrome, but suppress a global header without data and
-		// a global footer without any projected section content.
-		var globalHeader = hasItems && VirtualListView.IsHeaderVisible
+		var globalHeader = (hasItems || VirtualListView.ShowHeaderWhenEmpty) && VirtualListView.IsHeaderVisible
 			&& VirtualListView.Header?.Visibility == Visibility.Visible;
-		var globalFooter = position > 0 && VirtualListView.IsFooterVisible
+		var globalFooter = (hasItems || VirtualListView.ShowFooterWhenEmpty) && VirtualListView.IsFooterVisible
 			&& VirtualListView.Footer?.Visibility == Visibility.Visible;
-		var total = checked(position + (globalHeader ? 1 : 0) + (globalFooter ? 1 : 0));
-		return new Projection(sections, hasItems, globalHeader, globalFooter, total);
+		// Sharing the row stream keeps empty content from covering interactive chrome.
+		var inlineEmptyView = !hasItems && (globalHeader || globalFooter) && VirtualListView.EmptyView is not null;
+		var total = checked(position + (globalHeader ? 1 : 0) + (globalFooter ? 1 : 0) + (inlineEmptyView ? 1 : 0));
+		return new Projection(sections, hasItems, globalHeader, globalFooter, inlineEmptyView, total, itemCount);
+	}
+
+	public int? GetRemainingItemCount(IReadOnlyList<IPositionInfo> visiblePositions)
+	{
+		var snapshot = projection;
+		var lastItem = -1;
+		foreach (var info in visiblePositions)
+		{
+			if (info.Kind != PositionKind.Item || info.SectionIndex < 0 || info.SectionIndex >= snapshot.Sections.Length)
+				continue;
+			var section = snapshot.Sections[info.SectionIndex];
+			if (info.ItemIndex >= 0 && info.ItemIndex < section.ItemCount)
+				lastItem = Math.Max(lastItem, section.ItemStart + info.ItemIndex);
+		}
+		return lastItem < 0 ? null : snapshot.ItemCount - lastItem - 1;
 	}
 
 	public int GetPosition(int sectionIndex, int itemIndex)
@@ -106,6 +130,9 @@ internal class PositionalViewSelector
 		if (snapshot.HasGlobalFooter && position == snapshot.TotalCount - 1)
 			return PositionInfo.ForFooter(position);
 
+		if (snapshot.HasInlineEmptyView && position == snapshot.TotalCount - (snapshot.HasGlobalFooter ? 2 : 1))
+			return PositionInfo.ForEmptyView(position);
+
 		var sectionPosition = position - (snapshot.HasGlobalHeader ? 1 : 0);
 		var low = 0;
 		var high = snapshot.Sections.Length;
@@ -131,7 +158,7 @@ internal class PositionalViewSelector
 		return PositionInfo.ForSectionFooter(position, low, section.ItemCount);
 	}
 
-	readonly record struct Section(int Start, int End, int ItemCount, bool HasHeader, bool HasFooter);
+	readonly record struct Section(int Start, int End, int ItemCount, bool HasHeader, bool HasFooter, int ItemStart);
 
-	sealed record Projection(Section[] Sections, bool HasItems, bool HasGlobalHeader, bool HasGlobalFooter, int TotalCount);
+	sealed record Projection(Section[] Sections, bool HasItems, bool HasGlobalHeader, bool HasGlobalFooter, bool HasInlineEmptyView, int TotalCount, int ItemCount);
 }

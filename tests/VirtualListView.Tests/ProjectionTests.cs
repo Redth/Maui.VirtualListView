@@ -37,7 +37,7 @@ public class ProjectionTests
 	}
 
 	[Fact]
-	public void AllEmptyGroupsRetainSectionChromeAndFooterButNotGlobalHeader()
+	public void AllEmptyGroupsRetainSectionChromeButNeitherGlobalByDefault()
 	{
 		var view = new TestListView
 		{
@@ -51,14 +51,107 @@ public class ProjectionTests
 
 		Assert.False(projection.HasItems);
 		Assert.False(projection.HasGlobalHeader);
-		Assert.True(projection.HasGlobalFooter);
+		Assert.False(projection.HasGlobalFooter);
 		Assert.Equal(new[]
 		{
 			PositionKind.SectionHeader, PositionKind.SectionFooter,
-			PositionKind.SectionHeader, PositionKind.SectionFooter, PositionKind.Footer
+			PositionKind.SectionHeader, PositionKind.SectionFooter
 		}, Enumerable.Range(0, projection.TotalCount).Select(p => projection.GetInfo(p).Kind));
 		view.SectionHeaderTemplate = null;
 		view.SectionFooterTemplate = null;
+		projection.Invalidate();
+		AssertEmpty(projection);
+	}
+
+	[Fact]
+	public void EmptyChromeSettingsAreIndependentFalseDefaultsAndNotify()
+	{
+		var view = new TestListView();
+		Assert.True(view.IsHeaderVisible);
+		Assert.True(view.IsFooterVisible);
+		Assert.False(view.ShowHeaderWhenEmpty);
+		Assert.False(view.ShowFooterWhenEmpty);
+		var changes = new List<string>();
+		view.PropertyChanged += (_, e) => changes.Add(e.PropertyName);
+		view.SetValue(Microsoft.Maui.Controls.VirtualListView.ShowHeaderWhenEmptyProperty, true);
+		Assert.True(((IVirtualListView)view).ShowHeaderWhenEmpty);
+		Assert.False(((IVirtualListView)view).ShowFooterWhenEmpty);
+		view.SetValue(Microsoft.Maui.Controls.VirtualListView.ShowFooterWhenEmptyProperty, true);
+		Assert.True(((IVirtualListView)view).ShowFooterWhenEmpty);
+		Assert.Equal(new[] { nameof(view.ShowHeaderWhenEmpty), nameof(view.ShowFooterWhenEmpty) }, changes);
+	}
+
+	[Theory]
+	[InlineData(-1)]
+	[InlineData(0)]
+	[InlineData(1)]
+	[InlineData(3)]
+	public void EmptyChromeRequiresBothItsOptInAndExistingVisibilityRegardlessOfSectionChrome(int sections)
+	{
+		for (var flags = 0; flags < 64; flags++)
+		{
+			var view = new TestListView
+			{
+				Adapter = sections < 0 ? null : new MutableAdapter(new int[sections]),
+				GlobalHeader = new View { IsVisible = (flags & 16) != 0 },
+				GlobalFooter = new View { IsVisible = (flags & 32) != 0 },
+				ShowHeaderWhenEmpty = (flags & 1) != 0,
+				ShowFooterWhenEmpty = (flags & 2) != 0,
+				IsHeaderVisible = (flags & 4) != 0,
+				IsFooterVisible = (flags & 8) != 0,
+				SectionHeaderTemplate = new DataTemplate(() => new View()),
+				SectionFooterTemplate = new DataTemplate(() => new View()),
+				EmptyView = new View()
+			};
+			var projection = new PositionalViewSelector(view);
+			var header = (flags & 21) == 21;
+			var footer = (flags & 42) == 42;
+			Assert.False(projection.HasItems);
+			Assert.Equal(header, projection.HasGlobalHeader);
+			Assert.Equal(footer, projection.HasGlobalFooter);
+			Assert.Equal(header || footer, projection.HasInlineEmptyView);
+			var expected = new List<PositionKind>();
+			if (header) expected.Add(PositionKind.Header);
+			for (var s = 0; s < Math.Max(0, sections); s++)
+				expected.AddRange(new[] { PositionKind.SectionHeader, PositionKind.SectionFooter });
+			if (header || footer) expected.Add(PositionKind.EmptyView);
+			if (footer) expected.Add(PositionKind.Footer);
+			Assert.Equal(expected, Enumerable.Range(0, projection.TotalCount).Select(p => projection.GetInfo(p).Kind));
+			Assert.Equal(-1, projection.GetPosition(0, 0));
+			Assert.Null(projection.GetInfo(projection.TotalCount));
+		}
+	}
+
+	[Fact]
+	public void EmptyViewIsAnOptionalRowBetweenGlobalsOnlyWhileEmpty()
+	{
+		var source = new MutableAdapter(0);
+		var view = new TestListView
+		{
+			Adapter = source, GlobalHeader = new View(), GlobalFooter = new View(),
+			ShowHeaderWhenEmpty = true, ShowFooterWhenEmpty = true
+		};
+		var projection = new PositionalViewSelector(view);
+		Assert.Equal(2, projection.TotalCount);
+		Assert.False(projection.HasInlineEmptyView);
+		view.EmptyView = new View();
+		projection.Invalidate();
+		Assert.Equal(new[] { PositionKind.Header, PositionKind.EmptyView, PositionKind.Footer },
+			Enumerable.Range(0, projection.TotalCount).Select(p => projection.GetInfo(p).Kind));
+		Assert.True(projection.HasInlineEmptyView);
+		Assert.Equal(-1, projection.GetInfo(1).SectionIndex);
+		Assert.Equal(-1, projection.GetInfo(1).ItemIndex);
+		source.Counts = new[] { 0, 1 };
+		projection.Invalidate();
+		Assert.True(projection.HasItems);
+		Assert.False(projection.HasInlineEmptyView);
+		Assert.Equal(PositionKind.Item, projection.GetInfo(1).Kind);
+		Assert.Equal(1, projection.GetPosition(1, 0));
+		source.Counts = new[] { 0, 0 };
+		projection.Invalidate();
+		Assert.True(projection.HasInlineEmptyView);
+		view.GlobalHeader = null;
+		view.GlobalFooter = null;
 		projection.Invalidate();
 		AssertEmpty(projection);
 	}
@@ -80,11 +173,16 @@ public class ProjectionTests
 				GlobalHeader = new View { IsVisible = random.Next(2) == 1 },
 				GlobalFooter = new View { IsVisible = random.Next(2) == 1 },
 				IsHeaderVisible = random.Next(2) == 1,
-				IsFooterVisible = random.Next(2) == 1
+				IsFooterVisible = random.Next(2) == 1,
+				ShowHeaderWhenEmpty = random.Next(2) == 1,
+				ShowFooterWhenEmpty = random.Next(2) == 1,
+				EmptyView = random.Next(2) == 1 ? new View() : null
 			};
 			var expected = new List<(PositionKind Kind, int Section, int Item)>();
 			var hasItems = counts.Any(c => c > 0);
-			if (hasItems && view.IsHeaderVisible && view.GlobalHeader.Visibility == Visibility.Visible)
+			var header = (hasItems || view.ShowHeaderWhenEmpty) && view.IsHeaderVisible && view.GlobalHeader.Visibility == Visibility.Visible;
+			var footer = (hasItems || view.ShowFooterWhenEmpty) && view.IsFooterVisible && view.GlobalFooter.Visibility == Visibility.Visible;
+			if (header)
 				expected.Add((PositionKind.Header, -1, -1));
 			for (var s = 0; s < counts.Length; s++)
 			{
@@ -95,11 +193,15 @@ public class ProjectionTests
 				if (footers[s])
 					expected.Add((PositionKind.SectionFooter, s, -1));
 			}
-			if (expected.Count > 0 && view.IsFooterVisible && view.GlobalFooter.Visibility == Visibility.Visible)
+			var inlineEmpty = !hasItems && (header || footer) && view.EmptyView is not null;
+			if (inlineEmpty)
+				expected.Add((PositionKind.EmptyView, -1, -1));
+			if (footer)
 				expected.Add((PositionKind.Footer, -1, -1));
 
 			var projection = new PositionalViewSelector(view);
 			Assert.Equal(hasItems, projection.HasItems);
+			Assert.Equal(inlineEmpty, projection.HasInlineEmptyView);
 			Assert.Equal(expected.Count, projection.TotalCount);
 			for (var p = 0; p < expected.Count; p++)
 			{
@@ -270,6 +372,7 @@ public class ProjectionTests
 		Assert.False(projection.HasItems);
 		Assert.False(projection.HasGlobalHeader);
 		Assert.False(projection.HasGlobalFooter);
+		Assert.False(projection.HasInlineEmptyView);
 		Assert.Null(projection.GetInfo(0));
 		Assert.Null(projection.GetInfo(-1));
 		Assert.Equal(-1, projection.GetPosition(0, 0));
