@@ -9,23 +9,45 @@ public partial class SectionedAdapterPage : ContentPage
 		InitializeComponent();
 
 		Adapter = new SectionedAdapter(Sections);
-
-		var rnd = new Random();
-
-		for (int i = 0; i < 5; i++)
-		{
-			for (int j = 1; j <= rnd.Next(1, 7); j++)
-			{
-				Adapter.AddItem($"Section {i}", $"Item {j}");
-			}
-		}
-
+		SetContent(5, 6);
 		vlv.Adapter = Adapter;
 	}
 
 
 	public SectionedAdapter Adapter { get; set; }
 	public ObservableCollection<Section> Sections = new();
+	int refreshCount;
+
+	void RequestRefresh_Clicked(object sender, EventArgs e)
+		=> vlv.RequestRefresh();
+
+	void FullContent_Clicked(object sender, EventArgs e) => SetContent(5, 6);
+	void ShortContent_Clicked(object sender, EventArgs e) => SetContent(1, 1);
+	void EmptyContent_Clicked(object sender, EventArgs e) => SetContent(0, 0);
+
+	void ScrollEnd_Clicked(object sender, EventArgs e)
+	{
+		var section = Sections.Count - 1;
+		if (section >= 0 && Sections[section].Count > 0)
+			vlv.ScrollToItem(new Microsoft.Maui.ItemPosition(section, Sections[section].Count - 1), false);
+	}
+
+	void Horizontal_Toggled(object sender, ToggledEventArgs e)
+		=> vlv.Orientation = e.Value ? Microsoft.Maui.ListOrientation.Horizontal : Microsoft.Maui.ListOrientation.Vertical;
+
+	void SetContent(int sectionCount, int itemCount)
+	{
+		vlv.ClearSelectedItems();
+		Sections.Clear();
+		for (var i = 0; i < sectionCount; i++)
+		{
+			var section = new Section { Title = $"Section {i}" };
+			for (var j = 1; j <= itemCount; j++)
+				section.Add($"Item {j}");
+			Sections.Add(section);
+		}
+		Adapter.InvalidateData();
+	}
 
 	private void Button_Clicked(object sender, EventArgs e)
 	{
@@ -50,7 +72,17 @@ public partial class SectionedAdapterPage : ContentPage
 
 	private async void Vlv_OnOnRefresh(object sender, RefreshEventArgs e)
 	{
-		await Task.Delay(3000);
-		e.Complete();
+		var request = ++refreshCount;
+		refreshStatus.Text = $"Refreshing #{request}";
+		try
+		{
+			await Task.Delay(3000);
+		}
+		finally
+		{
+			e.Complete();
+			if (request == refreshCount)
+				refreshStatus.Text = $"Finished #{request}";
+		}
 	}
 }

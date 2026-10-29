@@ -640,10 +640,87 @@ native selection; offscreen items read the accepted state when realized.
 
 ## Refreshing
 
-Pull to refresh is enabled for iOS/MacCatalyst and Android.  WindowsAppSDK does not have the equivalent feature so there is no support for it.
-You can use the `RefreshCommand` or subscribe to the `OnRefresh` event to perform your logic while the refresh indicator displays.
-You must set `IsRefreshEnabled` to true to enable the gesture.  
-You can also set the `RefreshAccentColor` to change the color of the refresh indicator.
+Set `IsRefreshEnabled = true` to enable native refresh on Android, iOS,
+Mac Catalyst, and Windows. `RequestRefresh()` starts the native indicator and
+invokes the same `RefreshCommand` / `OnRefresh` path as a pull gesture:
+
+```csharp
+listView.IsRefreshEnabled = true;
+listView.OnRefresh += async (_, args) =>
+{
+    try
+    {
+        await ReloadDataAsync();
+        adapter.InvalidateData();
+    }
+    finally
+    {
+        args.Complete();
+    }
+};
+
+// For example, from a refresh button after the view is connected.
+listView.RequestRefresh();
+```
+
+An eligible request is handled on the list's owning dispatcher. Disabled,
+disconnected, or already-refreshing controls ignore programmatic requests; they
+are not replayed after enabling, connecting, or completing the active refresh.
+This includes requests while a gesture-started refresh is active. The method
+does not enable refresh implicitly or cancel existing application work.
+
+The command receives an `Action` completion callback, and the event receives
+`RefreshEventArgs.Complete`. Complete in `finally` and use the application's
+normal asynchronous error handling. Completion is marshalled to the owning
+dispatcher and runs at most once for that refresh. Disabling refresh, changing
+the adapter, or disconnecting ends its indicator; late or duplicate completion
+cannot stop a newer refresh. Synchronous callback failures end the indicator and
+propagate. A request without an executable command or event subscriber completes
+immediately, so it need not display a visible animation.
+
+Usually configure either the command or the event. When both are configured,
+the existing contract is unchanged: the command runs if `CanExecute(null)` is
+true, then the event runs, and the first valid completion ends the indicator.
+There is no wait-for-all-consumers behavior.
+
+Refresh requests do **not** invalidate adapter data automatically. Publish data
+changes through the adapter's normal API (`InvalidateData`, `InvalidateItems`,
+or a new snapshot). Conversely, those data notifications do not start a refresh
+indicator or invoke refresh callbacks.
+
+On iOS/Mac Catalyst, a programmatic request reveals `UIRefreshControl` at the
+top, even if the list was scrolled. It retains the horizontal offset, respects
+native top insets, and does not jump back to the previous position on completion.
+Horizontal Apple lists use a separate vertical native refresh host so feedback
+does not change the collection's height constraint or discard measured column
+widths. Application/safe-area insets and real viewport changes still constrain
+the collection normally. Changing Apple orientation ends active feedback before
+replacing its native refresh host; it does not cancel application work. Each
+native host gets its own refresh control so pull gestures continue to work after
+orientation changes. On a real viewport resize, native size estimates are updated
+against the incoming bounds before UIKit validates the layout.
+Android uses `SwipeRefreshLayout`. Windows uses WinUI `RefreshContainer` and
+supports touch pull-to-refresh; provide a refresh button for mouse/keyboard
+users. Disabling Windows refresh leaves list scrolling and child controls
+enabled. `RefreshAccentColor` changes the native indicator color.
+Android and Windows keep the empty view inside the refresh host so it cannot
+cover the native indicator.
+
+The **SectionedAdapterPage** sample has a Refresh button, an enable switch, a
+request counter, Full/Short/Empty content buttons, and a horizontal switch.
+The End button scrolls to the last item for reveal checks; its opaque empty view
+also exercises indicator layering. During native smoke checks, press Refresh
+repeatedly, toggle refresh off during a request, pull to refresh, and leave/reopen the page.
+Check that feedback stops and callback counts do not overlap. On Apple, also
+request from mid-list and check for visible feedback without a completion-time
+return jump. Repeat with empty/short content and horizontal orientation; horizontal
+column widths and the user's horizontal scroll position must remain stable as
+feedback starts and stops. Also scroll horizontally while feedback is active:
+completion must retain that new position, not restore the request-time position.
+Rotate the device in both list orientations and repeat the end-to-refresh check;
+the resized cells must fit the viewport without native invalid-size diagnostics.
+On Windows verify touch refresh, empty-view layering, and scrolling after toggling
+refresh. Native tests must verify visible feedback, not only an internal flag.
 
 ## Empty View
 

@@ -13,6 +13,60 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	CvLayout? layout;
 	CvDelegate? cvdelegate;
 	UIRefreshControl? refreshControl;
+	HorizontalRefreshHost? horizontalRefreshHost;
+
+	public override bool NeedsContainer => true;
+
+	protected override void SetupContainer()
+	{
+		base.SetupContainer();
+		UpdateRefreshHost();
+	}
+
+	protected override void RemoveContainer()
+	{
+		RemoveHorizontalRefreshHost();
+		base.RemoveContainer();
+	}
+
+	void RemoveHorizontalRefreshHost()
+	{
+		if (horizontalRefreshHost is null)
+			return;
+		horizontalRefreshHost.RefreshControl = null;
+		PlatformView.RemoveFromSuperview();
+		ContainerView?.InsertSubview(PlatformView, 0);
+		horizontalRefreshHost.RemoveFromSuperview();
+		horizontalRefreshHost.Dispose();
+		horizontalRefreshHost = null;
+	}
+
+	void UpdateRefreshHost()
+	{
+		if (VirtualView.Orientation == ListOrientation.Horizontal && ContainerView is not null)
+		{
+			PlatformView.RefreshControl = null;
+			PlatformView.AlwaysBounceVertical = false;
+			if (horizontalRefreshHost is null)
+			{
+				ResetRefreshControl();
+				PlatformView.RemoveFromSuperview();
+				horizontalRefreshHost = new HorizontalRefreshHost(PlatformView) { Frame = ContainerView.Bounds };
+				ContainerView.InsertSubview(horizontalRefreshHost, 0);
+			}
+			horizontalRefreshHost.ScrollEnabled = VirtualView.IsRefreshEnabled;
+			horizontalRefreshHost.RefreshControl = VirtualView.IsRefreshEnabled ? refreshControl : null;
+		}
+		else
+		{
+			var wasHorizontal = horizontalRefreshHost is not null;
+			RemoveHorizontalRefreshHost();
+			if (wasHorizontal)
+				ResetRefreshControl();
+			PlatformView.AlwaysBounceVertical = true;
+			PlatformView.RefreshControl = VirtualView.IsRefreshEnabled ? refreshControl : null;
+		}
+	}
 
 	protected override UICollectionView CreatePlatformView()
 	{
@@ -61,8 +115,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 			return;
 		base.ConnectHandler(nativeView);
 		layout = nativeView.CollectionViewLayout as CvLayout;
-		refreshControl = new UIRefreshControl { Enabled = VirtualView.IsRefreshEnabled };
-		refreshControl.ValueChanged += RefreshControlValueChanged;
+		ResetRefreshControl();
 		if (VirtualView.IsRefreshEnabled)
 			nativeView.RefreshControl = refreshControl;
 
@@ -78,17 +131,55 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		ConnectLifetime();
 	}
 
+	void ResetRefreshControl()
+	{
+		// UIKit retains the original scroll host; create a control instead of reparenting it.
+		if (refreshControl is not null)
+		{
+			refreshControl.ValueChanged -= RefreshControlValueChanged;
+			refreshControl.RemoveFromSuperview();
+			refreshControl.Dispose();
+		}
+		refreshControl = new UIRefreshControl { Enabled = VirtualView.IsRefreshEnabled };
+		refreshControl.SizeToFit();
+		refreshControl.ValueChanged += RefreshControlValueChanged;
+		MapRefreshAccentColor(this, VirtualView);
+	}
+
 	void RefreshControlValueChanged(object? sender, EventArgs e)
 	{
 		if (IsConnected && VirtualView.IsRefreshEnabled && refreshControl is not null)
 		{
-			BeginRefresh(() => refreshControl.BeginRefreshing(), () => refreshControl?.EndRefreshing());
+			BeginRefresh(() => refreshControl.BeginRefreshing(), EndRefreshFeedback);
 		}
+	}
+
+	void EndRefreshFeedback()
+	{
+		refreshControl?.EndRefreshing();
+	}
+
+	void PlatformRequestRefresh()
+	{
+		var control = refreshControl
+			?? throw new InvalidOperationException("The connected refresh control is unavailable.");
+		RecordScrollIntent();
+		PlatformView.LayoutIfNeeded();
+		control.SizeToFit();
+		var host = (UIScrollView?)horizontalRefreshHost ?? PlatformView;
+		host.LayoutIfNeeded();
+		var top = host.AdjustedContentInset.Top;
+		BeginRefresh(() =>
+		{
+			host.SetContentOffset(new CGPoint(host.ContentOffset.X, -top - control.Bounds.Height), false);
+			control.BeginRefreshing();
+		}, EndRefreshFeedback);
 	}
 
 	protected override void DisconnectHandler(UICollectionView nativeView)
 	{
 		DisconnectLifetime();
+		RemoveHorizontalRefreshHost();
 		nativeView.WeakDelegate = null;
 		nativeView.WeakDataSource = null;
 		nativeView.BackgroundView?.RemoveFromSuperview();
@@ -182,6 +273,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		{
 			if (handler.layout is not null)
 			{
+				handler.EndRefresh();
+				handler.UpdateRefreshHost();
 				handler.layout.ScrollDirection = virtualListView.Orientation switch
 				{
 					ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
@@ -206,15 +299,14 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		{
 			if (isRefreshEnabled)
 			{
-				handler.PlatformView.RefreshControl = handler.refreshControl;
 				handler.refreshControl.Enabled = true;
 			}
 			else
 			{
 				handler.EndRefresh();
 				handler.refreshControl.Enabled = false;
-				handler.PlatformView.RefreshControl = null;
 			}
+			handler.UpdateRefreshHost();
 		}
 	}
 

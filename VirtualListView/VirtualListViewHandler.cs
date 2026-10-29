@@ -31,7 +31,11 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	public static CommandMapper<IVirtualListView, VirtualListViewHandler> CommandMapper = new(ViewCommandMapper)
 	{
 		[nameof(IVirtualListView.ScrollToItem)] = MapScrollToItem,
+		[nameof(Controls.VirtualListView.RequestRefresh)] = MapRequestRefresh,
 	};
+
+	public static void MapRequestRefresh(VirtualListViewHandler handler, IVirtualListView view, object parameter)
+		=> handler.ownedRefresh?.Request(() => handler.VirtualView.IsRefreshEnabled, handler.PlatformRequestRefresh);
 
 	public static void MapScrollToItem(VirtualListViewHandler handler, IVirtualListView view, object parameter)
 	{

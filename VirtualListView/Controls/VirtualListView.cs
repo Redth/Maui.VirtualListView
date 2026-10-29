@@ -198,6 +198,15 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 
 	public event EventHandler<RefreshEventArgs> OnRefresh;
 
+	/// <summary>Starts native refresh feedback and invokes the existing refresh command and event.</summary>
+	/// <remarks>
+	/// Disabled, disconnected, and already-refreshing controls ignore the request without replaying it.
+	/// Complete through the command's callback or <see cref="RefreshEventArgs.Complete"/>.
+	/// On Apple platforms, this reveals the indicator at the top without restoring the previous scroll position.
+	/// </remarks>
+	public void RequestRefresh()
+		=> Handler?.Invoke(nameof(RequestRefresh), null);
+
 	void IVirtualListView.Refresh(Action completionCallback)
 	{
 		var requested = false;
