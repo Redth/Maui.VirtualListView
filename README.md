@@ -64,8 +64,8 @@ WinUI builds (or `maui` when also developing Android). This workload set uses
 Android SDK 36.1 and JDK 21, and requires Xcode 27.1 for iOS. Use a Mac with the
 matching Xcode for Apple sample builds, and Windows for the WinUI sample.
 The sample keeps Android API 21 and Windows 10 version 1809 as its deployment
-minima. The current .NET 10 Apple workload requires iOS and Mac Catalyst 15.0,
-so those sample minima replace 14.2 and 14.0 respectively. Android target SDK
+minima. The current .NET 10 Apple workload requires iOS 15.0 and Mac Catalyst
+17.0, so those sample minima replace 14.2 and 14.0 respectively. Android target SDK
 selection now follows the installed .NET 10 Android workload instead of an old
 manifest override.
 
