@@ -10,6 +10,7 @@ namespace Microsoft.Maui;
 public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, FrameLayout>
 {
 	FrameLayout rootLayout;
+	FrameLayout contentLayout;
 	SwipeRefreshLayout swipeRefreshLayout;
 	RvAdapter adapter;
 	RecyclerView recyclerView;
@@ -23,9 +24,11 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	protected override FrameLayout CreatePlatformView()
 	{
 		rootLayout = new FrameLayout(Context);
+		contentLayout = new FrameLayout(Context);
 		recyclerView = new InputRecyclerView(Context, RecordScrollIntent);
 		swipeRefreshLayout = new SwipeRefreshLayout(Context);
-		swipeRefreshLayout.AddView(recyclerView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
+		contentLayout.AddView(recyclerView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
+		swipeRefreshLayout.AddView(contentLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
 		rootLayout.AddView(swipeRefreshLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
 
 		return rootLayout;
@@ -39,9 +42,10 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		refreshListener = new SrlRefreshListener(() =>
 		{
 			if (IsConnected)
-				BeginRefresh(() => swipeRefreshLayout.Refreshing = true, () => swipeRefreshLayout.Refreshing = false);
-		});
+				PlatformRequestRefresh();
+		}, () => recyclerView.CanScrollVertically(-1));
 		swipeRefreshLayout.SetOnRefreshListener(refreshListener);
+		swipeRefreshLayout.SetOnChildScrollUpCallback(refreshListener);
 
 		layoutManager = new LinearLayoutManager(Context);
 		//layoutManager.Orientation = LinearLayoutManager.Horizontal;
@@ -69,10 +73,13 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		recyclerView.SetLayoutManager(layoutManager);
 		recyclerView.SetAdapter(adapter);
 		recyclerView.ViewTreeObserver.GlobalLayout += RecyclerLayoutCompleted;
-		recyclerView.LayoutParameters = new ViewGroup.LayoutParams(
+		recyclerView.LayoutParameters = new FrameLayout.LayoutParams(
 			ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
 		ConnectLifetime();
 	}
+
+	void PlatformRequestRefresh()
+		=> BeginRefresh(() => swipeRefreshLayout.Refreshing = true, () => swipeRefreshLayout.Refreshing = false);
 
 	protected override void DisconnectHandler(FrameLayout nativeView)
 	{
@@ -80,6 +87,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		recyclerView.ViewTreeObserver.GlobalLayout -= RecyclerLayoutCompleted;
 		afterLayout = null;
 		swipeRefreshLayout.SetOnRefreshListener(null);
+		swipeRefreshLayout.SetOnChildScrollUpCallback(null);
 		refreshListener?.Dispose();
 		refreshListener = null;
 		if (scrollListener is not null)
@@ -255,7 +263,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 		if (emptyView is not null)
 		{
-			this.rootLayout.AddView(emptyView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
+			contentLayout.AddView(emptyView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
 			UpdateEmptyViewVisibility();
 		}
 	}

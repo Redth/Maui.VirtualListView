@@ -6,6 +6,25 @@ namespace VirtualListView.Tests;
 public class ContentLayoutTests
 {
 	[Fact]
+	public void ApplicationInsetChangesRemeasureTheHorizontalCrossSizeWithoutPinningThePrimaryExtent()
+	{
+		var view = new MeasureView();
+		var handler = new MeasureHandler(view, (width, height) =>
+		{
+			Assert.True(double.IsPositiveInfinity(width));
+			return new Size(125, height);
+		});
+		using var layout = Create(view);
+
+		foreach (var applicationInset in new[] { 0d, 30, 60, 59, 30, 1, 0 })
+		{
+			var cross = 544 - applicationInset;
+			Assert.Equal(new Size(125, cross), layout.Measure(ListOrientation.Horizontal, cross));
+		}
+		Assert.Equal(7, handler.Measures);
+	}
+
+	[Fact]
 	public void VerticalMeasureUsesFiniteWidthAndArrangesTheAcceptedOuterSize()
 	{
 		var view = new MeasureView();

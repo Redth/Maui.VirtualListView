@@ -16,23 +16,36 @@ internal class CvLayout : UICollectionViewFlowLayout
 	public override void PrepareLayout()
 	{
 		if (Handler.TryGetTarget(out var handler) && handler.IsConnected)
-		{
-			var cross = Math.Max(1, CrossSize(handler.VirtualView.Orientation));
-			var estimate = handler.VirtualView.Orientation == ListOrientation.Vertical
-				? new CGSize(cross, 44) : new CGSize(44, cross);
-			if (EstimatedItemSize != estimate)
-				EstimatedItemSize = estimate;
-		}
+			UpdateEstimate(handler.VirtualView.Orientation, CollectionView.Bounds);
 		base.PrepareLayout();
 	}
 
 	internal double CrossSize(ListOrientation orientation)
+		=> CrossSize(orientation, CollectionView.Bounds);
+
+	double CrossSize(ListOrientation orientation, CGRect bounds)
 	{
-		var bounds = CollectionView.Bounds;
 		var inset = CollectionView.AdjustedContentInset;
 		return orientation == ListOrientation.Vertical
 			? Math.Max(0, bounds.Width - inset.Left - inset.Right - SectionInset.Left - SectionInset.Right)
 			: Math.Max(0, bounds.Height - inset.Top - inset.Bottom - SectionInset.Top - SectionInset.Bottom);
+	}
+
+	void UpdateEstimate(ListOrientation orientation, CGRect bounds)
+	{
+		var cross = Math.Max(1, CrossSize(orientation, bounds));
+		var estimate = orientation == ListOrientation.Vertical
+			? new CGSize(cross, 44) : new CGSize(44, cross);
+		if (EstimatedItemSize != estimate)
+			EstimatedItemSize = estimate;
+	}
+
+	public override UICollectionViewLayoutInvalidationContext GetInvalidationContextForBoundsChange(CGRect newBounds)
+	{
+		// UIKit validates estimates against the new viewport before PrepareLayout runs.
+		if (Handler.TryGetTarget(out var handler) && handler.IsConnected)
+			UpdateEstimate(handler.VirtualView.Orientation, newBounds);
+		return base.GetInvalidationContextForBoundsChange(newBounds);
 	}
 
 	public override UICollectionViewLayoutAttributes LayoutAttributesForItem(NSIndexPath path)

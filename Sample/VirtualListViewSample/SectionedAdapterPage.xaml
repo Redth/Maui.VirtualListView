@@ -6,17 +6,37 @@
 	xmlns:local="clr-namespace:VirtualListViewSample"
 	xmlns:vlv="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
 	Title="SectionedAdapterPage">
-	<Grid RowDefinitions="*,Auto" ColumnDefinitions="*,*,Auto" Padding="20">
+	<Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*,*,Auto" Padding="20">
+		<Grid Grid.ColumnSpan="3" RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="8">
+			<Button Text="Refresh" Clicked="RequestRefresh_Clicked" AutomationId="request-refresh" />
+			<HorizontalStackLayout Grid.Column="1" Spacing="8">
+				<Label Text="Refresh enabled" VerticalOptions="Center" />
+				<Switch x:Name="refreshEnabled" IsToggled="True" AutomationId="refresh-enabled" />
+			</HorizontalStackLayout>
+			<Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+				<Button Text="Full" Clicked="FullContent_Clicked" AutomationId="refresh-full" />
+				<Button Grid.Column="1" Text="Short" Clicked="ShortContent_Clicked" AutomationId="refresh-short" />
+				<Button Grid.Column="2" Text="Empty" Clicked="EmptyContent_Clicked" AutomationId="refresh-empty" />
+				<Button Grid.Column="3" Text="End" Clicked="ScrollEnd_Clicked" AutomationId="refresh-scroll-end" />
+			</Grid>
+			<Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+				<Label Text="Horizontal" VerticalOptions="Center" />
+				<Switch Grid.Column="1" Toggled="Horizontal_Toggled" AutomationId="refresh-horizontal" />
+				<Label x:Name="refreshStatus" Grid.Column="2" VerticalOptions="Center"
+					Text="No refresh requests started" AutomationId="refresh-status" />
+			</Grid>
+		</Grid>
 		<vlv:VirtualListView
-			Grid.Row="0"
+			Grid.Row="1"
 			Grid.Column="0" Grid.ColumnSpan="3"
-			IsRefreshEnabled="False"
+			IsRefreshEnabled="{Binding Source={x:Reference refreshEnabled}, Path=IsToggled}"
 			OnRefresh="Vlv_OnOnRefresh"
 			x:Name="vlv"
 			OnSelectedItemsChanged="vlv_SelectedItemsChanged"
 			SelectionMode="Single">
 			<vlv:VirtualListView.EmptyView>
-				<Label Text="Empty!" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+				<Label Text="Empty!" BackgroundColor="{AppThemeBinding Light=White, Dark=Black}"
+					HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
 			</vlv:VirtualListView.EmptyView>
 			<vlv:VirtualListView.SectionHeaderTemplate>
 				<DataTemplate>
@@ -41,8 +61,8 @@
 			</vlv:VirtualListView.ItemTemplate>
 		</vlv:VirtualListView>
 
-		<Entry x:Name="entrySection" Grid.Row="1" Grid.Column="0" Placeholder="Section" />
-		<Entry x:Name="entryItem" Grid.Row="1" Grid.Column="1" Placeholder="Item" />
-		<Button Grid.Row="1" Grid.Column="3" Text="Add" Clicked="Button_Clicked" />
+		<Entry x:Name="entrySection" Grid.Row="2" Grid.Column="0" Placeholder="Section" />
+		<Entry x:Name="entryItem" Grid.Row="2" Grid.Column="1" Placeholder="Item" />
+		<Button Grid.Row="2" Grid.Column="2" Text="Add" Clicked="Button_Clicked" />
 	</Grid>
 </ContentPage>

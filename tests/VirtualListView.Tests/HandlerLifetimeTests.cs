@@ -188,6 +188,270 @@ public class HandlerLifetimeTests
 		Assert.Equal(1, ended);
 	}
 
+	[Fact]
+	public void PublicRefreshRequestForwardsToTheHandlerWithoutDirectlyInvokingConsumers()
+	{
+		var view = new TestListView { IsRefreshEnabled = true };
+		var calls = 0;
+		view.OnRefresh += (_, _) => calls++;
+		view.RequestRefresh();
+		var handler = new RequestHandler(view);
+		view.Handler = handler;
+		var before = handler.Invocations;
+		view.RequestRefresh();
+		Assert.Equal(nameof(view.RequestRefresh), handler.Command);
+		Assert.Null(handler.Arguments);
+		Assert.Equal(before + 1, handler.Invocations);
+		Assert.Equal(0, calls);
+	}
+
+	[Fact]
+	public void DisabledAndDisconnectedRefreshRequestsAreNotReplayed()
+	{
+		var dispatcher = new TestDispatcher();
+		var publication = new HandlerPublication();
+		var refresh = new OwnedRefresh(publication);
+		var requests = 0;
+		var enabled = true;
+		refresh.Request(() => enabled, () => requests++);
+		publication.Connect(dispatcher, null, () => { });
+		dispatcher.Drain();
+		Assert.Equal(0, requests);
+		refresh.Request(() => enabled, () => requests++);
+		enabled = false;
+		dispatcher.Drain();
+		Assert.Equal(0, requests);
+		enabled = true;
+		dispatcher.Drain();
+		Assert.Equal(0, requests);
+		refresh.Request(() => enabled, () => requests++);
+		dispatcher.Drain();
+		Assert.Equal(1, requests);
+	}
+
+	[Fact]
+	public void RepeatedAndReentrantRequestsDoNotRestartOrQueueAnActiveRefresh()
+	{
+		var dispatcher = new TestDispatcher();
+		var publication = new HandlerPublication();
+		publication.Connect(dispatcher, null, () => { });
+		var refresh = new OwnedRefresh(publication);
+		var starts = 0;
+		var finishes = 0;
+		Action complete = null;
+		void Start() => refresh.Begin(callback =>
+		{
+			starts++;
+			complete = callback;
+			refresh.Request(() => true, Start);
+		}, () => finishes++);
+		refresh.Request(() => true, Start);
+		refresh.Request(() => true, Start);
+		dispatcher.Drain();
+		Assert.Equal(1, starts);
+		refresh.Request(() => true, Start);
+		complete();
+		dispatcher.Drain();
+		Assert.Equal(1, starts);
+		Assert.Equal(1, finishes);
+		refresh.Request(() => true, Start);
+		dispatcher.Drain();
+		Assert.Equal(2, starts);
+		complete();
+		dispatcher.Drain();
+		Assert.Equal(2, finishes);
+	}
+
+	[Fact]
+	public void ProgrammaticRequestsDuringAGestureRefreshAreIgnored()
+	{
+		var dispatcher = new TestDispatcher();
+		var publication = new HandlerPublication();
+		publication.Connect(dispatcher, null, () => { });
+		var refresh = new OwnedRefresh(publication);
+		Action complete = null;
+		refresh.Begin(callback => complete = callback, () => { });
+		var requests = 0;
+		refresh.Request(() => true, () => requests++);
+		dispatcher.Drain();
+		Assert.Equal(0, requests);
+		complete();
+		dispatcher.Drain();
+		refresh.Request(() => true, () => requests++);
+		dispatcher.Drain();
+		Assert.Equal(1, requests);
+	}
+
+	[Fact]
+	public void QueuedRequestsCannotOutliveTheirSourceOrConnectionAndInvalidationDoesNotStartRefresh()
+	{
+		var dispatcher = new TestDispatcher();
+		var publication = new HandlerPublication();
+		var source = new EventAdapter();
+		var invalidations = 0;
+		publication.Connect(dispatcher, source, () => invalidations++);
+		var refresh = new OwnedRefresh(publication);
+		var requests = 0;
+		source.InvalidateData();
+		dispatcher.Drain();
+		Assert.Equal(1, invalidations);
+		Assert.Equal(0, requests);
+		refresh.Request(() => true, () => requests++);
+		publication.SetAdapter(new EventAdapter());
+		dispatcher.Drain();
+		Assert.Equal(0, requests);
+		refresh.Request(() => true, () => requests++);
+		publication.Disconnect();
+		refresh.End();
+		publication.Connect(dispatcher, source, () => invalidations++);
+		dispatcher.Drain();
+		Assert.Equal(0, requests);
+		refresh.Request(() => true, () => requests++);
+		dispatcher.Drain();
+		Assert.Equal(1, requests);
+	}
+
+	[Theory]
+	[InlineData(false, false, false)]
+	[InlineData(false, false, true)]
+	[InlineData(true, false, false)]
+	[InlineData(true, false, true)]
+	[InlineData(true, true, false)]
+	[InlineData(true, true, true)]
+	public void RequestedRefreshPreservesConsumerDispatchAndFirstCompletionWins(
+		bool hasCommand, bool canExecute, bool hasEvent)
+	{
+		var dispatcher = new TestDispatcher();
+		var publication = new HandlerPublication();
+		publication.Connect(dispatcher, null, () => { });
+		var refresh = new OwnedRefresh(publication);
+		var view = new TestListView { IsRefreshEnabled = true };
+		var completions = new List<Action>();
+		var consumers = new List<string>();
+		if (hasCommand)
+			view.RefreshCommand = new Microsoft.Maui.Controls.Command(parameter =>
+			{
+				consumers.Add("command");
+				completions.Add(Assert.IsType<Action>(parameter));
+			}, parameter =>
+			{
+				Assert.Null(parameter);
+				return canExecute;
+			});
+		if (hasEvent)
+			view.OnRefresh += (_, args) =>
+			{
+				consumers.Add("event");
+				completions.Add(args.Complete);
+			};
+		var starts = 0;
+		var finishes = 0;
+		refresh.Request(() => view.IsRefreshEnabled, () => refresh.Begin(callback =>
+		{
+			starts++;
+			((IVirtualListView)view).Refresh(callback);
+		}, () => finishes++));
+		dispatcher.Drain();
+		Assert.Equal(1, starts);
+		var expected = new List<string>();
+		if (hasCommand && canExecute)
+			expected.Add("command");
+		if (hasEvent)
+			expected.Add("event");
+		Assert.Equal(expected, consumers);
+		Assert.Equal(completions.Count == 0 ? 1 : 0, finishes);
+		foreach (var completion in completions)
+		{
+			completion();
+			completion();
+			dispatcher.Drain();
+			Assert.Equal(1, finishes);
+		}
+		Assert.Equal(1, finishes);
+	}
+
+	[Fact]
+	public async Task RequestedRefreshAndItsCompletionUseTheOwningDispatcher()
+	{
+		var dispatcher = new TestDispatcher();
+		var publication = new HandlerPublication();
+		publication.Connect(dispatcher, null, () => { });
+		var refresh = new OwnedRefresh(publication);
+		Action complete = null;
+		var finishes = 0;
+		await Task.Run(() => refresh.Request(() =>
+		{
+			Assert.True(dispatcher.IsDraining);
+			return true;
+		}, () => refresh.Begin(callback =>
+		{
+			Assert.True(dispatcher.IsDraining);
+			complete = callback;
+		}, () =>
+		{
+			Assert.True(dispatcher.IsDraining);
+			finishes++;
+		})));
+		Assert.Null(complete);
+		dispatcher.Drain();
+		await Task.Run(() => { complete(); complete(); });
+		Assert.Equal(0, finishes);
+		dispatcher.Drain();
+		Assert.Equal(1, finishes);
+	}
+
+	[Theory]
+	[InlineData(false)]
+	[InlineData(true)]
+	public void RequestedConsumerFailureEndsFeedbackAndDoesNotBlockLaterRequests(bool commandFails)
+	{
+		var dispatcher = new TestDispatcher();
+		var publication = new HandlerPublication();
+		publication.Connect(dispatcher, null, () => { });
+		var refresh = new OwnedRefresh(publication);
+		var view = new TestListView();
+		var failure = new ApplicationException("consumer");
+		if (commandFails)
+			view.RefreshCommand = new Microsoft.Maui.Controls.Command(() => throw failure);
+		else
+			view.OnRefresh += (_, _) => throw failure;
+		var finishes = 0;
+		refresh.Request(() => true, () => refresh.Begin(
+			callback => ((IVirtualListView)view).Refresh(callback), () => finishes++));
+		Assert.Same(failure, Assert.Throws<ApplicationException>(dispatcher.Drain));
+		Assert.Equal(1, finishes);
+		var requests = 0;
+		refresh.Request(() => true, () => requests++);
+		dispatcher.Drain();
+		Assert.Equal(1, requests);
+	}
+
+	sealed class RequestHandler : IViewHandler
+	{
+		public RequestHandler(IView view) => VirtualView = view;
+		public string Command { get; private set; }
+		public object Arguments { get; private set; }
+		public int Invocations { get; private set; }
+		public bool HasContainer { get; set; }
+		public object ContainerView => null;
+		public object PlatformView => null;
+		public IView VirtualView { get; private set; }
+		IElement IElementHandler.VirtualView => VirtualView;
+		public IMauiContext MauiContext => null;
+		public Size GetDesiredSize(double width, double height) => Size.Zero;
+		public void PlatformArrange(Rect frame) { }
+		public void SetMauiContext(IMauiContext context) { }
+		public void SetVirtualView(IElement view) => VirtualView = (IView)view;
+		public void UpdateValue(string property) { }
+		public void Invoke(string command, object args)
+		{
+			Command = command;
+			Arguments = args;
+			Invocations++;
+		}
+		public void DisconnectHandler() { }
+	}
+
 	sealed class EventAdapter : IVirtualListViewAdapter, IDisposable
 	{
 		public EventHandler Notification { get; private set; }
