@@ -225,6 +225,29 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public IView? Header => GlobalHeader;
 	public IView? Footer => GlobalFooter;
 
+	protected override void OnPropertyChanged(string? propertyName = null)
+	{
+		base.OnPropertyChanged(propertyName);
+
+		switch (propertyName)
+		{
+			case nameof(GlobalHeader):
+				OnPropertyChanged(nameof(IVirtualListView.Header));
+				break;
+			case nameof(GlobalFooter):
+				OnPropertyChanged(nameof(IVirtualListView.Footer));
+				break;
+			case nameof(ItemTemplate):
+			case nameof(ItemTemplateSelector):
+			case nameof(SectionHeaderTemplate):
+			case nameof(SectionHeaderTemplateSelector):
+			case nameof(SectionFooterTemplate):
+			case nameof(SectionFooterTemplateSelector):
+				OnPropertyChanged(nameof(IVirtualListView.ViewSelector));
+				break;
+		}
+	}
+
 	public event EventHandler<ScrolledEventArgs> OnScrolled;
 
 	public void Scrolled(double x, double y)

@@ -74,6 +74,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 	protected override void DisconnectHandler(WGrid nativeView)
 	{
+		DisconnectProjectionObservers();
 		itemsRepeater.ItemTemplate = null;
 		elementFactory.Dispose();
 		elementFactory = null;
@@ -86,6 +87,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 	public void InvalidateData()
 	{
+		PositionalViewSelector?.Invalidate();
 		irSource?.Reset();
 		UpdateEmptyViewVisibility();
 	}
@@ -94,19 +96,13 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	{
 		var position = PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
 
+		if (position < 0)
+			return;
+
 		var elem = itemsRepeater.GetOrCreateElement(position);
 
 		elem.StartBringIntoView(new BringIntoViewOptions() { AnimationDesired = animated });
 	}
-
-	public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler?.InvalidateData();
-
-	public static void MapFooter(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler?.InvalidateData();
-
-	public static void MapViewSelector(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler?.InvalidateData();
 
 	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{ }
@@ -114,6 +110,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
 	{
 		var position = PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
+
+		if (position < 0)
+			return;
 
 		var elem = itemsRepeater.TryGetElement(position);
 

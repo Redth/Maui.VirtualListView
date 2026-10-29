@@ -1,4 +1,5 @@
 using Microsoft.Maui.Adapters;
+using System.ComponentModel;
 
 namespace Microsoft.Maui;
 
@@ -54,17 +55,53 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 
 	internal PositionalViewSelector PositionalViewSelector { get; private set; }
 
-	bool ShouldShowEmptyView
+	bool ShouldShowEmptyView => !(PositionalViewSelector?.HasItems ?? false);
+
+	INotifyPropertyChanged observedHeader;
+	INotifyPropertyChanged observedFooter;
+
+	public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
-		get
-		{
-			var sections = PositionalViewSelector?.Adapter?.GetNumberOfSections() ?? 0;
+		if (handler.observedHeader is not null)
+			handler.observedHeader.PropertyChanged -= handler.GlobalChromePropertyChanged;
 
-			if (sections <= 0)
-				return true;
+		handler.observedHeader = virtualListView.Header as INotifyPropertyChanged;
+		if (handler.observedHeader is not null)
+			handler.observedHeader.PropertyChanged += handler.GlobalChromePropertyChanged;
 
-			return (PositionalViewSelector?.Adapter?.GetNumberOfItemsInSection(0) ?? 0) <= 0;
-		}
+		handler.InvalidateData();
+	}
+
+	public static void MapFooter(VirtualListViewHandler handler, IVirtualListView virtualListView)
+	{
+		if (handler.observedFooter is not null)
+			handler.observedFooter.PropertyChanged -= handler.GlobalChromePropertyChanged;
+
+		handler.observedFooter = virtualListView.Footer as INotifyPropertyChanged;
+		if (handler.observedFooter is not null)
+			handler.observedFooter.PropertyChanged += handler.GlobalChromePropertyChanged;
+
+		handler.InvalidateData();
+	}
+
+	public static void MapViewSelector(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		=> handler.InvalidateData();
+
+	void GlobalChromePropertyChanged(object sender, PropertyChangedEventArgs e)
+	{
+		// Controls exposes IsVisible while IView exposes Visibility.
+		if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName is "Visibility" or "IsVisible")
+			InvalidateData();
+	}
+
+	void DisconnectProjectionObservers()
+	{
+		if (observedHeader is not null)
+			observedHeader.PropertyChanged -= GlobalChromePropertyChanged;
+		if (observedFooter is not null)
+			observedFooter.PropertyChanged -= GlobalChromePropertyChanged;
+		observedHeader = null;
+		observedFooter = null;
 	}
 
 	public static void MapAdapter(VirtualListViewHandler handler, IVirtualListView virtualListView)

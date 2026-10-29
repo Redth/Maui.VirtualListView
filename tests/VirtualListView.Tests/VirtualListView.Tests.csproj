@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+		<PackageReference Include="xunit" Version="2.9.2" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.100" />
+	</ItemGroup>
+	<ItemGroup>
+		<!-- Compile the real portable sources without requiring native MAUI workloads. -->
+		<Compile Include="../../VirtualListView/*.cs;../../VirtualListView/Adapters/*.cs;../../VirtualListView/Controls/*.cs"
+		         Link="Production/%(RecursiveDir)%(Filename)%(Extension)" />
+		<Using Include="Microsoft.Extensions.DependencyInjection" />
+		<Using Include="Microsoft.Maui" />
+		<Using Include="Microsoft.Maui.Controls" />
+		<Using Include="Microsoft.Maui.Graphics" />
+		<Using Include="Microsoft.Maui.Hosting" />
+		<Using Include="Xunit" />
+	</ItemGroup>
+</Project>

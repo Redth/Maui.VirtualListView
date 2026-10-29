@@ -1,4 +1,4 @@
-﻿using Microsoft.Maui.Adapters;
+using Microsoft.Maui.Adapters;
 
 namespace Microsoft.Maui;
 
@@ -8,166 +8,113 @@ internal class PositionalViewSelector
 	public IVirtualListViewAdapter Adapter => VirtualListView?.Adapter;
 	public IVirtualListViewSelector ViewSelector => VirtualListView?.ViewSelector;
 
-	public bool HasGlobalHeader =>
-		(VirtualListView?.IsHeaderVisible ?? false)
-			&& (VirtualListView?.Header?.Visibility ?? Visibility.Collapsed) == Visibility.Visible;
-
-	public bool HasGlobalFooter =>
-		(VirtualListView?.IsFooterVisible ?? false)
-			&& (VirtualListView?.Footer?.Visibility ?? Visibility.Collapsed) == Visibility.Visible;
+	Projection projection;
 
 	public PositionalViewSelector(IVirtualListView virtualListView)
 	{
 		VirtualListView = virtualListView;
+		Invalidate();
 	}
 
-	public int TotalCount
-		=> GetTotalCount();
+	public int TotalCount => projection.TotalCount;
+	public bool HasItems => projection.HasItems;
+	public bool HasGlobalHeader => projection.HasGlobalHeader;
+	public bool HasGlobalFooter => projection.HasGlobalFooter;
 
-	int GetTotalCount()
+	// Publish only complete metadata. Native count/bind/seek calls never rescan the source.
+	public void Invalidate()
+		=> projection = CreateProjection();
+
+	Projection CreateProjection()
 	{
-		if (Adapter is null)
-		{
-			return 0;
-		}
-		
-		var sum = 0;
+		var adapter = Adapter;
+		if (adapter is null)
+			return new Projection(Array.Empty<Section>(), false, false, false, 0);
 
-		//var hasAtLeastOneItem = false;
-		var numberOfSections = Adapter.GetNumberOfSections();
+		var sectionCount = adapter.GetNumberOfSections();
+		if (sectionCount < 0)
+			throw new InvalidOperationException("The adapter returned a negative section count.");
 
-		if (HasGlobalHeader && numberOfSections > 0)
+		var sections = new Section[sectionCount];
+		var selector = ViewSelector;
+		var hasItems = false;
+		var position = 0;
+		for (var s = 0; s < sections.Length; s++)
 		{
-			// Make sure that there's at least one section with at least
-			// one item, otherwise it's 'empty'
-			// The default adapter may always return 1 for number of sections
-			// so it's not enough to check that
-			for (int s = 0; s < numberOfSections; s++)
-			{
-				if (Adapter.GetNumberOfItemsInSection(s) > 0)
-				{
-					sum += 1;
-					// If we found one, we can stop looping
-					// since we just care to calculate a spot
-					// for the header cell if the adapter isn't empty
-					break;
-				}
-			}
+			var count = adapter.GetNumberOfItemsInSection(s);
+			if (count < 0)
+				throw new InvalidOperationException($"The adapter returned a negative item count for section {s}.");
+
+			var hasHeader = selector?.SectionHasHeader(s) ?? false;
+			var hasFooter = selector?.SectionHasFooter(s) ?? false;
+			var end = checked(position + count + (hasHeader ? 1 : 0) + (hasFooter ? 1 : 0));
+			sections[s] = new Section(position, end, count, hasHeader, hasFooter);
+			position = end;
+			hasItems |= count > 0;
 		}
 
-		if (Adapter != null)
-		{
-			for (int s = 0; s < numberOfSections; s++)
-			{
-				if (ViewSelector.SectionHasHeader(s))
-					sum += 1;
-
-				sum += Adapter.GetNumberOfItemsInSection(s);
-
-				if (ViewSelector.SectionHasFooter(s))
-					sum += 1;
-			}
-		}
-
-		// Only count footer if there is already at least one item
-		// otherwise the adapter is empty and we shouldn't count it
-		if (HasGlobalFooter && sum > 0)
-			sum += 1;
-
-		return sum;
+		// Preserve empty-group chrome, but suppress a global header without data and
+		// a global footer without any projected section content.
+		var globalHeader = hasItems && VirtualListView.IsHeaderVisible
+			&& VirtualListView.Header?.Visibility == Visibility.Visible;
+		var globalFooter = position > 0 && VirtualListView.IsFooterVisible
+			&& VirtualListView.Footer?.Visibility == Visibility.Visible;
+		var total = checked(position + (globalHeader ? 1 : 0) + (globalFooter ? 1 : 0));
+		return new Projection(sections, hasItems, globalHeader, globalFooter, total);
 	}
 
 	public int GetPosition(int sectionIndex, int itemIndex)
 	{
-		// calculate position
-		if (Adapter == null)
+		var snapshot = projection;
+		if (sectionIndex < 0 || sectionIndex >= snapshot.Sections.Length)
 			return -1;
 
-		var position = 0;
+		var section = snapshot.Sections[sectionIndex];
+		if (itemIndex < 0 || itemIndex >= section.ItemCount)
+			return -1;
 
-		if (HasGlobalHeader)
-		{
-			position++;
-		}
-
-		for (int s = 0; s <= sectionIndex; s++)
-		{
-			if (ViewSelector.SectionHasHeader(s))
-			{
-				position++;
-			}
-
-			if (s == sectionIndex)
-			{
-				position += itemIndex;
-				break;
-			}
-
-			var itemsInSection = Math.Max(Adapter.GetNumberOfItemsInSection(s), 0);
-
-			position += itemsInSection;
-
-			if (ViewSelector.SectionHasFooter(s))
-				position++;
-		}
-
-		return position;
+		return section.Start + (snapshot.HasGlobalHeader ? 1 : 0)
+			+ (section.HasHeader ? 1 : 0) + itemIndex;
 	}
-
 
 	public PositionInfo GetInfo(int position)
 	{
-		if (Adapter == null)
+		var snapshot = projection;
+		if (position < 0 || position >= snapshot.TotalCount)
 			return null;
 
-		var linear = 0;
+		if (snapshot.HasGlobalHeader && position == 0)
+			return PositionInfo.ForHeader(position);
 
-		var numberSections = Adapter.GetNumberOfSections();
+		if (snapshot.HasGlobalFooter && position == snapshot.TotalCount - 1)
+			return PositionInfo.ForFooter(position);
 
-		if (HasGlobalHeader)
+		var sectionPosition = position - (snapshot.HasGlobalHeader ? 1 : 0);
+		var low = 0;
+		var high = snapshot.Sections.Length;
+		// Find the first section ending after this position, skipping zero-row groups.
+		while (low < high)
 		{
-			if (position == 0)
-				return PositionInfo.ForHeader(position);
-
-			linear++;
+			var middle = low + (high - low) / 2;
+			if (snapshot.Sections[middle].End <= sectionPosition)
+				low = middle + 1;
+			else
+				high = middle;
 		}
 
-		for (int s = 0; s < numberSections; s++)
-		{
-			if (ViewSelector.SectionHasHeader(s))
-			{
-				if (position == linear)
-					return PositionInfo.ForSectionHeader(position, s);
+		var section = snapshot.Sections[low];
+		var offset = sectionPosition - section.Start;
+		if (section.HasHeader && offset == 0)
+			return PositionInfo.ForSectionHeader(position, low, section.ItemCount);
 
-				linear++;
-			}
+		var itemIndex = offset - (section.HasHeader ? 1 : 0);
+		if (itemIndex < section.ItemCount)
+			return PositionInfo.ForItem(position, low, itemIndex, section.ItemCount, snapshot.Sections.Length);
 
-			var itemsInSection = Math.Max(Adapter.GetNumberOfItemsInSection(s), 0);
-
-			// It's an item in the section, return it for this item
-			if (position < linear + itemsInSection)
-			{
-				var itemIndex = position - linear;
-
-				return PositionInfo.ForItem(position, s, itemIndex, itemsInSection, numberSections);
-			}
-
-			linear += itemsInSection;
-
-			if (ViewSelector.SectionHasFooter(s))
-			{
-				if (position == linear)
-					return PositionInfo.ForSectionFooter(position, s);
-
-				linear++;
-			}
-		}
-
-		return new PositionInfo
-		{
-			Position = position,
-			Kind = PositionKind.Footer
-		};
+		return PositionInfo.ForSectionFooter(position, low, section.ItemCount);
 	}
 
+	readonly record struct Section(int Start, int End, int ItemCount, bool HasHeader, bool HasFooter);
+
+	sealed record Projection(Section[] Sections, bool HasItems, bool HasGlobalHeader, bool HasGlobalFooter, int TotalCount);
 }

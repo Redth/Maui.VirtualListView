@@ -38,7 +38,7 @@ To add the Virtual List View control to your project, you need to add `.UseVirtu
 
 Instead of starting with a typical C# collection such as `ObservableCollection`, the VirtualListView takes the adapter approach that is common to iOS and Android has the concept of grouping built in (called Sections).
 
-This pattern is optimal since it allows for easily creating adapters backed by direct access data stores such as databases.  Instead of trying to load data from the actual datastore, and trying to deal with cache invalidation for an in memory collection you can write your adapter directly against any type of storage.
+Adapters can present data prepared from any storage system, but their synchronous methods run in native count, bind, template-selection, and layout paths. Keep these methods cheap and indexed: no SQL/HTTP, blocking waits, full-source enumeration, or business ordering. UI virtualization recycles views; it does not make synchronous storage access nonblocking or bound the amount of data you retain.
 
 To create an adapter for the VirtualListView, you need to implement the following interface:
 
@@ -96,98 +96,73 @@ When using this adapter, the adapter will automatically invalidate itself (by ca
 
 For many scenarios, it is ideal to create your own adapter implementation.  You can implement the `IVirtualListViewAdapter` directly, or subclass `VirtualListViewAdapterBase<TSection, TItem>`.
 
-Here's an example of a custom adapter for a flat list (no sections/grouping).  Notice that we cache commonly used data such as `ItemsForSection` and we will reset the cache anytime the data is invalidated:
+For a database-backed flat list, asynchronously prepare a bounded window outside the adapter, then publish its resident array and invalidate on the UI thread. The example uses your application's `ItemInfo` model and repository; `ReadWindowAsync` is an application-defined asynchronous query with stable ordering and a maximum result size, not a VirtualListView API.
 
 ```csharp
-public class SQLiteAdapter : VirtualListViewAdapterBase<object, ItemInfo>
+public sealed class WindowAdapter : VirtualListViewAdapterBase<object, ItemInfo>
 {
-	public SQLiteAdapter() : base()
-	{
-		Db = new Database(...);
-	}
+	ItemInfo[] items = Array.Empty<ItemInfo>();
 
-	public Database Db { get; }
-
-	int? cachedItemCount = null;
-
-	// No sections/grouping, so disregard the sectionIndex
 	public override int GetNumberOfItemsInSection(int sectionIndex)
-		=> cachedItemCount ??= Db.ExecuteScalar<int>("SELECT COUNT(Id) FROM Items");
+		=> items.Length;
 
-	public override string GetItem(int sectionIndex, int itemIndex)
-		=> Db.FindWithQuery<ItemInfo>("SELECT * FROM Items ORDER BY Id LIMIT 1 OFFSET ?", itemIndex);
+	public override ItemInfo GetItem(int sectionIndex, int itemIndex)
+		=> items[itemIndex];
 
-	public override void InvalidateData()
+	// Call on the UI thread; do not mutate a published snapshot.
+	public void Publish(IEnumerable<ItemInfo> preparedItems)
 	{
-		// Clear our item count cache
-		// Also do this any time we may insert or delete data 
-		cachedItemCount = null;
+		items = preparedItems.ToArray();
+		base.InvalidateData();
+	}
+}
+
+// In your page/view model, outside all native callbacks:
+var adapter = new WindowAdapter();
+listView.Adapter = adapter;
+var prepared = await repository.ReadWindowAsync(offset: 0, limit: 250, cancellationToken);
+await MainThread.InvokeOnMainThreadAsync(() => adapter.Publish(prepared));
+```
+
+Counts and item indices describe only the published window, not a fictitious database-wide count whose records would need synchronous fetching. Paging, seek semantics, filtering, cancellation, stale-result rejection, errors, and selection/scroll restoration belong to the application. Publish a new window only if its query/source generation is still current. Do not start loads from `GetItem`, count getters, template selectors, or measure callbacks. Use a genuinely asynchronous storage API; if the storage library is synchronous, perform the bounded query off the UI thread before publication.
+
+For grouped data, prepare bounded section summaries and item arrays together. The same snapshot must supply section counts, item counts, and indexed data:
+
+```csharp
+public sealed record PreparedSection(GroupInfo Group, ItemInfo[] Items);
+
+public sealed class SectionWindowAdapter : VirtualListViewAdapterBase<GroupInfo, ItemInfo>
+{
+	PreparedSection[] sections = Array.Empty<PreparedSection>();
+
+	public override int GetNumberOfSections() => sections.Length;
+
+	public override int GetNumberOfItemsInSection(int sectionIndex)
+		=> sections[sectionIndex].Items.Length;
+
+	public override GroupInfo GetSection(int sectionIndex)
+		=> sections[sectionIndex].Group;
+
+	public override ItemInfo GetItem(int sectionIndex, int itemIndex)
+		=> sections[sectionIndex].Items[itemIndex];
+
+	public void Publish(IEnumerable<PreparedSection> preparedSections)
+	{
+		sections = preparedSections
+			.Select(section => new PreparedSection(section.Group, section.Items.ToArray()))
+			.ToArray();
 		base.InvalidateData();
 	}
 }
 ```
 
-Here's an example of a more sophisticated adapter with grouping/sections. Again, notice we cache Section count and Item count per section:
+The repository should enforce bounds on both sections and items before publication. Keep item/group model revisions consistent with the snapshot as well; do not concurrently mutate it during native reads. All source publication and `InvalidateData()` notifications must be serialized on the UI thread. `ObservableCollectionAdapter` forwards collection notifications on the caller's thread, so its mutations follow the same rule.
 
-```csharp
-public class SQLiteSectionedAdapter : VirtualListViewAdapterBase<GroupInfo, ItemInfo>
-{
-	public SQLiteSectionedAdapter() : base()
-	{
-		Db = new Database(...);
-	}
+`CachingVirtualListViewAdapter` caches section objects and counts, not items or database queries. It clears all metadata caches when it or its wrapped source invalidates, and forwards one notification without recursively invalidating the source. Dispose the wrapper when you are finished with it to detach its source subscription; disposal does **not** dispose the shared source adapter.
 
-	public Database Db { get; }
+The control captures section counts/chrome once per accepted invalidation in O(sections) time and memory, without materializing items or views. Total count and item-to-position lookup are O(1); position-to-section lookup is O(log sections). After changing custom adapter data or custom selector chrome rules, invalidate the adapter. Replacing the adapter, templates, header/footer, or visibility flags refreshes the projection automatically. Changes to a header/footer's own visibility are observed when the view implements `INotifyPropertyChanged` (as MAUI controls do); custom non-notifying views must explicitly invalidate.
 
-	Dictionary<int, GroupInfo> cachedSectionSummaries = new ();
-
-	int? cachedNumberOfSections = null;
-
-	public int GetNumberOfSections()
-		=> cachedNumberOfSections ??= Db.ExecuteScalar<int>("SELECT DISTINCT COUNT(GroupId) FROM Items");
-
-	// No sections/grouping, so disregard the sectionIndex
-	public override int GetNumberOfItemsInSection(int sectionIndex)
-		=> cachedItemCount ??= Db.ExecuteScalar<int>("SELECT COUNT(Id) FROM Items");
-
-	public GroupInfo GetSection(int sectionIndex)
-	{
-		if (cachedSectionSummaries.ContainsKey(sectionIndex))
-			return cachedSectionSummaries[sectionIndex];
-
-		var sql = @"
-				SELECT DISTINCT g.GroupId, g.GroupName, Count(i.Id) as ItemCount
-				FROM Items g
-					INNER JOIN Items i ON i.GroupId = g.GroupId
-				GROUP BY g.GroupId
-				ORDER BY g.GroupName
-				LIMIT 1 OFFSET ?
-		";
-
-		var groupInfo = Db.FindWithQuery<GroupInfo>(sql, sectionIndex);
-
-		if (groupInfo != null)
-			cachedSectionSummaries.Add(sectionIndex, groupInfo);
-
-		return groupInfo;
-	}
-
-	public override string GetItem(int sectionIndex, int itemIndex)
-		=> Db.FindWithQuery<ItemInfo>("SELECT * FROM Items WHERE GroupId=? ORDER BY Id LIMIT 1 OFFSET ?", sectionIndex, itemIndex);
-
-	public override void InvalidateData()
-	{
-		// Clear our caches
-		// Also do this any time we may insert or delete data 
-		cachedItemCount = null;
-		cachedNumberOfSections.Clear();
-
-		base.InvalidateData();
-	}
-}
-```
-
-
+Adapter counts must be nonnegative and the projected total, including chrome, must fit in an `int`. Invalid counts or overflow throw before replacing the previous projection; they are not converted into valid-looking rows.
 
 ## Templates
 
@@ -298,7 +273,9 @@ You can also set the `RefreshAccentColor` to change the color of the refresh ind
 
 ## Empty View
 
-If your adapter has <= 1 section and no items, an empty view can be displayed automatically:
+If no section contains data items, an empty view can be displayed automatically, even when there are multiple sections. An empty first section does not hide data in later sections.
+
+Chrome follows the same projection on all platforms: no adapter or zero sections produces no rows; empty sections retain configured section headers/footers; the global header requires at least one data item; the global footer requires at least one projected section row (data or section chrome). Chrome alone does not suppress the empty view. Global chrome must also be present, enabled by `IsHeaderVisible`/`IsFooterVisible`, and have `Visibility.Visible`.
 
 ```xaml
 <vlv:VirtualListView.EmptyView>
@@ -324,3 +301,7 @@ Looking ahead, there are a few goals:
 Some current non-goals but considerations for even later:
 - Grid / Column support
 - Sticky section headers
+
+## Portable regression tests
+
+Run `dotnet test tests/VirtualListView.Tests/VirtualListView.Tests.csproj --configuration Release` with .NET 8. The project compiles the actual portable production sources against MAUI 8 packages; it does not require native MAUI workloads or replace the projection/cache logic with test implementations. CI runs this command separately from native builds. It covers projection boundaries, empty groups/chrome, invalidation, wrapped-source events, and large indexed lookups. Native handler compilation and device behavior still require their platform toolchains.

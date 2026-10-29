@@ -80,6 +80,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 	protected override void DisconnectHandler(UICollectionView nativeView)
 	{
+		DisconnectProjectionObservers();
+
 		if (dataSource is not null)
 		{
 			dataSource.Dispose();
@@ -113,15 +115,6 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 	internal CvCell? GetCell(NSIndexPath indexPath)
 		=> dataSource?.GetCell(PlatformView, indexPath) as CvCell;
-
-	public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler?.InvalidateData();
-
-	public static void MapFooter(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler?.InvalidateData();
-
-	public static void MapViewSelector(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler?.InvalidateData();
 
 	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
@@ -245,6 +238,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	public void InvalidateData()
 	{
 		this.PlatformView.InvokeOnMainThread(() => {
+			PositionalViewSelector?.Invalidate();
 			//layout?.InvalidateLayout();
 
 			UpdateEmptyViewVisibility();

@@ -63,6 +63,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 	protected override void DisconnectHandler(FrameLayout nativeView)
 	{
+		DisconnectProjectionObservers();
 		recyclerView.ClearOnScrollListeners();
 		recyclerView.SetAdapter(null);
 		adapter.Dispose();
@@ -73,6 +74,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 	public void InvalidateData()
 	{
+		PositionalViewSelector?.Invalidate();
 		UpdateEmptyViewVisibility();
 		adapter?.Reset();
 		adapter?.NotifyDataSetChanged();
@@ -82,17 +84,11 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	{
 		var position = PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
 
+		if (position < 0)
+			return;
+
 		recyclerView.ScrollToPosition(position);
 	}
-
-	public static void MapHeader(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler.InvalidateData();
-
-	public static void MapFooter(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler.InvalidateData();
-
-	public static void MapViewSelector(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> handler.InvalidateData();
 
 	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{ }
@@ -103,6 +99,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
 	{
 		var position = PositionalViewSelector.GetPosition(itemPosition.SectionIndex, itemPosition.ItemIndex);
+
+		if (position < 0)
+			return;
 
 		var vh = recyclerView.FindViewHolderForAdapterPosition(position);
 
@@ -205,7 +204,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 		for (var p = firstVisibleItemPosition; p <= lastVisibleItemPosition; p++)
 		{
-			positions.Add(PositionalViewSelector.GetInfo(p));
+			if (PositionalViewSelector.GetInfo(p) is PositionInfo info)
+				positions.Add(info);
 		}
 
 		return positions;

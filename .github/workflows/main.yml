@@ -7,6 +7,16 @@ on:
     types: [published]
 
 jobs:
+  portable-tests:
+    name: Portable source regression tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+    - run: dotnet test tests/VirtualListView.Tests/VirtualListView.Tests.csproj --configuration Release
+
   build:
     name: Build
     env:
@@ -29,8 +39,6 @@ jobs:
 
     - name: Build
       run: dotnet build --configuration Release
-   # - name: Test
-   #   run: dotnet test --configuration Release
     - name: Package NuGets
       shell: pwsh
       run: |
