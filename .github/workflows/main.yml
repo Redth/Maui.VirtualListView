@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   PACKAGE_VERSION: ${{ github.event_name == 'release' && github.ref_name || format('0.999-ci{0}', github.run_id) }}
   DOTNET_NOLOGO: true

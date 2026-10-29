@@ -32,6 +32,8 @@
 		<EmbeddedResource Include="chinook.litedb" />
 	</ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj" />
+		<ProjectReference Include="..\..\VirtualListView\VirtualListView.csproj">
+			<GlobalPropertiesToRemove Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">RuntimeIdentifier</GlobalPropertiesToRemove>
+		</ProjectReference>
 	</ItemGroup>
 </Project>

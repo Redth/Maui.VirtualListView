@@ -33,9 +33,18 @@ sealed class RvViewContainer : global::Android.Widget.FrameLayout
 	internal void UpdateOrientation()
 	{
 		var vertical = handler.VirtualView.Orientation == ListOrientation.Vertical;
-		LayoutParameters = new AndroidX.RecyclerView.Widget.RecyclerView.LayoutParams(
-			vertical ? LayoutParams.MatchParent : LayoutParams.WrapContent,
-			vertical ? LayoutParams.WrapContent : LayoutParams.MatchParent);
+		var width = vertical ? LayoutParams.MatchParent : LayoutParams.WrapContent;
+		var height = vertical ? LayoutParams.WrapContent : LayoutParams.MatchParent;
+		if (LayoutParameters is AndroidX.RecyclerView.Widget.RecyclerView.LayoutParams layout)
+		{
+			// RecyclerView stores the attached ViewHolder in these native parameters.
+			layout.Width = width;
+			layout.Height = height;
+		}
+		else
+		{
+			LayoutParameters = new AndroidX.RecyclerView.Widget.RecyclerView.LayoutParams(width, height);
+		}
 		RequestLayout();
 	}
 

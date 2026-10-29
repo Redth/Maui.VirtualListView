@@ -25,6 +25,8 @@ measured with a finite cross-axis constraint (width for vertical lists, height f
 horizontal lists), then arranged at the size accepted by the native row. MAUI
 counts the root `Margin` and nested padding; do not add those margins again in a
 native row wrapper. Android converts logical units to pixels at that boundary.
+Orientation changes retain RecyclerView's existing native layout parameters,
+including its ViewHolder association, instead of replacing that native state.
 
 Content `MeasureInvalidated` notifications are coalesced on the owning dispatcher.
 Text, font, style, viewport and orientation changes can remeasure compatible
