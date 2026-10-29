@@ -116,9 +116,10 @@ internal class CvCell : UICollectionViewCell
 	[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "The slot owns retained content; ClearView removes it and Release disconnects owned MAUI handlers.")]
 	public UIView NativeView { get; private set; }
 
-	public void Bind(VirtualListViewHandler handler, PositionInfo position, object data)
+	public void Bind(VirtualListViewHandler handler, PositionInfo position, object data, PresentationKey? key)
 	{
 		Handler = handler;
+		tapRecognizer.Enabled = position.Kind == PositionKind.Item;
 		if (Content is null)
 		{
 			var weakSelf = new WeakReference<CvCell>(this);
@@ -135,7 +136,7 @@ internal class CvCell : UICollectionViewCell
 						cell.ClearView();
 				});
 		}
-		handler.BindRetained(Content, position, data);
+		handler.BindRetained(Content, position, data, key);
 		SetNeedsLayout();
 	}
 

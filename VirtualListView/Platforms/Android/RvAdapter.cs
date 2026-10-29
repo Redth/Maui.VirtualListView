@@ -93,7 +93,7 @@ internal partial class RvAdapter : RecyclerView.Adapter
 
 		var data = positionalViewSelector.Adapter.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
 
-		var reuseId = info.Kind is PositionKind.Header or PositionKind.Footer
+		var reuseId = info.Kind is PositionKind.Header or PositionKind.Footer or PositionKind.EmptyView
 			? info.Kind.ToString() : positionalViewSelector.ViewSelector.GetReuseId(info, data);
 
 		int vt = -1;

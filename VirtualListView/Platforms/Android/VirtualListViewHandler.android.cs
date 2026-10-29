@@ -103,16 +103,16 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 	void PlatformInvalidateData()
 	{
-		UpdateEmptyViewVisibility();
+		UpdateEmptyView();
 		adapter?.Reset();
 		adapter?.NotifyDataSetChanged();
 	}
 
 	void PlatformApplyUpdates(KeyedUpdatePlan plan)
 	{
+		UpdateEmptyView();
 		adapter.Reset();
 		adapter.Rebind(plan);
-		UpdateEmptyViewVisibility();
 		if (plan.Reset)
 		{
 			adapter.NotifyDataSetChanged();
@@ -233,11 +233,6 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		handler.swipeRefreshLayout.Enabled = virtualListView.IsRefreshEnabled;
 	}
 
-	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
-	{
-		handler?.UpdateEmptyView();
-	}
-
 	void UpdateEmptyViewVisibility()
 	{
 		if (emptyView is not null)
@@ -246,18 +241,24 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 	void UpdateEmptyView()
 	{
-		if (emptyView is not null)
+		global::Android.Views.View next = null;
+		if (VirtualView?.EmptyView is IView view && PositionalViewSelector?.HasInlineEmptyView != true)
 		{
-			emptyView.RemoveFromParent();
+			RetainedView.ReleaseSupplied(VirtualView, view, PositionKind.EmptyView);
+			next = view.ToPlatform(MauiContext);
 		}
-
-		emptyView = VirtualView?.EmptyView?.ToPlatform(MauiContext);
-
-		if (emptyView is not null)
+		if (!ReferenceEquals(emptyView, next))
 		{
-			this.rootLayout.AddView(emptyView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
-			UpdateEmptyViewVisibility();
+			if (emptyView is not null)
+			{
+				emptyView.Visibility = ViewStates.Visible;
+				emptyView.RemoveFromParent();
+			}
+			emptyView = next;
+			if (emptyView is not null)
+				rootLayout.AddView(emptyView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
 		}
+		UpdateEmptyViewVisibility();
 	}
 	
 	ScrollBarVisibility _defaultHorizontalScrollVisibility = ScrollBarVisibility.Default;

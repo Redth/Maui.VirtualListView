@@ -54,6 +54,16 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 	public static readonly BindableProperty IsHeaderVisibleProperty =
 		BindableProperty.Create(nameof(IsHeaderVisible), typeof(bool), typeof(VirtualListView), true);
 
+	/// <summary>Allow a visible global header when there are no data items.</summary>
+	public bool ShowHeaderWhenEmpty
+	{
+		get => (bool)GetValue(ShowHeaderWhenEmptyProperty);
+		set => SetValue(ShowHeaderWhenEmptyProperty, value);
+	}
+
+	public static readonly BindableProperty ShowHeaderWhenEmptyProperty =
+		BindableProperty.Create(nameof(ShowHeaderWhenEmpty), typeof(bool), typeof(VirtualListView), false);
+
 	public IView? GlobalFooter
 	{
 		get => (IView)GetValue(GlobalFooterProperty);
@@ -79,6 +89,16 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 
 	public static readonly BindableProperty IsFooterVisibleProperty =
 		BindableProperty.Create(nameof(IsFooterVisible), typeof(bool), typeof(VirtualListView), true);
+
+	/// <summary>Allow a visible global footer when there are no data items.</summary>
+	public bool ShowFooterWhenEmpty
+	{
+		get => (bool)GetValue(ShowFooterWhenEmptyProperty);
+		set => SetValue(ShowFooterWhenEmptyProperty, value);
+	}
+
+	public static readonly BindableProperty ShowFooterWhenEmptyProperty =
+		BindableProperty.Create(nameof(ShowFooterWhenEmpty), typeof(bool), typeof(VirtualListView), false);
 
 
 	public DataTemplate? ItemTemplate
@@ -239,7 +259,10 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 				if (bobj is VirtualListView virtualListView)
 				{
 					if (oldValue is IView oldView)
+					{
+						RetainedView.ReleaseSupplied(virtualListView, oldView, PositionKind.EmptyView);
 						virtualListView.RemoveLogicalView(oldView);
+					}
 
 					if (newValue is IView newView)
 						virtualListView.AddLogicalView(newView);
@@ -430,12 +453,14 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 				GlobalHeader,
 			PositionKind.Footer =>
 				GlobalFooter,
+			PositionKind.EmptyView =>
+				EmptyView,
 			_ => default
 		};
 
 	public void RecycleView(PositionInfo position, object? data, IView view)
 	{
-		if (position.Kind is not (PositionKind.Header or PositionKind.Footer) && view is BindableObject controlsView)
+		if (position.Kind is not (PositionKind.Header or PositionKind.Footer or PositionKind.EmptyView) && view is BindableObject controlsView)
 		{
 			controlsView.SetValue(BindingContextProperty, data);
 		}
@@ -460,6 +485,8 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 				"GLOBAL_HEADER_" + Header.GetStableIdentity(),
 			PositionKind.Footer =>
 				"GLOBAL_FOOTER_" + Footer.GetStableIdentity(),
+			PositionKind.EmptyView =>
+				"EMPTY_VIEW_" + EmptyView.GetStableIdentity(),
 			_ => "UNKNOWN"
 		};
 

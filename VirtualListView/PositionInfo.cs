@@ -8,6 +8,9 @@ public class PositionInfo : IPositionInfo
 	internal static PositionInfo ForFooter(int position)
 		=> new() { Position = position, Kind = PositionKind.Footer };
 
+	internal static PositionInfo ForEmptyView(int position)
+		=> new() { Position = position, Kind = PositionKind.EmptyView };
+
 	internal static PositionInfo ForSectionHeader(int positon, int sectionIndex, int itemsInSection = 0)
 		=> new()
 		{

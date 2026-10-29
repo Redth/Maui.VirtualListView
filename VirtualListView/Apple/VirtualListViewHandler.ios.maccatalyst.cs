@@ -118,8 +118,18 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	{
 		if (layout is null || PositionalViewSelector?.GetInfo(position.Position) is null)
 			return;
-		using var context = new UICollectionViewFlowLayoutInvalidationContext();
-		context.InvalidateItems(new[] { NSIndexPath.FromItemSection(position.Position, 0) });
+		using var path = NSIndexPath.FromItemSection(position.Position, 0);
+		if (PlatformView.CellForItem(path) is not CvCell cell)
+			return;
+		using var original = layout.LayoutAttributesForItem(path);
+		if (original is null)
+			return;
+		using var preferred = cell.PreferredLayoutAttributesFittingAttributes(original);
+		var tolerance = 0.5 / Math.Max(1, PlatformView.TraitCollection.DisplayScale);
+		if (Math.Abs(preferred.Frame.Width - original.Frame.Width) < tolerance
+			&& Math.Abs(preferred.Frame.Height - original.Frame.Height) < tolerance)
+			return;
+		using var context = layout.GetInvalidationContext(preferred, original);
 		layout.InvalidateLayout(context);
 	}
 
@@ -196,11 +206,6 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	}
 
 
-	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
-	{
-		handler?.UpdateEmptyView();
-	}
-
 	void UpdateEmptyViewVisibility()
 	{
 		if (PlatformView is not null && PlatformView.BackgroundView is not null)
@@ -215,13 +220,18 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	{
 		if (PlatformView is not null)
 		{
-			if (PlatformView.BackgroundView is not null)
+			UIView? next = null;
+			if (MauiContext is not null && VirtualView?.EmptyView is IView view && PositionalViewSelector?.HasInlineEmptyView != true)
 			{
-				PlatformView.BackgroundView.RemoveFromSuperview();
+				RetainedView.ReleaseSupplied(VirtualView, view, PositionKind.EmptyView);
+				next = view.ToPlatform(MauiContext);
 			}
-
-			if (MauiContext is not null)
-				PlatformView.BackgroundView = VirtualView?.EmptyView?.ToPlatform(MauiContext);
+			if (!ReferenceEquals(PlatformView.BackgroundView, next))
+			{
+				PlatformView.BackgroundView?.UpdateVisibility(Visibility.Visible);
+				PlatformView.BackgroundView?.RemoveFromSuperview();
+				PlatformView.BackgroundView = next;
+			}
 
 			UpdateEmptyViewVisibility();
 		}
@@ -237,39 +247,62 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		PlatformView.ShowsHorizontalScrollIndicator = scrollBarVisibility == ScrollBarVisibility.Always || scrollBarVisibility == ScrollBarVisibility.Default;
 	}
 
-	void PlatformInvalidateData()
+	void PlatformInvalidateData(KeyedUpdatePlan? plan = null)
 	{
-		dataSource?.PruneCells();
-		UpdateEmptyViewVisibility();
-		PlatformView.ReloadData();
+		dataSource?.State.Reload(PositionalViewSelector, acceptedRows, () =>
+		{
+			dataSource.PruneCells();
+			if (plan is not null)
+				dataSource.Rebind(plan);
+			UpdateEmptyView();
+			PlatformView.ReloadData();
+		});
 	}
 
 	void PlatformApplyUpdates(KeyedUpdatePlan plan)
 	{
-		dataSource?.Rebind(plan);
-		UpdateEmptyViewVisibility();
 		if (plan.Reset)
 		{
-			PlatformInvalidateData();
+			PlatformInvalidateData(plan);
 			return;
 		}
 		UIView.PerformWithoutAnimation(() =>
 		{
-			PlatformView.PerformBatchUpdates(() =>
+			var structural = plan.Removed.Length > 0 || plan.Inserted.Length > 0 || plan.Moved.Length > 0;
+			if (structural)
+				dataSource?.State.Apply(PositionalViewSelector, acceptedRows,
+					update => PlatformView.PerformBatchUpdates(update, null), () =>
+					{
+						UpdateEmptyView();
+						dataSource.Rebind(plan);
+						if (plan.Removed.Length > 0)
+							PlatformView.DeleteItems(plan.Removed.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
+						if (plan.Inserted.Length > 0)
+							PlatformView.InsertItems(plan.Inserted.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
+						foreach (var move in plan.Moved)
+							PlatformView.MoveItem(NSIndexPath.FromItemSection(move.From, 0), NSIndexPath.FromItemSection(move.To, 0));
+					});
+			else
 			{
-				if (plan.Removed.Length > 0)
-					PlatformView.DeleteItems(plan.Removed.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
-				if (plan.Inserted.Length > 0)
-					PlatformView.InsertItems(plan.Inserted.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
-				foreach (var move in plan.Moved)
-					PlatformView.MoveItem(NSIndexPath.FromItemSection(move.From, 0), NSIndexPath.FromItemSection(move.To, 0));
-			}, null);
+				dataSource?.State.Accept(PositionalViewSelector, acceptedRows);
+				UpdateEmptyView();
+				dataSource?.Rebind(plan);
+			}
 			// Content/template changes are rebound above, including moved rows. Do not
 			// reload old-coordinate paths in the same structural UIKit transaction.
 			foreach (var index in plan.Changed)
 				if (PositionalViewSelector.GetInfo(index) is PositionInfo info)
 					PlatformInvalidateContentLayout(info);
 			PlatformView.LayoutIfNeeded();
+			if (structural && plan.Before is KeyedRows before)
+			{
+				// Flow layout can retain stale sizes for survivors whose native index changed.
+				foreach (var cell in PlatformView.VisibleCells.OfType<CvCell>())
+					if (cell.Content?.Key is PresentationKey key && before.Indices.TryGetValue(key, out var oldIndex)
+						&& cell.PositionInfo is PositionInfo info && oldIndex != info.Position)
+						PlatformInvalidateContentLayout(info);
+				PlatformView.LayoutIfNeeded();
+			}
 		});
 	}
 

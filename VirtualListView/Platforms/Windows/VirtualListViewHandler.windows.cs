@@ -123,8 +123,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 	void PlatformInvalidateData()
 	{
+		UpdateEmptyView();
 		irSource?.Reset();
-		UpdateEmptyViewVisibility();
 	}
 
 	void ScrollManipulationStarted(object sender, object e) => RecordScrollIntent();
@@ -133,9 +133,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 	void PlatformApplyUpdates(KeyedUpdatePlan plan)
 	{
+		UpdateEmptyView();
 		irSource.Apply(plan);
 		elementFactory.Rebind(plan);
-		UpdateEmptyViewVisibility();
 	}
 
 	(int Index, double Offset) PlatformVisibleAnchor()
@@ -248,11 +248,6 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	}
 
 
-	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
-	{
-		handler?.UpdateEmptyView();
-	}
-
 	void UpdateEmptyViewVisibility()
 	{
 		if (emptyView is not null)
@@ -264,13 +259,23 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 	void UpdateEmptyView()
 	{
-		if (emptyView is not null)
-			rootLayout.Children.Remove(emptyView);
-
-		emptyView = VirtualView?.EmptyView?.ToPlatform(MauiContext);
-
-		if (emptyView is not null)
-			rootLayout.Children.Add(emptyView);
+		WFrameworkElement next = null;
+		if (VirtualView?.EmptyView is IView view && PositionalViewSelector?.HasInlineEmptyView != true)
+		{
+			RetainedView.ReleaseSupplied(VirtualView, view, PositionKind.EmptyView);
+			next = view.ToPlatform(MauiContext);
+		}
+		if (!ReferenceEquals(emptyView, next))
+		{
+			if (emptyView is not null)
+			{
+				emptyView.Visibility = WVisibility.Visible;
+				rootLayout.Children.Remove(emptyView);
+			}
+			emptyView = next;
+			if (emptyView is not null)
+				rootLayout.Children.Add(emptyView);
+		}
 
 		UpdateEmptyViewVisibility();
 	}

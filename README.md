@@ -619,7 +619,40 @@ You can also set the `RefreshAccentColor` to change the color of the refresh ind
 
 If no section contains data items, an empty view can be displayed automatically, even when there are multiple sections. An empty first section does not hide data in later sections.
 
-Chrome follows the same projection on all platforms: no adapter or zero sections produces no rows; empty sections retain configured section headers/footers; the global header requires at least one data item; the global footer requires at least one projected section row (data or section chrome). Chrome alone does not suppress the empty view. Global chrome must also be present, enabled by `IsHeaderVisible`/`IsFooterVisible`, and have `Visibility.Visible`.
+Empty means zero **data items across all sections**, regardless of section
+headers or footers. Empty sections retain configured section chrome, but global
+header and footer are hidden when empty by default. This includes the case where
+section chrome previously kept a global footer visible.
+
+Set `ShowHeaderWhenEmpty` and `ShowFooterWhenEmpty` independently to keep supplied
+global content visible without data. Both default to `false` and also apply
+before an adapter is assigned or when it reports zero sections.
+`IsHeaderVisible=false` / `IsFooterVisible=false` always wins, as does hiding the
+supplied view itself. The new settings do not affect nonempty lists.
+
+When global chrome is shown while empty, `EmptyView` becomes a nonselectable
+scroll-content row after any section chrome and before the global footer, rather
+than an overlay. This keeps search/filter controls and footer content uncovered
+on Android, iOS, Mac Catalyst, and Windows. It is measured like other content
+(including margins and explicit size requests), and tall content can scroll.
+When no global chrome is shown, the existing viewport empty view is retained.
+Chrome alone never counts as data or suppresses the empty message.
+
+```xaml
+<vlv:VirtualListView ShowHeaderWhenEmpty="True" ShowFooterWhenEmpty="False">
+  <vlv:VirtualListView.GlobalHeader>
+    <SearchBar Placeholder="Filter results" />
+  </vlv:VirtualListView.GlobalHeader>
+  <vlv:VirtualListView.EmptyView>
+    <Label Text="No matching results" Margin="16" />
+  </vlv:VirtualListView.EmptyView>
+</vlv:VirtualListView>
+```
+
+Custom view selectors that opt in to empty global chrome should handle
+`PositionKind.EmptyView` by returning the supplied empty view, preserving its
+binding context and using a distinct reuse ID. The built-in selector does this
+automatically.
 
 ```xaml
 <vlv:VirtualListView.EmptyView>
