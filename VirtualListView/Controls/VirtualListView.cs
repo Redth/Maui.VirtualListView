@@ -374,6 +374,29 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		}
 	}
 
+	/// <summary>Adds unique positions in input order with one selection update in multiple-selection mode.</summary>
+	public void SelectMany(IEnumerable<ItemPosition> items)
+	{
+		ArgumentNullException.ThrowIfNull(items);
+		if (SelectionMode != Maui.SelectionMode.Multiple)
+			return;
+
+		var current = SelectedItems?.ToList() ?? [];
+		var selected = current.ToHashSet();
+		var changed = false;
+		foreach (var item in items)
+		{
+			if (selected.Add(item))
+			{
+				current.Add(item);
+				changed = true;
+			}
+		}
+
+		if (changed)
+			SelectedItems = current.ToArray();
+	}
+
 	public void ClearSelectedItems()
 	{
 		if (SelectionMode == Maui.SelectionMode.Multiple)

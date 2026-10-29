@@ -44,6 +44,8 @@ public interface IVirtualListView : IView
 
 	void SelectItem(ItemPosition path);
 
+	void SelectMany(IEnumerable<ItemPosition> items);
+
 	void DeselectItem(ItemPosition path);
 
 	void ClearSelectedItems();

@@ -80,8 +80,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		ownedRefresh?.End();
 		DisconnectProjectionObservers();
 		PositionalViewSelector = null;
-		previousSelections = Array.Empty<ItemPosition>();
-		selectedPositions.Clear();
+		selection.Clear();
 		acceptedRows = null;
 		acceptedSource = null;
 		pendingAnchor = null;
@@ -201,17 +200,16 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		var after = new KeyedRows(nextProjection, snapshot);
 		var plan = new KeyedUpdatePlan(before, after, reset);
 		var anchor = CaptureAnchor();
-		var selection = before?.ReconcileSelection(previousSelections, after);
+		var reconciledSelection = before?.ReconcileSelection(selection.Positions, after);
 		PositionalViewSelector.Accept(nextProjection);
 		acceptedRows = after;
-		if (selection is not null)
+		if (reconciledSelection is not null)
 		{
-			previousSelections = selection;
-			selectedPositions = selection.ToHashSet();
+			selection.Reset(reconciledSelection);
 			if (VirtualView.SelectionMode == SelectionMode.Single)
-				VirtualView.SelectedItem = selection.Length == 0 ? null : selection[0];
+				VirtualView.SelectedItem = reconciledSelection.Length == 0 ? null : reconciledSelection[0];
 			else
-				VirtualView.SelectedItems = selection;
+				VirtualView.SelectedItems = reconciledSelection;
 		}
 		PlatformApplyUpdates(plan);
 		RestoreAnchor(anchor);
@@ -301,8 +299,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		{
 			if (handler.acceptedRows is not null)
 			{
-				handler.previousSelections = Array.Empty<ItemPosition>();
-				handler.selectedPositions.Clear();
+				handler.selection.Clear();
 				virtualListView.SelectedItems = Array.Empty<ItemPosition>();
 				virtualListView.SelectedItem = null;
 			}
@@ -324,11 +321,10 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		if (VirtualView.SelectionMode == SelectionMode.None)
 			return false;
 
-		return selectedPositions.Contains(new ItemPosition(sectionIndex, itemIndex));
+		return selection.Contains(new ItemPosition(sectionIndex, itemIndex));
 	}
 
-	ItemPosition[] previousSelections = Array.Empty<ItemPosition>();
-	HashSet<ItemPosition> selectedPositions = new();
+	readonly HandlerSelection selection = new();
 
 	public static void MapSelectedItems(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{
@@ -339,34 +335,8 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	}
 
 	void ApplySelectedItems(IVirtualListView virtualListView)
-	{
-		var newSelections = virtualListView?.SelectedItems ?? Array.Empty<ItemPosition>();
-
-		if (virtualListView.SelectionMode == SelectionMode.None)
-			newSelections = Array.Empty<ItemPosition>();
-		else if (virtualListView.SelectionMode == SelectionMode.Single && newSelections.Count > 1)
-			newSelections = newSelections.Take(1).ToArray();
-
-		// First deselect any previously selected items that aren't in the new set
-		var nextSet = newSelections.Where(position =>
-			PositionalViewSelector.GetPosition(position.SectionIndex, position.ItemIndex) >= 0).ToHashSet();
-		foreach (var itemPosition in previousSelections)
-		{
-			if (!nextSet.Contains(itemPosition))
-				PlatformUpdateItemSelection(itemPosition, false);
-		}
-
-		// Set all the new state selected to true
-		foreach (var itemPosition in nextSet)
-		{
-			if (!selectedPositions.Contains(itemPosition))
-				PlatformUpdateItemSelection(itemPosition, true);
-		}
-
-		// Keep track of the new state for next time it changes
-		previousSelections = nextSet.ToArray();
-		selectedPositions = nextSet;
-	}
+		=> selection.Apply(virtualListView.SelectedItems, virtualListView.SelectionMode,
+			PositionalViewSelector, PlatformUpdateItemSelection);
 
 	public static void MapIsHeaderVisible(VirtualListViewHandler handler, IVirtualListView virtualListView)
 	{

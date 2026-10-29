@@ -589,6 +589,25 @@ There are 3 selection modes: `None`, `Single`, and `Multiple`.  Only `Item` type
 There are `SelectedItem` and `SelectedItems` bindable properties.
 There's an `OnSelectedItemsChanged` event fired whenever these change.
 
+`SelectedItems` remains an ordered `IList<ItemPosition>`: arrays and lists can
+still be assigned or bound. To select a batch, set `SelectionMode` to `Multiple`
+and call `SelectMany` on the control or its `IVirtualListView` interface:
+
+```csharp
+listView.SelectionMode = SelectionMode.Multiple;
+listView.SelectMany(Enumerable.Range(0, 5000).Select(index => new ItemPosition(0, index)));
+```
+
+Existing selections keep their order; new unique positions are appended in input
+order. The input is enumerated once and the resulting selection is published
+once, with one `SelectedItems` property change and one `OnSelectedItemsChanged`
+event. Empty or already-selected batches do not replace the collection or raise
+an event. `SelectMany` does nothing in `None` or `Single` mode and rejects null
+input. Call it on the owning UI dispatcher, just like the other selection APIs.
+Membership and native selection differences use internal hash sets, not repeated
+linear searches of the public list. Only changed, valid item positions update
+native selection; offscreen items read the accepted state when realized.
+
 ## Refreshing
 
 Pull to refresh is enabled for iOS/MacCatalyst and Android.  WindowsAppSDK does not have the equivalent feature so there is no support for it.
