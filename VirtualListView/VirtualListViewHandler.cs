@@ -67,7 +67,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 			? bindable.Dispatcher : MauiContext.Services.GetRequiredService<IDispatcher>();
 		contentDispatcher = dispatcher;
 		acceptedSource = VirtualView.Adapter;
-		publication.Connect(dispatcher, VirtualView.Adapter, ApplyDataInvalidation, ApplySnapshot);
+		publication.Connect(dispatcher, VirtualView.Adapter, ApplyDataInvalidation, ApplySnapshot, ApplyItemsInvalidation);
 		ownedRefresh ??= new OwnedRefresh(publication);
 		MapHeader(this, VirtualView);
 		MapFooter(this, VirtualView);
@@ -119,6 +119,16 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		PlatformInvalidateData();
 	}
 
+	void ApplyItemsInvalidation(ItemsInvalidatedEventArgs args)
+	{
+		if (args.Items.Count == 0)
+			return;
+		var plan = new KeyedUpdatePlan(PositionalViewSelector, args);
+		var anchor = CaptureAnchor(positional: true);
+		PlatformApplyUpdates(plan);
+		RestoreAnchor(anchor);
+	}
+
 	KeyedRows acceptedRows;
 	internal VirtualListViewSnapshot AcceptedSnapshot => acceptedRows?.Snapshot;
 	IVirtualListViewAdapter acceptedSource;
@@ -131,12 +141,13 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		pendingAnchor = null;
 	}
 
-	KeyedAnchor CaptureAnchor()
+	KeyedAnchor CaptureAnchor(bool positional = false)
 	{
 		// Native layout may still show the previous transaction. Keep its keyed
 		// baseline across ordered edits/corrections until restoration completes.
 		var visible = PlatformVisibleAnchor();
-		return anchorState.Capture(acceptedRows, visible.Index, visible.Offset, pendingAnchor);
+		return anchorState.Capture(acceptedRows, visible.Index, visible.Offset, pendingAnchor,
+			positional ? PositionalViewSelector.TotalCount : 0);
 	}
 
 	void RestoreAnchor(KeyedAnchor anchor)
@@ -215,30 +226,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	}
 
 	internal void RebindRetained(RetainedView content, KeyedUpdatePlan plan)
-	{
-		if (content?.Position is not PositionInfo old)
-			return;
-		var key = content.Key;
-		if (key is null && plan.Before is not null && old.Position >= 0 && old.Position < plan.Before.Rows.Length)
-			key = plan.Before.Rows[old.Position].Key;
-		if (key is not null && plan.After.Indices.TryGetValue(key.Value, out var index))
-		{
-			var row = plan.After.Rows[index];
-			row.Position.IsSelected = row.Key.Kind == PositionKind.Item
-				&& IsItemSelected(row.Position.SectionIndex, row.Position.ItemIndex);
-			if (plan.Before is not null && plan.Before.Indices.TryGetValue(key.Value, out var oldIndex)
-				&& plan.Before.Rows[oldIndex].Revision == row.Revision
-				&& ReferenceEquals(plan.Before.Rows[oldIndex].Data, row.Data)
-				&& content.TryUpdatePosition(row.Position, row.Data))
-			{
-				content.Key = row.Key;
-				return;
-			}
-			BindRetained(content, row.Position, row.Data, row.Key);
-		}
-		else
-			content.Unbind();
-	}
+		=> content?.Rebind(plan, IsItemSelected);
 
 	void BeginRefresh(Action started, Action finished)
 		=> ownedRefresh.Begin(completion =>

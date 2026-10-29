@@ -36,6 +36,18 @@ class IrSource : IReadOnlyList<IrDataWrapper>, INotifyCollectionChanged
 
 	internal void Apply(KeyedUpdatePlan plan)
 	{
+		if (plan.RefreshedItems is not null)
+		{
+			foreach (var edit in plan.Edits)
+			{
+				var item = plan.RefreshedItems[edit.Index];
+				var old = this[edit.Index];
+				var replacement = new IrDataWrapper(Context, item.Position, item.Data, PositionalViewSelector, VirtualListView);
+				CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(
+					NotifyCollectionChangedAction.Replace, replacement, old, edit.Index));
+			}
+			return;
+		}
 		acceptedRows = plan.After;
 		if (plan.Reset)
 		{

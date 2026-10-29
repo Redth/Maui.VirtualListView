@@ -48,6 +48,7 @@ internal sealed class KeyedRows
 
 internal enum RowEditKind { Insert, Remove, Move, Replace }
 internal readonly record struct RowEdit(RowEditKind Kind, int Index, int From = -1);
+internal sealed record RefreshedItem(PositionInfo Position, object? Data);
 
 // Sequential indices are used by RecyclerView/WinUI. UIKit uses the same accepted
 // before/after keys, translated to old removal/move and final insertion coordinates.
@@ -55,18 +56,43 @@ internal sealed class KeyedUpdatePlan
 {
 	const int MaximumEdits = 128;
 	public KeyedRows? Before { get; }
-	public KeyedRows After { get; }
+	readonly KeyedRows? after;
+	public KeyedRows After => after ?? throw new InvalidOperationException("A positional content plan has no keyed rows.");
 	public bool Reset { get; private set; }
 	public List<RowEdit> Edits { get; } = new();
 	public int[] Removed { get; private set; } = Array.Empty<int>();
 	public int[] Inserted { get; private set; } = Array.Empty<int>();
 	public (int From, int To)[] Moved { get; private set; } = Array.Empty<(int, int)>();
 	public int[] Changed { get; private set; } = Array.Empty<int>();
+	public IReadOnlyDictionary<int, RefreshedItem>? RefreshedItems { get; }
+	public bool IsItemRefresh => RefreshedItems is not null;
+
+	// A content-only plan shares native replace/rebind machinery, without inventing
+	// keys or enumerating unrelated item payloads for a legacy source.
+	public KeyedUpdatePlan(PositionalViewSelector projection, ItemsInvalidatedEventArgs args)
+	{
+		args.Validate(projection.Adapter);
+		projection.ValidateItemRefresh();
+		Changed = args.Items.Select(item =>
+		{
+			var index = projection.GetPosition(item.SectionIndex, item.ItemIndex);
+			if (index < 0)
+				throw new ArgumentOutOfRangeException(nameof(args), "The item is not in the accepted projection.");
+			return index;
+		}).Order().ToArray();
+		RefreshedItems = Changed.ToDictionary(index => index, index =>
+		{
+			var info = projection.GetInfo(index);
+			return new RefreshedItem(info, projection.Adapter.GetItem(info.SectionIndex, info.ItemIndex));
+		});
+		foreach (var index in Changed)
+			Edits.Add(new(RowEditKind.Replace, index));
+	}
 
 	public KeyedUpdatePlan(KeyedRows? before, KeyedRows after, bool reset)
 	{
 		Before = before;
-		After = after;
+		this.after = after;
 		Reset = reset || before is null;
 		if (Reset)
 			return;
@@ -142,7 +168,7 @@ internal sealed class KeyedUpdatePlan
 	}
 }
 
-internal sealed record KeyedAnchor(KeyedRows Before, int Index, double Offset, long Intent, long Version);
+internal sealed record KeyedAnchor(KeyedRows? Before, int Index, double Offset, long Intent, long Version);
 
 internal sealed class KeyedAnchorState
 {
@@ -150,23 +176,29 @@ internal sealed class KeyedAnchorState
 	long version;
 	public void Supersede() => intent++;
 	public void Invalidate() { intent++; version++; }
-	public KeyedAnchor? Capture(KeyedRows? rows, int index, double offset, KeyedAnchor? pending = null)
+	public KeyedAnchor? Capture(KeyedRows? rows, int index, double offset, KeyedAnchor? pending = null, int positionalCount = 0)
 	{
 		if (pending is not null && Resolve(pending, rows) >= 0)
 		{
 			rows = pending.Before;
 			index = pending.Index;
 			offset = pending.Offset;
+			if (rows is null)
+				positionalCount = Math.Max(positionalCount, index + 1);
 		}
 		version++;
-		if (rows is null || index < 0 || index >= rows.Rows.Length || !double.IsFinite(offset))
+		if (index < 0 || index >= (rows?.Rows.Length ?? positionalCount) || !double.IsFinite(offset))
 			return null;
 		return new(rows, index, offset, intent, version);
 	}
 
 	public int Resolve(KeyedAnchor anchor, KeyedRows? current)
 	{
-		if (current is null || anchor.Intent != intent || anchor.Version != version)
+		if (anchor.Intent != intent || anchor.Version != version)
+			return -1;
+		if (anchor.Before is null)
+			return current is null ? anchor.Index : -1;
+		if (current is null)
 			return -1;
 		if (current.Indices.TryGetValue(anchor.Before.Rows[anchor.Index].Key, out var index))
 			return index;

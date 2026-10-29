@@ -34,6 +34,14 @@ internal class PositionalViewSelector
 	public void Invalidate()
 		=> projection = CreateProjection();
 
+	internal void ValidateItemRefresh()
+	{
+		var next = CreateProjection();
+		if (projection.TotalCount != next.TotalCount || projection.HasGlobalHeader != next.HasGlobalHeader
+			|| projection.HasGlobalFooter != next.HasGlobalFooter || !projection.Sections.SequenceEqual(next.Sections))
+			throw new InvalidOperationException("Item refresh cannot change counts or chrome. Publish structural changes with InvalidateData first.");
+	}
+
 	Projection CreateProjection()
 	{
 		var adapter = Adapter;

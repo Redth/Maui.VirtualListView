@@ -1,6 +1,6 @@
 ﻿namespace Microsoft.Maui.Adapters;
 
-public abstract class VirtualListViewAdapterBase<TSection, TItem> : IVirtualListViewAdapter
+public abstract class VirtualListViewAdapterBase<TSection, TItem> : IItemRefreshVirtualListViewAdapter
 {
 	// This adapter assumes we only ever have 1 section
 	// however we really want to return 0 if there's no items at all
@@ -14,6 +14,15 @@ public abstract class VirtualListViewAdapterBase<TSection, TItem> : IVirtualList
 	public virtual void InvalidateData()
 	{
 		RaiseDataInvalidated(EventArgs.Empty);
+	}
+
+	/// <summary>Rebinds the specified item occurrences, including template selection, without a data reset.</summary>
+	public virtual void InvalidateItems(params ItemPosition[] items)
+	{
+		var args = new ItemsInvalidatedEventArgs(items);
+		args.Validate(this);
+		if (args.Items.Count > 0)
+			RaiseDataInvalidated(args);
 	}
 
 	protected void RaiseDataInvalidated(EventArgs args) => OnDataInvalidated?.Invoke(this, args);
