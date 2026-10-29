@@ -14,8 +14,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PACKAGE_VERSION: ${{ github.event_name == 'release' && github.ref_name || format('0.999-ci{0}', github.run_id) }}
+  PACKAGE_VERSION: ${{ github.event_name == 'release' && github.ref_name || format('0.999.0-ci{0}', github.run_id) }}
   DOTNET_NOLOGO: true
+  # Keep GitInfo metadata without replacing the version selected for this run.
+  GitVersion: 'false'
 
 jobs:
   portable-tests:
@@ -111,15 +113,20 @@ jobs:
       run: dotnet restore VirtualListView/VirtualListView.csproj -p:TargetFrameworks="${LIBRARY_TARGETS//;/%3B}" -p:EnableWindowsTargeting=true -p:PackageVersion="$PACKAGE_VERSION"
     - name: Pack previously built native outputs
       run: dotnet pack VirtualListView/VirtualListView.csproj --no-build --configuration Release --output artifacts -p:TargetFrameworks="${LIBRARY_TARGETS//;/%3B}" -p:EnableWindowsTargeting=true -p:PackageVersion="$PACKAGE_VERSION"
-    - name: Check package contains every target
+    - name: Check package targets, resources and version
       run: |
         python3 - <<'PY'
+        import os
         from pathlib import Path
         from zipfile import ZipFile
         package, = Path("artifacts").glob("*.nupkg")
+        expected = f"Redth.Maui.VirtualListView.{os.environ['PACKAGE_VERSION']}.nupkg"
+        assert package.name == expected, (package.name, expected)
         with ZipFile(package) as archive:
             targets = [name.split("/")[1] for name in archive.namelist()
                        if name.startswith("lib/") and name.endswith("/VirtualListView.dll")]
+            windows = next(target for target in targets if target.startswith("net10.0-windows"))
+            assert f"lib/{windows}/VirtualListView.pri" in archive.namelist()
         assert len(targets) == 5, targets
         for target in ("net10.0", "net10.0-android", "net10.0-ios", "net10.0-maccatalyst", "net10.0-windows"):
             assert any(name == target if target == "net10.0" else name.startswith(target) for name in targets), targets

@@ -84,4 +84,14 @@
 		</ItemGroup>
 	</Target>
 
+	<!-- Cross-host packing does not import Windows-only WinAppSDK resource properties. -->
+	<Target Name="PrepareWindowsPackageResources" BeforeTargets="_AddPriFileToPackBuildOutput"
+			Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+		<PropertyGroup>
+			<IncludeProjectPriFile>true</IncludeProjectPriFile>
+			<ProjectPriFileName Condition="'$(ProjectPriFileName)' == ''">$(TargetName).pri</ProjectPriFileName>
+			<ProjectPriFullPath Condition="'$(ProjectPriFullPath)' == ''">$(TargetDir)$(ProjectPriFileName)</ProjectPriFullPath>
+		</PropertyGroup>
+	</Target>
+
 </Project>

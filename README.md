@@ -89,8 +89,10 @@ dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj -c Releas
 ```
 
 CI runs the portable tests without native workloads, builds the libraries and
-samples on their native hosts, and combines all five library targets into one
-NuGet package. The Apple jobs use the `xcode-27` hosted image with stable Xcode
+samples on their native hosts, and combines all five library targets and the
+Windows resource index into one NuGet package. CI checks the package contents
+and selected version, keeping branch builds separate from release versions.
+The Apple jobs use the `xcode-27` hosted image with stable Xcode
 27.1 selected explicitly; that runner image is currently in public preview.
 Pull requests and branch pushes produce unsigned package artifacts without
 accessing signing secrets. Published releases require package signing before
