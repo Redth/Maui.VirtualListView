@@ -134,6 +134,45 @@ public class RemainingItemsThresholdTests
 	}
 
 	[Theory]
+	[InlineData(false, false)]
+	[InlineData(true, false)]
+	[InlineData(false, true)]
+	[InlineData(true, true)]
+	public void EmptyGlobalOptInsStayOutOfPagingCountsAcrossZeroOneZeroTransitions(bool header, bool footer)
+	{
+		var source = new MutableAdapter(0, 0);
+		var projection = new PositionalViewSelector(new TestListView
+		{
+			Adapter = source,
+			GlobalHeader = new ContentView(),
+			GlobalFooter = new ContentView(),
+			ShowHeaderWhenEmpty = header,
+			ShowFooterWhenEmpty = footer,
+			EmptyView = new ContentView(),
+			SectionHeaderTemplate = new DataTemplate(() => new ContentView()),
+			SectionFooterTemplate = new DataTemplate(() => new ContentView())
+		});
+		Assert.Equal(header || footer, projection.HasInlineEmptyView);
+		Assert.Equal(0, projection.DataItemCount);
+		Assert.Null(projection.GetRemainingItemCount(
+			Enumerable.Range(0, projection.TotalCount).Select(projection.GetInfo).ToArray()));
+
+		source.Counts = new[] { 0, 1 };
+		projection.Invalidate();
+		Assert.False(projection.HasInlineEmptyView);
+		Assert.Equal(1, projection.DataItemCount);
+		Assert.Equal(0, projection.GetRemainingItemCount(
+			new[] { projection.GetInfo(projection.GetPosition(1, 0)) }));
+
+		source.Counts = new[] { 0, 0 };
+		projection.Invalidate();
+		Assert.Equal(header || footer, projection.HasInlineEmptyView);
+		Assert.Equal(0, projection.DataItemCount);
+		Assert.Null(projection.GetRemainingItemCount(
+			Enumerable.Range(0, projection.TotalCount).Select(projection.GetInfo).ToArray()));
+	}
+
+	[Theory]
 	[InlineData(-1, 0, false)]
 	[InlineData(0, 1, false)]
 	[InlineData(0, 0, true)]

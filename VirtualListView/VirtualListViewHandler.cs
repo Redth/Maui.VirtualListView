@@ -12,8 +12,10 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		[nameof(IVirtualListView.Adapter)] = MapAdapter,
 		[nameof(IVirtualListView.Header)] = MapHeader,
 		[nameof(IVirtualListView.IsHeaderVisible)] = MapIsHeaderVisible,
+		[nameof(IVirtualListView.ShowHeaderWhenEmpty)] = MapIsHeaderVisible,
 		[nameof(IVirtualListView.Footer)] = MapFooter,
 		[nameof(IVirtualListView.IsFooterVisible)] = MapIsFooterVisible,
+		[nameof(IVirtualListView.ShowFooterWhenEmpty)] = MapIsFooterVisible,
 		[nameof(IVirtualListView.ViewSelector)] = MapViewSelector,
 		[nameof(IVirtualListView.SelectionMode)] = MapSelectionMode,
 		[nameof(IVirtualListView.Orientation)] = MapOrientation,
@@ -301,7 +303,11 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 
 	void EndRefresh() => ownedRefresh?.End();
 
-	bool ShouldShowEmptyView => !(PositionalViewSelector?.HasItems ?? false);
+	bool ShouldShowEmptyView => !(PositionalViewSelector?.HasItems ?? false)
+		&& !(PositionalViewSelector?.HasInlineEmptyView ?? false);
+
+	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		=> handler.InvalidateData();
 
 	INotifyPropertyChanged observedHeader;
 	INotifyPropertyChanged observedFooter;

@@ -32,6 +32,8 @@ public sealed class MeasurementPage : ContentPage
 			ItemTemplate = new DataTemplate(CreateCard),
 			GlobalHeader = CardFor(header),
 			GlobalFooter = CardFor(footer),
+			ShowHeaderWhenEmpty = true,
+			ShowFooterWhenEmpty = true,
 			EmptyView = new Label { Text = "No rows. Header and footer must still size themselves.", Margin = 12 }
 		};
 		var axes = new HorizontalStackLayout
@@ -50,6 +52,13 @@ public sealed class MeasurementPage : ContentPage
 					items.Clear();
 					foreach (var row in rows.Take(countMode == 0 ? 60 : countMode == 1 ? 0 : 1))
 						items.Add(row);
+				}),
+				Button("0 / 1", "measurement-single", () =>
+				{
+					var addItem = items.Count == 0;
+					items.Clear();
+					if (addItem)
+						items.Add(rows[0]);
 				})
 			}
 		};
@@ -72,11 +81,22 @@ public sealed class MeasurementPage : ContentPage
 				Button("Child visibility", "measurement-visibility", () => rows[0].DetailsVisible = !rows[0].DetailsVisible)
 			}
 		};
-		var grid = new Grid { RowDefinitions = { new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Star) } };
+		var chrome = new HorizontalStackLayout
+		{
+			Children =
+			{
+				Button("Empty header", "measurement-empty-header", () => list.ShowHeaderWhenEmpty = !list.ShowHeaderWhenEmpty),
+				Button("Empty footer", "measurement-empty-footer", () => list.ShowFooterWhenEmpty = !list.ShowFooterWhenEmpty),
+				Button("Header visible", "measurement-header-visible", () => list.IsHeaderVisible = !list.IsHeaderVisible),
+				Button("Footer visible", "measurement-footer-visible", () => list.IsFooterVisible = !list.IsFooterVisible)
+			}
+		};
+		var grid = new Grid { RowDefinitions = { new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Star) } };
 		grid.Add(new Label { Text = "Check every END marker, spacing, and chrome. Scroll back, change size, and repeat.", Margin = 8 }, 0, 0);
 		grid.Add(axes, 0, 1);
 		grid.Add(changes, 0, 2);
-		grid.Add(list, 0, 3);
+		grid.Add(chrome, 0, 3);
+		grid.Add(list, 0, 4);
 		Content = grid;
 	}
 

@@ -6,5 +6,6 @@ public enum PositionKind
 	SectionHeader,
 	Item,
 	SectionFooter,
-	Footer
+	Footer,
+	EmptyView
 }

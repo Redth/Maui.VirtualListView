@@ -243,6 +243,58 @@ public class RetainedViewTests
 	}
 
 	[Fact]
+	public void InlineEmptyViewCanReturnToOverlayOwnershipWithoutDisposalOrLostContext()
+	{
+		var context = new object();
+		var empty = new TrackedView { BindingContext = context };
+		var handler = new TrackingHandler(empty);
+		empty.Handler = handler;
+		var owner = new TestListView { EmptyView = empty };
+		IView native = null;
+		using var slot = new RetainedView(owner, view => native = view, () => native = null);
+		slot.Bind(PositionInfo.ForEmptyView(1), null);
+		Assert.Same(empty, native);
+		Assert.Same(owner, empty.Parent);
+		Assert.Single(((IVisualTreeElement)owner).GetVisualChildren());
+		RetainedView.ReleaseSupplied(owner, empty, PositionKind.EmptyView);
+		Assert.Null(slot.View);
+		Assert.Null(native);
+		Assert.Same(owner, empty.Parent);
+		Assert.Same(context, empty.BindingContext);
+		Assert.Same(handler, empty.Handler);
+		Assert.Equal(0, handler.Disconnects);
+		Assert.Equal(0, empty.Disposals);
+		slot.Bind(PositionInfo.ForEmptyView(0), null);
+		slot.Release();
+		Assert.Same(owner, empty.Parent);
+		owner.EmptyView = null;
+		Assert.Null(empty.Parent);
+	}
+
+	[Fact]
+	public void ReplacingInlineEmptyViewReleasesItsSlotBeforeChangingLogicalChildren()
+	{
+		var first = new TrackedView();
+		var second = new TrackedView();
+		var owner = new TestListView { BindingContext = new object(), EmptyView = first };
+		using var slot = CreateSlot(owner);
+		slot.Bind(PositionInfo.ForEmptyView(0), null);
+		var reuseId = owner.GetReuseId(PositionInfo.ForEmptyView(0), null);
+		owner.EmptyView = second;
+		Assert.Null(slot.View);
+		Assert.Null(first.Parent);
+		Assert.Same(owner, second.Parent);
+		slot.Bind(PositionInfo.ForEmptyView(1), null);
+		Assert.Same(second, slot.View);
+		Assert.NotEqual(reuseId, owner.GetReuseId(PositionInfo.ForEmptyView(1), null));
+		slot.Release();
+		Assert.Same(owner.BindingContext, second.BindingContext);
+		Assert.Same(owner, second.Parent);
+		Assert.Equal(0, first.Disposals);
+		Assert.Equal(0, second.Disposals);
+	}
+
+	[Fact]
 	public void TemplateIdsAreInstanceBasedAndDoNotDependOnPrivateMembersOrHashes()
 	{
 		var first = new DataTemplate(() => new ContentView());
