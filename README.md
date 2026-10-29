@@ -94,9 +94,42 @@ Windows resource index into one NuGet package. CI checks the package contents
 and selected version, keeping branch builds separate from release versions.
 The Apple jobs use the `xcode-27` hosted image with stable Xcode
 27.1 selected explicitly; that runner image is currently in public preview.
-Pull requests and branch pushes produce unsigned package artifacts without
-accessing signing secrets. Published releases require package signing before
-the release-only NuGet publish job can run.
+All runs produce package artifacts without author signing or signing secrets.
+Only published releases run the NuGet publish job.
+
+### NuGet trusted publishing
+
+The release-only publish job uses [NuGet trusted publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing)
+instead of a stored API key. Only that job can request a GitHub OIDC token, which
+`NuGet/login@v1` exchanges for a short-lived NuGet API key immediately before pushing
+the package.
+
+One-time setup:
+
+1. In GitHub **Settings > Secrets and variables > Actions > Variables**, set the
+   repository variable `NUGET_USER` to the nuget.org username used to publish
+   (profile name, not email).
+2. Sign in to that account on nuget.org and open **Trusted Publishing**. Add a
+   GitHub policy with repository owner `Redth`, repository `Maui.VirtualListView`,
+   and workflow file `main.yml` (filename only). Leave **Environment** empty;
+   this workflow does not use a GitHub Actions environment.
+3. Select the owner of `Redth.Maui.VirtualListView`, allow publishing new versions
+   of existing packages, and scope the policy to `Redth.Maui.VirtualListView`.
+4. Once the workflow change is merged, publish a GitHub release whose tag is the
+   intended NuGet version, such as `1.2.3` or `1.2.3-preview.1` (no `v` prefix).
+   The workflow builds, checks, and publishes that version.
+5. After the first successful trusted publish, revoke the old API key on
+   nuget.org and remove the unused GitHub secret `NUGET_ORG_API_KEY`.
+
+The workflow no longer uses `CODESIGN_PFX`; the obsolete GitHub secret can be
+removed after this change is merged. Before the first unsigned publish, check
+the package's required signer under **Manage Packages** and the owners'
+registered certificates on nuget.org. [Required author signing](https://learn.microsoft.com/en-us/nuget/nuget-org/package-signing-certificates)
+can still block unsigned versions even when the push initially succeeds.
+Removing an account's last registered certificate ends its required author
+signing enrollment, but can affect other packages owned by that account.
+Branch pushes and pull requests continue to produce unsigned artifacts without
+requesting NuGet credentials or publishing packages.
 
 To add the Virtual List View control to your project, you need to add `.UseVirtualListView()` to your app builder:
 
