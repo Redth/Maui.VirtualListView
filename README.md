@@ -68,6 +68,8 @@ minima. The current .NET 10 Apple workload requires iOS 15.0 and Mac Catalyst
 17.0, so those sample minima replace 14.2 and 14.0 respectively. Android target SDK
 selection now follows the installed .NET 10 Android workload instead of an old
 manifest override.
+The iOS sample adopts the scene-based app lifecycle required by Xcode 27;
+Mac Catalyst already uses its custom scene delegate.
 
 Build one sample target at a time so MSBuild does not require the other hosts'
 toolchains:

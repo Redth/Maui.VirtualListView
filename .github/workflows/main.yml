@@ -63,7 +63,7 @@ jobs:
     - name: Install SDK-matched MAUI workloads
       run: dotnet workload install maui --version "$(dotnet --version)"
     - name: Install Android SDK dependencies
-      run: dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj -t:InstallAndroidDependencies -p:TargetFrameworks=net10.0-android -p:AcceptAndroidSDKLicenses=true -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME"
+      run: dotnet build Sample/VirtualListViewSample/VirtualListViewSample.csproj -f net10.0-android -t:InstallAndroidDependencies -p:TargetFrameworks=net10.0-android -p:AcceptAndroidSDKLicenses=true -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME"
     - name: Build portable, Android and Apple libraries
       run: dotnet build VirtualListView/VirtualListView.csproj --configuration Release -p:PackageVersion="$PACKAGE_VERSION"
     - name: Build Android sample APK
