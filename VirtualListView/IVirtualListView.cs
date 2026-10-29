@@ -20,6 +20,12 @@ public interface IVirtualListView : IView
 
 	void Scrolled(double x, double y);
 
+	int RemainingItemsThreshold { get; }
+
+	event EventHandler RemainingItemsThresholdReached;
+
+	void SendRemainingItemsThresholdReached();
+
 	SelectionMode SelectionMode { get; }
 
 	IList<ItemPosition> SelectedItems { get; set; }

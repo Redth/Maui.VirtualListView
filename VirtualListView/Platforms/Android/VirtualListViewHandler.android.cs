@@ -62,6 +62,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 				if (rv.ScrollState != RecyclerView.ScrollStateIdle)
 					RecordScrollIntent();
 				VirtualView?.Scrolled(x, y);
+				ScheduleRemainingItemsThresholdCheck();
 			}
 		}, RecordScrollIntent);
 		recyclerView.AddOnScrollListener(scrollListener);
@@ -170,7 +171,10 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		var completion = afterLayout;
 		afterLayout = null;
 		completion?.Invoke();
+		RemainingItemsLayoutCompleted();
 	}
+
+	void PlatformRequestRemainingItemsLayout() => recyclerView.RequestLayout();
 
 	void PlatformResetTemplates() => adapter?.ResetTemplates();
 	void PlatformInvalidateContentLayout(PositionInfo position) => adapter?.InvalidateContentLayout(position);

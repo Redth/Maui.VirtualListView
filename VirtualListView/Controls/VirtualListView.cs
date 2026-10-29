@@ -305,6 +305,38 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 		set => SetValue(ScrolledCommandProperty, value);
 	}
 
+	public static readonly BindableProperty RemainingItemsThresholdProperty =
+		BindableProperty.Create(nameof(RemainingItemsThreshold), typeof(int), typeof(VirtualListView), -1,
+			validateValue: (_, value) =>
+			{
+				ArgumentOutOfRangeException.ThrowIfLessThan((int)value, -1, nameof(RemainingItemsThreshold));
+				return true;
+			});
+
+	public int RemainingItemsThreshold
+	{
+		get => (int)GetValue(RemainingItemsThresholdProperty);
+		set => SetValue(RemainingItemsThresholdProperty, value);
+	}
+
+	public static readonly BindableProperty RemainingItemsThresholdReachedCommandProperty =
+		BindableProperty.Create(nameof(RemainingItemsThresholdReachedCommand), typeof(ICommand), typeof(VirtualListView), default);
+
+	public ICommand? RemainingItemsThresholdReachedCommand
+	{
+		get => (ICommand)GetValue(RemainingItemsThresholdReachedCommandProperty);
+		set => SetValue(RemainingItemsThresholdReachedCommandProperty, value);
+	}
+
+	public event EventHandler? RemainingItemsThresholdReached;
+
+	void IVirtualListView.SendRemainingItemsThresholdReached()
+	{
+		if (RemainingItemsThresholdReachedCommand?.CanExecute(null) == true)
+			RemainingItemsThresholdReachedCommand.Execute(null);
+		RemainingItemsThresholdReached?.Invoke(this, EventArgs.Empty);
+	}
+
 	public static readonly BindableProperty SelectedItemsProperty =
 		BindableProperty.Create(nameof(SelectedItems), typeof(IList<ItemPosition>), typeof(VirtualListView), Array.Empty<ItemPosition>(),
 			propertyChanged: (bindableObj, oldValue, newValue) =>

@@ -664,6 +664,64 @@ Chrome follows the same projection on all platforms: no adapter or zero sections
 
 Scrolled notifications can be observed with `ScrolledCommand` which will pass a `ScrolledEventArgs` parameter, or the `OnScrolled` event with a parameter of the same type.  The event args contain the X/Y position scrolled.
 
+## Near-end notifications and paging
+
+Set `RemainingItemsThreshold` to receive `RemainingItemsThresholdReached`, or
+bind `RemainingItemsThresholdReachedCommand` (no command parameter). The default
+`-1` disables notifications; `0` means the last loaded data item is visible;
+positive values notify when that many or fewer loaded data items remain after
+the furthest visible item. Values below `-1` are rejected.
+
+```xml
+<vlv:VirtualListView
+    Adapter="{Binding Adapter}"
+    RemainingItemsThreshold="3"
+    RemainingItemsThresholdReachedCommand="{Binding LoadNextPageCommand}" />
+```
+
+Only **data items across all sections** count. Global and section headers/footers,
+empty sections, native flat row numbers and scroll pixels do not count. The check
+uses the control's accepted projection and visible item coordinates, in either
+orientation. `FindVisiblePositions()` exposes those coordinates for custom
+application behavior; filter `Kind == PositionKind.Item` and do not assume the
+returned positions are sorted.
+
+Checks run after native layout/scroll callbacks on the owning UI dispatcher.
+A nonempty initial list can notify after layout without any scroll gesture,
+including when it fits inside the viewport. An empty list, or a viewport with
+only headers/footers, has no visible data item and does not request a first page:
+the application must load that explicitly.
+
+Notifications are latched, not sent for every scroll callback. They re-arm when
+the viewport leaves the threshold and returns, when accepted data-item counts
+grow (so a short appended page can trigger again without scrolling), when the
+threshold changes, or when the adapter/connection is replaced. Content-only
+updates, same-count resets and removals do not by themselves re-arm. Seeing only
+chrome does not re-arm. After failure or a page that adds no data, staying near
+the same end does not automatically retry; provide an explicit retry action.
+Changing `-1` back to an enabled threshold explicitly re-arms, even if the data
+has not changed.
+
+This is a **notification**, not a paging engine. There is no `CanLoadMore` or
+control-owned in-flight state. The command's `CanExecute(null)` is honored, but a
+rejected command is not automatically retried when it later becomes executable.
+The command runs before the event; use one surface for loading, not both.
+Neither awaits asynchronous work. Applications must guard concurrent requests,
+handle cancellation/stale query results, display errors, and publish resident
+data safely. Disable the threshold (`-1`) while loading or paused and at
+end-of-data. Only re-enable after releasing the in-flight guard and publishing a
+successful page; an empty page that still claims more results should pause for
+explicit retry, not toggle the threshold in an automatic loop.
+
+The sample's **Paging** page (`Sample/VirtualListViewSample/PagingPage.cs`) uses
+delayed synthetic pages and a `SnapshotAdapter`, with UI-thread publication,
+one in-flight request, generation/cancellation guards, loading/error/end states,
+Restart and explicit Retry. Its first page has three rows; the next request fails
+once, and the request after thirteen loaded rows returns one empty nonterminal
+page. Both pause until Retry. Subsequent pages reach 43 rows and disable the
+threshold. Try resizing, navigating away during a request, restarting while
+loading, and scrolling through global/section chrome on each native target.
+
 
 ## Future
 

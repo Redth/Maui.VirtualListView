@@ -58,6 +58,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		{
 			UpdateVisibleElements();
 			VirtualView.Scrolled(scrollViewer.HorizontalOffset, scrollViewer.VerticalOffset);
+			ScheduleRemainingItemsThresholdCheck();
 		}
 	}
 
@@ -67,7 +68,10 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		var completion = afterLayout;
 		afterLayout = null;
 		completion?.Invoke();
+		RemainingItemsLayoutCompleted();
 	}
+
+	void PlatformRequestRemainingItemsLayout() => itemsRepeater.InvalidateMeasure();
 
 	void UpdateVisibleElements()
 	{

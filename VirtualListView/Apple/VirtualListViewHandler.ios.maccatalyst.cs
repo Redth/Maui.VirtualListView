@@ -29,7 +29,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		layout.MinimumInteritemSpacing = 0f;
 		layout.MinimumLineSpacing = 0f;
 
-		var collectionView = new UICollectionView(CGRect.Empty, layout);
+		var collectionView = new LayoutCollectionView(layout, RemainingItemsLayoutCompleted);
 		//collectionView.ContentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentBehavior.Never;
 		collectionView.AllowsMultipleSelection = false;
 		collectionView.AllowsSelection = false;
@@ -43,6 +43,17 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 
 		return collectionView;
 	}
+
+	sealed class LayoutCollectionView(UICollectionViewLayout layout, Action completed) : UICollectionView(CGRect.Empty, layout)
+	{
+		public override void LayoutSubviews()
+		{
+			base.LayoutSubviews();
+			completed();
+		}
+	}
+
+	void PlatformRequestRemainingItemsLayout() => PlatformView.SetNeedsLayout();
 
 	protected override void ConnectHandler(UICollectionView nativeView)
 	{
