@@ -38,4 +38,9 @@ public partial class MainPage : ContentPage, ISafeAreaView
 	{
 		Navigation.PushAsync(new KeyedUpdatesPage());
 	}
+
+	private void ItemRefresh_Clicked(object sender, EventArgs e)
+	{
+		Navigation.PushAsync(new ItemRefreshPage());
+	}
 }

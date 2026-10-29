@@ -8,6 +8,7 @@ public abstract class CachingVirtualListViewAdapter<TSection, TItem> : VirtualLi
 	LRUCache<int, int> cachedNumberOfItemsInSection;
 	LRUCache<int, TSection> cachedSections;
 	bool invalidating;
+	long itemNotifications;
 	bool disposedValue;
 
 	public CachingVirtualListViewAdapter(VirtualListViewAdapterBase<TSection, TItem> sourceAdapter, int sectionCacheSize = 1000)
@@ -54,8 +55,38 @@ public abstract class CachingVirtualListViewAdapter<TSection, TItem> : VirtualLi
 		}
 	}
 
+	public sealed override void InvalidateItems(params ItemPosition[] items)
+	{
+		ObjectDisposedException.ThrowIf(disposedValue, this);
+		var args = new ItemsInvalidatedEventArgs(items);
+		args.Validate(SourceAdapter);
+		if (args.Items.Count == 0)
+			return;
+
+		var before = itemNotifications;
+		ClearCaches();
+		if (SourceAdapter is IItemRefreshVirtualListViewAdapter refreshable)
+			refreshable.InvalidateItems(args.Items.ToArray());
+		ClearCaches();
+		// Forward source notifications normally, including reentrant refreshes.
+		// A legacy or non-notifying source still needs one wrapper notification.
+		if (itemNotifications == before)
+			RaiseDataInvalidated(args);
+	}
+
 	void SourceDataInvalidated(object sender, EventArgs e)
 	{
+		if (disposedValue)
+			return;
+		if (e is ItemsInvalidatedEventArgs items)
+		{
+			items.Validate(SourceAdapter);
+			ClearCaches();
+			itemNotifications++;
+			RaiseDataInvalidated(items);
+			return;
+		}
+
 		if (invalidating)
 			return;
 

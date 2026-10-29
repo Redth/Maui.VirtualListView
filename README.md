@@ -153,6 +153,70 @@ var adapter = new VirtualListViewAdapter<string>(
 	});
 ```
 
+### Targeted content refresh for custom adapters
+
+Adapters derived from `VirtualListViewAdapterBase<TSection, TItem>` support
+`InvalidateItems`. After changing resident data on the list's owning UI
+dispatcher, pass **section/item coordinates**, not flat native row indices:
+
+```csharp
+var sections = new List<List<string>>
+{
+	new() { "Original", "Unchanged" },
+	new() { "Also original" }
+};
+var adapter = new VirtualListViewSectionedAdapter<List<string>, string>(sections);
+listView.Adapter = adapter;
+
+sections[0][0] = "Updated content that may wrap onto more lines";
+sections[1][0] = "Another updated item";
+adapter.InvalidateItems(new ItemPosition(0, 0), new ItemPosition(1, 0));
+```
+
+Only the requested occurrences are rebound and have their templates reselected.
+A compatible retained MAUI tree is reused; a different template replaces that
+tree. Unrelated rows and section/global headers and footers are not rebound.
+Offscreen items need no new view tree and read the updated data when realized.
+Selection stays on the same positions, and the visible item and its relative
+scroll offset are preserved unless a newer scroll action or reset supersedes
+restoration. All platforms use the existing ordered update queue and native
+content-update machinery; Windows sends per-row `Replace`, not a list reset.
+There is no full-reset threshold for a content-only refresh.
+
+This is **not a structural notification**: section/item counts, ordering,
+section data, and chrome mapping must stay unchanged. Publish inserts, removals,
+reorders, and section/chrome changes with `InvalidateData`, or use snapshots for
+keyed structural edits. Detectable count/chrome mismatches throw rather than
+silently resetting. Same-count reorders cannot be inferred from legacy adapters.
+Null input, negative coordinates, and nonexistent items throw; an empty request
+is a no-op, duplicate coordinates are refreshed once, and the input is copied.
+No payload reads or notifications occur for a partially invalid batch.
+
+The original `IVirtualListViewAdapter` interface is unchanged. The optional
+`IItemRefreshVirtualListViewAdapter` exposes the convenience method for callers
+holding an interface. Direct custom implementations can opt in by publishing
+`ItemsInvalidatedEventArgs` through their existing `OnDataInvalidated` event.
+They must validate coordinates before publishing, just as the base class does;
+the handler also checks against its accepted projection before native updates.
+Caching wrappers preserve targeted source events, forward explicit refreshes
+when the source supports them, and never turn a refresh into `InvalidateData`.
+Their count/section caches are cleared without owning or disposing the source.
+
+Snapshot sources must instead submit a new snapshot with increased item content
+revisions. Positional refresh is rejected for snapshot sources, including through
+caching wrappers: it must not bypass the accepted immutable snapshot or its
+revision ordering. Mutable legacy data is not captured by a notification:
+keep its mutations and refresh calls on the owning UI dispatcher; use snapshots
+for background publication. Normal bindings and automatic measurement
+invalidation continue to work without calling this API. A refresh is for changed
+adapter content or template choice, not a workaround for content resizing.
+
+The sample's **Targeted Item Refresh** page updates selected rows' non-notifying
+data, alternates short/long content, and toggles template choice. It includes
+global/section chrome and a fixed offscreen fallback item. Check that selection,
+unrelated rows, and the visible scroll anchor survive repeated updates, including
+after scrolling away/back, on Android, iOS, Mac Catalyst, and Windows.
+
 ### `SnapshotAdapter`: optional keyed updates
 
 Existing `IVirtualListViewAdapter` implementations still work unchanged. For

@@ -14,6 +14,7 @@ internal sealed class HandlerPublication
 	EventHandler? invalidated;
 	Action? invalidate;
 	Action<VirtualListViewSnapshot, bool>? acceptSnapshot;
+	Action<ItemsInvalidatedEventArgs>? refreshItems;
 	long generation;
 	long scheduledDrain;
 	long nextDrain;
@@ -21,7 +22,7 @@ internal sealed class HandlerPublication
 	public bool IsConnected { get { lock (sync) return dispatcher is not null; } }
 
 	public void Connect(IDispatcher owningDispatcher, IVirtualListViewAdapter? source, Action onInvalidated,
-		Action<VirtualListViewSnapshot, bool>? onSnapshot = null)
+		Action<VirtualListViewSnapshot, bool>? onSnapshot = null, Action<ItemsInvalidatedEventArgs>? onItems = null)
 	{
 		if (IsConnected)
 			return;
@@ -31,6 +32,7 @@ internal sealed class HandlerPublication
 			dispatcher = owningDispatcher;
 			invalidate = onInvalidated;
 			acceptSnapshot = onSnapshot;
+			refreshItems = onItems;
 			generation++;
 		}
 		SetAdapter(source);
@@ -57,7 +59,18 @@ internal sealed class HandlerPublication
 			lock (sync)
 				if (dispatcher is null || epoch != generation)
 					return;
-			if (source is ISnapshotVirtualListViewAdapter snapshots && acceptSnapshot is not null)
+			if (args is ItemsInvalidatedEventArgs items)
+			{
+				if (source is ISnapshotVirtualListViewAdapter)
+					throw new InvalidOperationException("Snapshot sources must submit item content revisions, not positional refreshes.");
+				Post(epoch, () =>
+				{
+					if (refreshItems is null)
+						throw new InvalidOperationException("No item refresh consumer is connected.");
+					refreshItems(items);
+				});
+			}
+			else if (source is ISnapshotVirtualListViewAdapter snapshots && acceptSnapshot is not null)
 			{
 				var snapshot = (args as SnapshotInvalidatedEventArgs)?.Snapshot ?? snapshots.CaptureSnapshot();
 				var reset = (args as SnapshotInvalidatedEventArgs)?.Reset ?? true;
@@ -98,6 +111,7 @@ internal sealed class HandlerPublication
 			dispatcher = null;
 			invalidate = null;
 			acceptSnapshot = null;
+			refreshItems = null;
 			pending.Clear();
 			// A previously scheduled drain can still run, but cannot own the new queue.
 			scheduledDrain = 0;

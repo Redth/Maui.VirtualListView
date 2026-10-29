@@ -28,6 +28,43 @@ internal sealed class RetainedView : IDisposable
 	public PositionInfo? Position { get; private set; }
 	internal PresentationKey? Key { get; set; }
 
+	internal void Rebind(KeyedUpdatePlan plan, Func<int, int, bool> isSelected)
+	{
+		if (Position is not PositionInfo old)
+			return;
+		if (plan.RefreshedItems is not null)
+		{
+			if (plan.RefreshedItems.TryGetValue(old.Position, out var item))
+			{
+				item.Position.IsSelected = isSelected(item.Position.SectionIndex, item.Position.ItemIndex);
+				Bind(item.Position, item.Data);
+			}
+			return;
+		}
+
+		var key = Key;
+		if (key is null && plan.Before is not null && old.Position >= 0 && old.Position < plan.Before.Rows.Length)
+			key = plan.Before.Rows[old.Position].Key;
+		if (key is not null && plan.After.Indices.TryGetValue(key.Value, out var index))
+		{
+			var row = plan.After.Rows[index];
+			row.Position.IsSelected = row.Key.Kind == PositionKind.Item
+				&& isSelected(row.Position.SectionIndex, row.Position.ItemIndex);
+			if (plan.Before is not null && plan.Before.Indices.TryGetValue(key.Value, out var oldIndex)
+				&& plan.Before.Rows[oldIndex].Revision == row.Revision
+				&& ReferenceEquals(plan.Before.Rows[oldIndex].Data, row.Data)
+				&& TryUpdatePosition(row.Position, row.Data))
+			{
+				Key = row.Key;
+				return;
+			}
+			Bind(row.Position, row.Data);
+			Key = row.Key;
+		}
+		else
+			Unbind();
+	}
+
 	internal bool TryUpdatePosition(PositionInfo position, object? data)
 	{
 		if (View is null || !ReferenceEquals(selector, owner.ViewSelector) || kind != position.Kind
