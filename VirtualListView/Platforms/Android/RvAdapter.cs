@@ -156,7 +156,7 @@ internal partial class RvAdapter : RecyclerView.Adapter
 	{
 		holders.ForEach(holder =>
 		{
-			if (ReferenceEquals(holder.PositionInfo, position))
+			if (holder.PositionInfo is PositionInfo current && current.Position == position.Position)
 				holder.ViewContainer.RequestLayout();
 		});
 	}

@@ -91,7 +91,11 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	}
 
 	// This updates geometry for the currently bound slot, never source/projection state.
-	internal void InvalidateContentLayout(PositionInfo position) => Publish(() => PlatformInvalidateContentLayout(position));
+	internal void InvalidateContentLayout(PositionInfo position) => Publish(() =>
+	{
+		if (PositionalViewSelector?.GetInfo(position.Position) is not null)
+			PlatformInvalidateContentLayout(position);
+	});
 
 	public void InvalidateData() => Publish(ApplyDataInvalidation);
 
