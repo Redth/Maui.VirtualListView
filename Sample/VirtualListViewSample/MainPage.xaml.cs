@@ -34,6 +34,11 @@ public partial class MainPage : ContentPage, ISafeAreaView
 		Navigation.PushAsync(new MeasurementPage());
 	}
 
+	private void ScrollPerformance_Clicked(object sender, EventArgs e)
+	{
+		Navigation.PushAsync(new ScrollPerformancePage());
+	}
+
 	private void KeyedUpdates_Clicked(object sender, EventArgs e)
 	{
 		Navigation.PushAsync(new KeyedUpdatesPage());

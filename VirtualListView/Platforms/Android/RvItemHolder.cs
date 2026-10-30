@@ -29,6 +29,7 @@ internal class RvItemHolder : RecyclerView.ViewHolder
 				if (container.TryGetTarget(out var host))
 					host.ClearView();
 			});
+		ViewContainer.SetRetainedView(Content);
 	}
 
 	public IView VirtualView

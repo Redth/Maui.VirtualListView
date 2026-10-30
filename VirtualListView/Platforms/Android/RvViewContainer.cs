@@ -7,6 +7,7 @@ sealed class RvViewContainer : global::Android.Widget.FrameLayout
 {
 	readonly VirtualListViewHandler handler;
 	RetainedContentLayout contentLayout;
+	WeakReference<RetainedView> retainedView;
 
 	public RvViewContainer(VirtualListViewHandler handler)
 		: this(handler.MauiContext)
@@ -29,6 +30,8 @@ sealed class RvViewContainer : global::Android.Widget.FrameLayout
 	public AView NativeView { get; private set; }
 
 	public bool NeedsView => VirtualView is null || VirtualView.Handler is null || NativeView is null;
+
+	internal void SetRetainedView(RetainedView view) => retainedView = new(view);
 
 	internal void UpdateOrientation()
 	{
@@ -95,7 +98,8 @@ sealed class RvViewContainer : global::Android.Widget.FrameLayout
 		{
 			if (weakSelf.TryGetTarget(out var container) && container.handler.IsConnected)
 				container.handler.Publish(() => container.handler.PreserveAnchorDuring(container.RequestLayout));
-		});
+		}, () => weakSelf.TryGetTarget(out var container)
+			&& container.retainedView.TryGetTarget(out var content) && content.Position is not null);
     }
 
 	public void ClearView()

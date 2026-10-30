@@ -29,6 +29,9 @@ Orientation changes retain RecyclerView's existing native layout parameters,
 including its ViewHolder association, instead of replacing that native state.
 
 Content `MeasureInvalidated` notifications are coalesced on the owning dispatcher.
+On Android, unbound retained rows stay dirty without being remeasured by queued
+callbacks. Bound rows can still be measured during native prefetch; the next
+native row measurement always refreshes a reused slot.
 Text, font, style, viewport and orientation changes can remeasure compatible
 content without replacing its MAUI tree or resetting the data source. Each slot
 keeps only its latest compatible measurement; global header/footer content has
@@ -60,9 +63,46 @@ and unchanged neighbors after both growth and collapse. With no selection,
 refresh the offscreen item, then use **Offscreen row** to display section 1 /
 item 10 and check its updated text and geometry.
 
+### Scrolling reproduction
+
+The sample's **Scrolling Reproduction** page compares VirtualListView and MAUI
+CollectionView with the same 200 in-memory rows and stable template instances.
+Choose a Label-only row, one Entry, or ten Entries arranged in two columns.
+There is no database or image loading in this page. Entry text uses one-way
+bindings so editing and model notifications are outside this comparison.
+**Entry spell check** is enabled by default and applies equally to both controls.
+Turn it off to isolate Android spell-check service work for identifier-like fields;
+this is an explicit template choice, not a behavior change in the library.
+For application templates containing codes or identifiers, set
+`IsSpellCheckEnabled="False"` on those Entries if spelling checks are unnecessary.
+Keep it enabled for prose; the list does not override this setting.
+
+Selecting either control creates a fresh list. **Top** returns the existing list
+to the start without recreating it; repeat the same gestures to compare first
+and subsequent traversals. **Snapshot** displays and logs cumulative row-tree
+creation, non-null binding, root measurement and arrangement counts. Snapshots
+are manual to avoid updating page chrome while measuring a scroll. They count
+managed row operations, not individual native Entry layout passes or frame time.
+
+Android performance work targets a .NET 11/CoreCLR consumer app; an improvement on
+older app runtimes is not required. With a .NET 11 SDK selected explicitly
+(the repository SDK pin remains .NET 10), build the sample using
+`-c Release -p:AndroidCoreClrPerformance=true -p:RuntimeIdentifier=android-arm64`.
+This targets only the sample at `net11.0-android` with Android API 24 as its minimum;
+the referenced library stays on `net10.0-android`. Keep the SDK's normal CoreCLR
+Release settings, including ReadyToRun, and do not force Mono AOT properties.
+Verify that the APK includes `libcoreclr.so` rather than `libmonosgen-2.0.so`.
+
+Run without a debugger on the affected device. Capture Android `dumpsys gfxinfo`
+frame data separately for each traversal, resetting its statistics after
+navigation and **Top** have settled. Keep the
+viewport and gestures identical between controls. Emulator timing, especially
+on a busy host, is not a substitute for measurements on the reported hardware.
+
 ## Setup
 
-The library and sample target .NET 10 on Android, iOS, Mac Catalyst, and Windows.
+By default, the library and sample target .NET 10 on Android, iOS, Mac Catalyst,
+and Windows. The Android performance opt-in above targets the sample at .NET 11.
 The portable library and regression tests also target `net10.0`.
 `global.json` selects stable SDK **10.0.403** (with patch-only roll-forward and no
 preview SDKs), and `Directory.Build.props` pins all MAUI packages to **10.0.120**.
