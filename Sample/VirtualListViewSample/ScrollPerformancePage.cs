@@ -1,4 +1,5 @@
 using Microsoft.Maui.Adapters;
+using Microsoft.Maui.Controls.Shapes;
 
 namespace VirtualListViewSample;
 
@@ -11,7 +12,7 @@ public sealed class ScrollPerformancePage : ContentPage
 	readonly Picker complexity = new()
 	{
 		Title = "Row content",
-		Items = { "Label only", "Label + 1 Entry", "Label + 10 Entries" },
+		Items = { "Label only", "Label + 1 Entry", "Label + 10 Entries", "Nested wrapping layout", "Mixed form controls", "Local image cards" },
 		SelectedIndex = 2,
 		AutomationId = "scroll-complexity"
 	};
@@ -19,6 +20,7 @@ public sealed class ScrollPerformancePage : ContentPage
 	Action scrollToTop;
 	bool virtualList = true;
 	int entryCount;
+	RowTemplate rowTemplate;
 
 	public ScrollPerformancePage()
 	{
@@ -43,7 +45,7 @@ public sealed class ScrollPerformancePage : ContentPage
 			Spacing = 4,
 			Children =
 			{
-				new Label { Text = "200 resident rows. No database or images. Compare the same gestures in Release without a debugger.", FontSize = 12 },
+				new Label { Text = "200 resident rows. No database or network. Images are bundled locally. Compare the same gestures in Release without a debugger.", FontSize = 12 },
 				controls,
 				complexity,
 				new HorizontalStackLayout
@@ -68,11 +70,13 @@ public sealed class ScrollPerformancePage : ContentPage
 	void ShowList(bool useVirtualList)
 	{
 		virtualList = useVirtualList;
-		entryCount = complexity.SelectedIndex switch { 0 => 0, 1 => 1, _ => 10 };
+		rowTemplate = (RowTemplate)complexity.SelectedIndex;
+		entryCount = rowTemplate switch { RowTemplate.OneEntry or RowTemplate.MixedControls => 1, RowTemplate.TenEntries => 10, _ => 0 };
 		var nextCounters = new Counters();
 		var entries = entryCount;
+		var selectedTemplate = rowTemplate;
 		var checkSpelling = spellCheck.IsToggled;
-		var template = new DataTemplate(() => new InstrumentedRow(nextCounters, entries, checkSpelling));
+		var template = new DataTemplate(() => new InstrumentedRow(nextCounters, selectedTemplate, entries, checkSpelling));
 		View next = virtualList
 			? new VirtualListView
 			{
@@ -102,7 +106,7 @@ public sealed class ScrollPerformancePage : ContentPage
 	void Snapshot()
 	{
 		var name = virtualList ? "VirtualListView" : "CollectionView";
-		summary.Text = $"{name}; Entries={entryCount}; SpellCheck={(spellCheck.IsToggled ? 1 : 0)}; Created={counters.Created}; Bound={counters.Bound}; "
+		summary.Text = $"{name}; Entries={entryCount}; SpellCheck={(spellCheck.IsToggled ? 1 : 0)}; Template={(int)rowTemplate}; Created={counters.Created}; Bound={counters.Bound}; "
 			+ $"Measured={counters.Measured}; Arranged={counters.Arranged}";
 		Console.WriteLine($"[ScrollRepro] {summary.Text}");
 	}
@@ -114,16 +118,43 @@ public sealed class ScrollPerformancePage : ContentPage
 		return button;
 	}
 
+	enum RowTemplate
+	{
+		LabelOnly,
+		OneEntry,
+		TenEntries,
+		NestedLayout,
+		MixedControls,
+		LocalImages
+	}
+
 	sealed class Row
 	{
 		public Row(int index)
 		{
 			Title = $"Row {index:D3}";
 			Values = Enumerable.Range(0, 10).Select(field => $"Value {index:D3}-{field}").ToArray();
+			Description = string.Join(" ", Enumerable.Repeat(
+				"Resident content wraps differently as recycled rows change size.", 1 + index % 4));
+			CategoryIndex = index % 3;
+			Category = new[] { "Planned", "In progress", "Reviewed" }[CategoryIndex];
+			Enabled = index % 2 == 0;
+			Reviewed = index % 3 == 0;
+			Progress = index % 101;
+			Image = index % 2 == 0 ? "scroll_landscape.png" : "scroll_landscape_alt.png";
+			AlternateImage = index % 2 == 0 ? "scroll_landscape_alt.png" : "scroll_landscape.png";
 		}
 
 		public string Title { get; }
 		public string[] Values { get; }
+		public string Description { get; }
+		public int CategoryIndex { get; }
+		public string Category { get; }
+		public bool Enabled { get; }
+		public bool Reviewed { get; }
+		public double Progress { get; }
+		public string Image { get; }
+		public string AlternateImage { get; }
 	}
 
 	sealed class Counters
@@ -138,7 +169,7 @@ public sealed class ScrollPerformancePage : ContentPage
 	{
 		readonly Counters counters;
 
-		public InstrumentedRow(Counters counters, int entryCount, bool checkSpelling)
+		public InstrumentedRow(Counters counters, RowTemplate template, int entryCount, bool checkSpelling)
 		{
 			this.counters = counters;
 			counters.Created++;
@@ -147,23 +178,25 @@ public sealed class ScrollPerformancePage : ContentPage
 			var title = new Label { FontSize = 14, HeightRequest = 24 };
 			title.SetBinding(Label.TextProperty, nameof(Row.Title), BindingMode.OneWay);
 			content.Add(title);
-			if (entryCount > 0)
+			switch (template)
 			{
-				var fields = new Grid
-				{
-					ColumnDefinitions = { new(GridLength.Star), new(GridLength.Star) },
-					ColumnSpacing = 8,
-					RowSpacing = 0
-				};
-				for (var row = 0; row < (entryCount + 1) / 2; row++)
-					fields.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-				for (var index = 0; index < entryCount; index++)
-				{
-					var entry = new Entry { FontSize = 14, HeightRequest = 44, IsSpellCheckEnabled = checkSpelling };
-					entry.SetBinding(Entry.TextProperty, $"{nameof(Row.Values)}[{index}]", BindingMode.OneWay);
-					fields.Add(entry, index % 2, index / 2);
-				}
-				content.Add(fields);
+				case RowTemplate.NestedLayout:
+					content.Add(NestedLayout());
+					break;
+				case RowTemplate.MixedControls:
+					content.Add(MixedControls(checkSpelling));
+					break;
+				case RowTemplate.LocalImages:
+					content.Add(LocalImages());
+					break;
+				case RowTemplate.LabelOnly:
+				case RowTemplate.OneEntry:
+				case RowTemplate.TenEntries:
+					if (entryCount > 0)
+						content.Add(EntryFields(entryCount, checkSpelling));
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(template));
 			}
 			Content = content;
 			BindingContextChanged += (_, _) =>
@@ -171,6 +204,135 @@ public sealed class ScrollPerformancePage : ContentPage
 				if (BindingContext is Row)
 					counters.Bound++;
 			};
+		}
+
+		static Grid EntryFields(int entryCount, bool checkSpelling)
+		{
+			var fields = new Grid
+			{
+				ColumnDefinitions = { new(GridLength.Star), new(GridLength.Star) },
+				ColumnSpacing = 8,
+				RowSpacing = 0
+			};
+			for (var row = 0; row < (entryCount + 1) / 2; row++)
+				fields.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+			for (var index = 0; index < entryCount; index++)
+			{
+				var entry = new Entry { FontSize = 14, HeightRequest = 44, IsSpellCheckEnabled = checkSpelling };
+				entry.SetBinding(Entry.TextProperty, $"{nameof(Row.Values)}[{index}]", BindingMode.OneWay);
+				fields.Add(entry, index % 2, index / 2);
+			}
+			return fields;
+		}
+
+		static Border NestedLayout()
+		{
+			var heading = new Grid
+			{
+				ColumnDefinitions = { new(GridLength.Star), new(GridLength.Auto) },
+				ColumnSpacing = 8
+			};
+			heading.Add(BoundLabel(nameof(Row.Category), 12));
+			heading.Add(new Label { Text = "Resident data", FontSize = 12 }, 1);
+			var details = new VerticalStackLayout
+			{
+				Spacing = 6,
+				Children =
+				{
+					heading,
+					BoundLabel(nameof(Row.Description), 14),
+					new HorizontalStackLayout
+					{
+						Spacing = 12,
+						Children =
+						{
+							BoundLabel($"{nameof(Row.Values)}[0]", 11),
+							BoundLabel($"{nameof(Row.Values)}[1]", 11)
+						}
+					}
+				}
+			};
+			return new Border
+			{
+				Padding = 12,
+				Stroke = Colors.SlateGray,
+				StrokeShape = new RoundRectangle { CornerRadius = 8 },
+				Content = new Grid { Children = { details } }
+			};
+		}
+
+		static Grid MixedControls(bool checkSpelling)
+		{
+			var fields = new Grid
+			{
+				ColumnDefinitions = { new(GridLength.Star), new(GridLength.Star) },
+				RowDefinitions = { new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Auto) },
+				ColumnSpacing = 8,
+				RowSpacing = 4
+			};
+			var entry = new Entry { FontSize = 14, HeightRequest = 44, IsSpellCheckEnabled = checkSpelling };
+			entry.SetBinding(Entry.TextProperty, $"{nameof(Row.Values)}[0]", BindingMode.OneWay);
+			fields.Add(entry);
+			var category = new Picker { Title = "Status", Items = { "Planned", "In progress", "Reviewed" }, FontSize = 14 };
+			category.SetBinding(Picker.SelectedIndexProperty, nameof(Row.CategoryIndex), BindingMode.OneWay);
+			fields.Add(category, 1);
+			var enabled = new Switch();
+			enabled.SetBinding(Switch.IsToggledProperty, nameof(Row.Enabled), BindingMode.OneWay);
+			SemanticProperties.SetDescription(enabled, "Enabled");
+			fields.Add(new HorizontalStackLayout
+			{
+				Spacing = 4,
+				Children = { new Label { Text = "Enabled", VerticalOptions = LayoutOptions.Center }, enabled }
+			}, 0, 1);
+			var reviewed = new CheckBox();
+			reviewed.SetBinding(CheckBox.IsCheckedProperty, nameof(Row.Reviewed), BindingMode.OneWay);
+			SemanticProperties.SetDescription(reviewed, "Reviewed");
+			fields.Add(new HorizontalStackLayout
+			{
+				Spacing = 4,
+				Children = { new Label { Text = "Reviewed", VerticalOptions = LayoutOptions.Center }, reviewed }
+			}, 1, 1);
+			var progress = new Slider { Minimum = 0, Maximum = 100 };
+			progress.SetBinding(Slider.ValueProperty, nameof(Row.Progress), BindingMode.OneWay);
+			SemanticProperties.SetDescription(progress, "Progress");
+			fields.Add(progress, 0, 2);
+			Grid.SetColumnSpan(progress, 2);
+			return fields;
+		}
+
+		static VerticalStackLayout LocalImages()
+		{
+			var images = new Grid
+			{
+				ColumnDefinitions = { new(new GridLength(2, GridUnitType.Star)), new(GridLength.Star) },
+				RowDefinitions = { new(new GridLength(72)), new(new GridLength(72)) },
+				ColumnSpacing = 8,
+				RowSpacing = 8
+			};
+			var large = BoundImage(nameof(Row.Image), 152);
+			images.Add(large);
+			Grid.SetRowSpan(large, 2);
+			images.Add(BoundImage(nameof(Row.AlternateImage), 72), 1);
+			images.Add(BoundImage(nameof(Row.Image), 72), 1, 1);
+			return new VerticalStackLayout
+			{
+				Spacing = 6,
+				Children = { images, BoundLabel(nameof(Row.Description), 14) }
+			};
+		}
+
+		static Label BoundLabel(string path, double size)
+		{
+			var label = new Label { FontSize = size, LineBreakMode = LineBreakMode.WordWrap };
+			label.SetBinding(Label.TextProperty, path, BindingMode.OneWay);
+			return label;
+		}
+
+		static Image BoundImage(string path, double height)
+		{
+			var image = new Image { HeightRequest = height, Aspect = Aspect.AspectFill };
+			image.SetBinding(Image.SourceProperty, path, BindingMode.OneWay);
+			return image;
 		}
 
 		protected override Size MeasureOverride(double widthConstraint, double heightConstraint)

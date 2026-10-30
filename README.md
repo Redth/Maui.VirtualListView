@@ -67,15 +67,21 @@ item 10 and check its updated text and geometry.
 
 The sample's **Scrolling Reproduction** page compares VirtualListView and MAUI
 CollectionView with the same 200 in-memory rows and stable template instances.
-Choose a Label-only row, one Entry, or ten Entries arranged in two columns.
-There is no database or image loading in this page. Entry text uses one-way
-bindings so editing and model notifications are outside this comparison.
+Choose a Label-only row, one Entry, ten Entries arranged in two columns, a nested
+layout with variable-length wrapping text, mixed native form controls, or local
+image cards. The image case binds three images per row to two bundled assets;
+there is no database or network loading. Bindings are one-way so editing and model
+notifications are outside this comparison. The mixed-controls case includes an
+Entry, Picker, Switch, CheckBox and Slider. Swipe along the row's left padding to
+avoid a form control consuming the gesture.
 **Entry spell check** is enabled by default and applies equally to both controls.
 Turn it off to isolate Android spell-check service work for identifier-like fields;
 this is an explicit template choice, not a behavior change in the library.
 For application templates containing codes or identifiers, set
 `IsSpellCheckEnabled="False"` on those Entries if spelling checks are unnecessary.
-Keep it enabled for prose; the list does not override this setting.
+Keep it enabled for prose; the list does not override this setting. Snapshots
+include the selected template index as well as the Entry/spelling settings, so
+captures from different row types are not accidentally combined.
 
 Selecting either control creates a fresh list. **Top** returns the existing list
 to the start without recreating it; repeat the same gestures to compare first
@@ -83,6 +89,9 @@ and subsequent traversals. **Snapshot** displays and logs cumulative row-tree
 creation, non-null binding, root measurement and arrangement counts. Snapshots
 are manual to avoid updating page chrome while measuring a scroll. They count
 managed row operations, not individual native Entry layout passes or frame time.
+Take snapshots immediately before and after **Top** as well as around the swipes:
+a repeat swipe can reuse every tree while the intervening jump still constructs
+new rows. Compare several returns after the initial pool warm-up.
 
 Android performance work targets a .NET 11/CoreCLR consumer app; an improvement on
 older app runtimes is not required. With a .NET 11 SDK selected explicitly
@@ -561,7 +570,7 @@ Return stable `DataTemplate` instances from selectors; do not create a new templ
 
 A native slot keeps its compatible MAUI tree and child handlers through ordinary rebinds. Binding updates position and selection before creating native child handlers. Temporary disappearance only changes visibility: it does not remove logical ownership or clear the retained tree's binding context. `IVirtualListViewSelector.ViewAttached` and `ViewDetached` describe actual display, not template creation or final destruction.
 
-True recycling clears item binding/position state while retaining compatible content. Replacing an incompatible template, evicting pooled content, or disconnecting the handler detaches logical/native ownership and disconnects the owned child tree. Android and Windows pools keep at most two spare trees per type, with a total spare budget based on the visible/active slots (minimum four). Native Apple slots remain owned by UIKit; retired slots are pruned and all tracked content is released at teardown.
+True recycling clears item binding/position state while retaining compatible content. Replacing an incompatible template, evicting pooled content, or disconnecting the handler detaches logical/native ownership and disconnects the owned child tree. Android pools keep at most five spare trees per type, matching RecyclerView's default and allowing small visible batches to be reused during jumps back to the top. Windows pools keep at most two per type. Both retain a total spare budget based on visible/active slots (minimum four), not dataset size. Native Apple slots remain owned by UIKit; retired slots are pruned and all tracked content is released at teardown.
 
 The application still owns supplied `GlobalHeader`, `GlobalFooter`, `EmptyView`, and adapters. The handler removes them from its native hosts but does not dispose their handlers or services. Supplied views keep their explicit binding contexts; otherwise they inherit the list's context through public MAUI logical-child APIs.
 

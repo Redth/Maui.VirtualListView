@@ -32,6 +32,10 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 	</ItemGroup>
 	<ItemGroup>
+		<MauiImage Include="Resources\Images\scroll_landscape.svg" BaseSize="320,180" />
+		<MauiImage Include="Resources\Images\scroll_landscape_alt.svg" BaseSize="320,180" />
+	</ItemGroup>
+	<ItemGroup>
 		<EmbeddedResource Include="chinook.litedb" />
 	</ItemGroup>
 	<ItemGroup>
