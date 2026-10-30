@@ -100,6 +100,75 @@ public class ContentLayoutTests
 	}
 
 	[Fact]
+	public void InactiveContentRemainsDirtyWithoutMeasuringOrRequestingLayout()
+	{
+		var dispatcher = new ManualDispatcher();
+		var view = new MeasureView();
+		var extent = 40d;
+		var handler = new MeasureHandler(view, (width, _) => new Size(width, extent));
+		var notifications = new List<bool>();
+		using var layout = new RetainedContentLayout(view, dispatcher.Dispatch, notifications.Add, () => false);
+		layout.Measure(ListOrientation.Vertical, 320);
+
+		extent = 75;
+		view.ChangeMeasure();
+		dispatcher.Drain();
+		Assert.Equal(1, handler.Measures);
+		Assert.Empty(notifications);
+		Assert.Equal(0, dispatcher.Pending);
+
+		Assert.Equal(new Size(320, 75), layout.Measure(ListOrientation.Vertical, 320));
+		layout.Arrange(ListOrientation.Vertical, new Size(320, 75));
+		Assert.Equal(2, handler.Measures);
+		Assert.Equal(75, handler.Arranged.Height);
+	}
+
+	[Fact]
+	public void SkippedInactiveNotificationDoesNotSuppressLaterActiveChanges()
+	{
+		var dispatcher = new ManualDispatcher();
+		var view = new MeasureView();
+		var extent = 40d;
+		var active = false;
+		var handler = new MeasureHandler(view, (width, _) => new Size(width, extent));
+		var notifications = new List<bool>();
+		using var layout = new RetainedContentLayout(view, dispatcher.Dispatch, notifications.Add, () => active);
+		layout.Measure(ListOrientation.Vertical, 320);
+		extent = 75;
+		view.ChangeMeasure();
+		dispatcher.Drain();
+
+		active = true;
+		extent = 100;
+		view.ChangeMeasure();
+		dispatcher.Drain();
+		Assert.Equal(2, handler.Measures);
+		Assert.Equal(new[] { true }, notifications);
+		Assert.Equal(new Size(320, 100), layout.Measure(ListOrientation.Vertical, 320));
+	}
+
+	[Fact]
+	public void ActivationBeforeQueuedNotificationPreservesTheExtentChange()
+	{
+		var dispatcher = new ManualDispatcher();
+		var view = new MeasureView();
+		var extent = 40d;
+		var active = false;
+		var handler = new MeasureHandler(view, (width, _) => new Size(width, extent));
+		var notifications = new List<bool>();
+		using var layout = new RetainedContentLayout(view, dispatcher.Dispatch, notifications.Add, () => active);
+		layout.Measure(ListOrientation.Vertical, 320);
+		extent = 75;
+		view.ChangeMeasure();
+		Assert.Equal(new Size(320, 75), layout.Measure(ListOrientation.Vertical, 320, force: true));
+
+		active = true;
+		dispatcher.Drain();
+		Assert.Equal(2, handler.Measures);
+		Assert.Equal(new[] { true }, notifications);
+	}
+
+	[Fact]
 	public async Task ContentChangesAreCoalescedAndRemeasuredOnTheOwningDispatcher()
 	{
 		var dispatcher = new ManualDispatcher();

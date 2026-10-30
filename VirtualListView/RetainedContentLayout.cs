@@ -9,6 +9,7 @@ internal sealed class RetainedContentLayout : IDisposable
 	readonly IView view;
 	readonly Func<Action, bool> dispatch;
 	readonly Action<bool> invalidate;
+	readonly Func<bool>? shouldInvalidate;
 	Size? measured;
 	Size? notified;
 	double crossConstraint;
@@ -18,11 +19,13 @@ internal sealed class RetainedContentLayout : IDisposable
 	int pending;
 	int disposed;
 
-	public RetainedContentLayout(IView view, Func<Action, bool> dispatch, Action<bool> invalidate)
+	public RetainedContentLayout(IView view, Func<Action, bool> dispatch, Action<bool> invalidate,
+		Func<bool>? shouldInvalidate = null)
 	{
 		this.view = view;
 		this.dispatch = dispatch;
 		this.invalidate = invalidate;
+		this.shouldInvalidate = shouldInvalidate;
 		if (view is VisualElement element)
 			element.MeasureInvalidated += MeasureInvalidated;
 	}
@@ -77,6 +80,9 @@ internal sealed class RetainedContentLayout : IDisposable
 		{
 			Interlocked.Exchange(ref pending, 0);
 			if (Volatile.Read(ref disposed) != 0)
+				return;
+			// Inactive native rows keep their dirty revision until the next native measure.
+			if (shouldInvalidate is not null && !shouldInvalidate())
 				return;
 			// A native arrange may already have remeasured, but not accepted the new row extent.
 			var previous = notified;
