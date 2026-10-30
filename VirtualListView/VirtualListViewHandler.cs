@@ -12,8 +12,10 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		[nameof(IVirtualListView.Adapter)] = MapAdapter,
 		[nameof(IVirtualListView.Header)] = MapHeader,
 		[nameof(IVirtualListView.IsHeaderVisible)] = MapIsHeaderVisible,
+		[nameof(IVirtualListView.ShowHeaderWhenEmpty)] = MapIsHeaderVisible,
 		[nameof(IVirtualListView.Footer)] = MapFooter,
 		[nameof(IVirtualListView.IsFooterVisible)] = MapIsFooterVisible,
+		[nameof(IVirtualListView.ShowFooterWhenEmpty)] = MapIsFooterVisible,
 		[nameof(IVirtualListView.ViewSelector)] = MapViewSelector,
 		[nameof(IVirtualListView.SelectionMode)] = MapSelectionMode,
 		[nameof(IVirtualListView.Orientation)] = MapOrientation,
@@ -23,12 +25,17 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		[nameof(IVirtualListView.SelectedItems)] = MapSelectedItems,
 		[nameof(IVirtualListView.VerticalScrollbarVisibility)] = MapVerticalScrollbarVisibility,
 		[nameof(IVirtualListView.HorizontalScrollbarVisibility)] = MapHorizontalScrollbarVisibility,
+		[nameof(IVirtualListView.RemainingItemsThreshold)] = MapRemainingItemsThreshold,
 	};
 
 	public static CommandMapper<IVirtualListView, VirtualListViewHandler> CommandMapper = new(ViewCommandMapper)
 	{
 		[nameof(IVirtualListView.ScrollToItem)] = MapScrollToItem,
+		[nameof(Controls.VirtualListView.RequestRefresh)] = MapRequestRefresh,
 	};
+
+	public static void MapRequestRefresh(VirtualListViewHandler handler, IVirtualListView view, object parameter)
+		=> handler.ownedRefresh?.Request(() => handler.VirtualView.IsRefreshEnabled, handler.PlatformRequestRefresh);
 
 	public static void MapScrollToItem(VirtualListViewHandler handler, IVirtualListView view, object parameter)
 	{
@@ -60,12 +67,17 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	IDispatcher contentDispatcher;
 	OwnedRefresh ownedRefresh;
 	internal bool IsConnected => publication.IsConnected;
+	readonly RemainingItemsThresholdState remainingItemsThreshold = new();
+	bool remainingItemsLayoutPending;
+	bool remainingItemsCheckPending;
+	long remainingItemsCheckVersion;
 
 	void ConnectLifetime()
 	{
 		var dispatcher = VirtualView is Controls.BindableObject bindable
 			? bindable.Dispatcher : MauiContext.Services.GetRequiredService<IDispatcher>();
 		contentDispatcher = dispatcher;
+		ResetRemainingItemsThreshold();
 		acceptedSource = VirtualView.Adapter;
 		publication.Connect(dispatcher, VirtualView.Adapter, ApplyDataInvalidation, ApplySnapshot, ApplyItemsInvalidation);
 		ownedRefresh ??= new OwnedRefresh(publication);
@@ -76,6 +88,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	void DisconnectLifetime()
 	{
 		publication.Disconnect();
+		ResetRemainingItemsThreshold();
 		contentDispatcher = null;
 		ownedRefresh?.End();
 		DisconnectProjectionObservers();
@@ -94,6 +107,62 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		var dispatcher = contentDispatcher;
 		// A disconnected slot is retired; its pending measurement is no longer needed.
 		return dispatcher is null || dispatcher.Dispatch(action);
+	}
+
+	void ResetRemainingItemsThreshold()
+	{
+		remainingItemsThreshold.Reset();
+		remainingItemsCheckVersion++;
+		remainingItemsCheckPending = false;
+		remainingItemsLayoutPending = true;
+	}
+
+	void RemainingItemsDataChanged()
+	{
+		remainingItemsThreshold.UpdateItemCount(PositionalViewSelector.DataItemCount);
+		remainingItemsLayoutPending = true;
+		if (VirtualView.RemainingItemsThreshold >= 0)
+			PlatformRequestRemainingItemsLayout();
+	}
+
+	internal void RemainingItemsLayoutCompleted()
+	{
+		remainingItemsLayoutPending = false;
+		ScheduleRemainingItemsThresholdCheck();
+	}
+
+	internal void ScheduleRemainingItemsThresholdCheck()
+	{
+		if (!IsConnected || VirtualView.RemainingItemsThreshold < 0 || remainingItemsLayoutPending || remainingItemsCheckPending)
+			return;
+		remainingItemsCheckPending = true;
+		var version = ++remainingItemsCheckVersion;
+		var publish = CapturePublisher();
+		// Defer past native scroll/layout callbacks, even when already on the UI thread.
+		if (!DispatchContentLayout(() => publish(() =>
+		{
+			if (version != remainingItemsCheckVersion)
+				return;
+			remainingItemsCheckPending = false;
+			if (remainingItemsLayoutPending)
+				return;
+			var remaining = PositionalViewSelector.GetRemainingItemCount(FindVisiblePositions());
+			if (remainingItemsThreshold.ShouldNotify(VirtualView.RemainingItemsThreshold, remaining))
+				VirtualView.SendRemainingItemsThresholdReached();
+		})))
+		{
+			remainingItemsCheckPending = false;
+			throw new InvalidOperationException("The owning dispatcher rejected a remaining-items threshold check.");
+		}
+	}
+
+	public static void MapRemainingItemsThreshold(VirtualListViewHandler handler, IVirtualListView view)
+	{
+		handler.Publish(() =>
+		{
+			handler.ResetRemainingItemsThreshold();
+			handler.RemainingItemsDataChanged();
+		});
 	}
 
 	// This updates geometry for the currently bound slot, never source/projection state.
@@ -115,6 +184,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		acceptedRows = null;
 		anchorState.Invalidate();
 		PositionalViewSelector?.Accept(new PositionalViewSelector(VirtualView));
+		RemainingItemsDataChanged();
 		PlatformInvalidateData();
 	}
 
@@ -124,6 +194,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 			return;
 		var plan = new KeyedUpdatePlan(PositionalViewSelector, args);
 		var anchor = CaptureAnchor(positional: true);
+		RemainingItemsDataChanged();
 		PlatformApplyUpdates(plan);
 		RestoreAnchor(anchor);
 	}
@@ -203,6 +274,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		var reconciledSelection = before?.ReconcileSelection(selection.Positions, after);
 		PositionalViewSelector.Accept(nextProjection);
 		acceptedRows = after;
+		RemainingItemsDataChanged();
 		if (reconciledSelection is not null)
 		{
 			selection.Reset(reconciledSelection);
@@ -235,7 +307,11 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 
 	void EndRefresh() => ownedRefresh?.End();
 
-	bool ShouldShowEmptyView => !(PositionalViewSelector?.HasItems ?? false);
+	bool ShouldShowEmptyView => !(PositionalViewSelector?.HasItems ?? false)
+		&& !(PositionalViewSelector?.HasInlineEmptyView ?? false);
+
+	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		=> handler.InvalidateData();
 
 	INotifyPropertyChanged observedHeader;
 	INotifyPropertyChanged observedFooter;
@@ -297,6 +373,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 		handler.EndRefresh();
 		if (!ReferenceEquals(handler.acceptedSource, virtualListView.Adapter))
 		{
+			handler.ResetRemainingItemsThreshold();
 			if (handler.acceptedRows is not null)
 			{
 				handler.selection.Clear();

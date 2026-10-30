@@ -86,8 +86,14 @@ internal sealed class RetainedView : IDisposable
 	{
 		var nextSelector = owner.ViewSelector;
 		var nextId = nextSelector.GetReuseId(position, data);
-		var supplied = position.Kind is PositionKind.Header or PositionKind.Footer;
-		var suppliedView = position.Kind == PositionKind.Header ? owner.Header : owner.Footer;
+		var supplied = position.Kind is PositionKind.Header or PositionKind.Footer or PositionKind.EmptyView;
+		var suppliedView = position.Kind switch
+		{
+			PositionKind.Header => owner.Header,
+			PositionKind.Footer => owner.Footer,
+			PositionKind.EmptyView => owner.EmptyView,
+			_ => null
+		};
 		var wasVisible = visible;
 		var created = false;
 		SetVisible(false);
@@ -163,6 +169,7 @@ internal sealed class RetainedView : IDisposable
 	{
 		SetVisible(false);
 		var view = View;
+		var keepsLogicalOwnership = kind == PositionKind.EmptyView && ReferenceEquals(view, owner.EmptyView);
 		View = null;
 		Position = null;
 		Key = null;
@@ -175,7 +182,7 @@ internal sealed class RetainedView : IDisposable
 		detachNative();
 		if (!ownsView)
 			suppliedOwners.Remove(view);
-		if (owner is Element parent)
+		if (!keepsLogicalOwnership && owner is Element parent)
 			parent.RemoveLogicalView(view);
 		if (ownsView)
 		{

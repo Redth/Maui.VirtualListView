@@ -372,6 +372,316 @@ public class KeyedUpdateTests
 		Assert.Equal(count, events.Count);
 	}
 
+	[Theory]
+	[InlineData(false, false, false)]
+	[InlineData(true, false, false)]
+	[InlineData(false, true, false)]
+	[InlineData(true, true, false)]
+	[InlineData(false, false, true)]
+	[InlineData(true, false, true)]
+	[InlineData(false, true, true)]
+	[InlineData(true, true, true)]
+	public void EmptyChromeTransitionsReplayAcrossObservableSnapshotsAndWindows(bool header, bool footer, bool sections)
+	{
+		var items = new ObservableCollection<object>();
+		using var adapter = new ObservableCollectionAdapter<object>(items);
+		var view = new TestListView
+		{
+			Adapter = adapter, GlobalHeader = new ContentView(), GlobalFooter = new ContentView(),
+			ShowHeaderWhenEmpty = header, ShowFooterWhenEmpty = footer, EmptyView = new ContentView(),
+			SectionHeaderTemplate = sections ? new DataTemplate(() => new ContentView()) : null,
+			SectionFooterTemplate = sections ? new DataTemplate(() => new ContentView()) : null
+		};
+		var projection = new PositionalViewSelector(view);
+		var windows = new IrSource(null, projection, view);
+		var dispatcher = new QueueDispatcher();
+		var publication = new HandlerPublication();
+		KeyedRows before = null;
+		var mirror = new List<PresentationKey?>();
+		windows.CollectionChanged += (_, args) =>
+		{
+			switch (args.Action)
+			{
+				case NotifyCollectionChangedAction.Reset:
+					mirror = windows.Select(row => row.key).ToList();
+					break;
+				case NotifyCollectionChangedAction.Add:
+					mirror.Insert(args.NewStartingIndex, ((IrDataWrapper)args.NewItems[0]).key);
+					break;
+				case NotifyCollectionChangedAction.Remove:
+					Assert.Equal(mirror[args.OldStartingIndex], ((IrDataWrapper)args.OldItems[0]).key);
+					mirror.RemoveAt(args.OldStartingIndex);
+					break;
+				default:
+					throw new Exception("These empty/data transitions only insert, remove, or reset.");
+			}
+			Assert.Equal(mirror.Count, windows.Count);
+			Assert.Equal(mirror, windows.Select(row => row.key));
+		};
+		var accepted = 0;
+		publication.Connect(dispatcher, adapter, () => throw new Exception("Snapshot source"), (snapshot, reset) =>
+		{
+			var next = new PositionalViewSelector(view, snapshot);
+			var after = new KeyedRows(next, snapshot);
+			var plan = new KeyedUpdatePlan(before, after, reset);
+			if (!plan.Reset) Replay(plan);
+			projection.Accept(next);
+			windows.Apply(plan);
+			var hasItems = snapshot.Sections.Any(section => section.Items.Count > 0);
+			Assert.Equal(hasItems, projection.HasItems);
+			Assert.Equal(hasItems || header, projection.HasGlobalHeader);
+			Assert.Equal(hasItems || footer, projection.HasGlobalFooter);
+			Assert.Equal(!hasItems && (header || footer), projection.HasInlineEmptyView);
+			Assert.Equal(after.Rows.Select(row => (PresentationKey?)row.Key), mirror);
+			Assert.Equal(after.Rows.Length, windows.Count);
+			if (projection.HasInlineEmptyView)
+			{
+				var index = footer ? after.Rows.Length - 2 : after.Rows.Length - 1;
+				Assert.Equal(PositionKind.EmptyView, after.Rows[index].Key.Kind);
+				Assert.DoesNotContain(after.Rows, row => row.Key.Kind == PositionKind.Item);
+			}
+			before = after;
+			accepted++;
+		});
+		dispatcher.Drain();
+		items.Add(new object());
+		items.RemoveAt(0);
+		items.Add(new object());
+		items.Clear();
+		items.Add(new object());
+		dispatcher.Drain();
+		Assert.Equal(6, accepted);
+		publication.Disconnect();
+	}
+
+	[Theory]
+	[InlineData(false, false, false)]
+	[InlineData(true, false, false)]
+	[InlineData(false, true, false)]
+	[InlineData(true, true, false)]
+	[InlineData(false, false, true)]
+	[InlineData(true, false, true)]
+	[InlineData(false, true, true)]
+	[InlineData(true, true, true)]
+	public void AppleProjectionStaysAtTheNativeBaselineUntilTheBatchCallbackAfterEmptyResetsAndFlagToggles(
+		bool header, bool footer, bool visibility)
+	{
+		var items = new ObservableCollection<object> { new object() };
+		using var adapter = new ObservableCollectionAdapter<object>(items);
+		var view = new TestListView
+		{
+			Adapter = adapter, GlobalHeader = new ContentView(), GlobalFooter = new ContentView(),
+			ShowHeaderWhenEmpty = true, ShowFooterWhenEmpty = true, EmptyView = new ContentView()
+		};
+		var projection = new PositionalViewSelector(view);
+		var state = new CvDataSourceState(projection);
+		var dispatcher = new QueueDispatcher();
+		var publication = new HandlerPublication();
+		KeyedRows before = null;
+		int? nativeCount = null;
+		var batches = 0;
+		void Accept(VirtualListViewSnapshot snapshot, bool reset)
+		{
+			var next = new PositionalViewSelector(view, snapshot);
+			var after = new KeyedRows(next, snapshot);
+			var plan = new KeyedUpdatePlan(before, after, reset);
+			if (before is not null)
+				Assert.Equal(before.Rows.Length, state.Count);
+			projection.Accept(next);
+			if (plan.Reset)
+				state.Reload(projection, after, () =>
+				{
+					Assert.Equal(after.Rows.Length, state.Count);
+					// ReloadData defers reading its new baseline until a later layout or batch.
+					nativeCount = null;
+				});
+			else
+			{
+				Replay(plan);
+				if (plan.Removed.Length > 0 || plan.Inserted.Length > 0 || plan.Moved.Length > 0)
+					state.Apply(projection, after, update =>
+					{
+						var oldCount = nativeCount ?? state.Count;
+						Assert.Equal(before.Rows.Length, oldCount);
+						Assert.Equal(oldCount, state.Count);
+						Assert.Same(before, state.Rows);
+						Assert.Same(before.Snapshot, state.Projection.Adapter);
+						for (var index = 0; index < oldCount; index++)
+							Assert.Equal(before.Rows[index].Position.Kind, state.Projection.GetInfo(index).Kind);
+						update();
+						Assert.Equal(oldCount - plan.Removed.Length + plan.Inserted.Length, state.Count);
+						nativeCount = state.Count;
+						batches++;
+					}, () =>
+					{
+						Assert.Equal(after.Rows.Length, state.Count);
+						Assert.Same(after, state.Rows);
+						Assert.Same(after.Snapshot, state.Projection.Adapter);
+						for (var index = 0; index < state.Count; index++)
+							Assert.Equal(after.Rows[index].Position.Kind, state.Projection.GetInfo(index).Kind);
+					});
+				else
+					state.Accept(projection, after);
+			}
+			Assert.Equal(after.Rows.Length, state.Count);
+			before = after;
+		}
+		publication.Connect(dispatcher, adapter, () => throw new Exception("Snapshot source"), Accept);
+		dispatcher.Drain();
+		items.Clear();
+		dispatcher.Drain();
+		Assert.Equal(3, state.Count);
+
+		void Invalidate()
+		{
+			publication.Post(() => Accept(before.Snapshot, true));
+			dispatcher.Drain();
+		}
+		if (visibility) view.IsHeaderVisible = header;
+		else view.ShowHeaderWhenEmpty = header;
+		Invalidate();
+		if (visibility) view.IsFooterVisible = footer;
+		else view.ShowFooterWhenEmpty = footer;
+		Invalidate();
+		var emptyCount = (header ? 1 : 0) + (footer ? 1 : 0) + (header || footer ? 1 : 0);
+		Assert.Equal(emptyCount, state.Count);
+
+		for (var repetition = 0; repetition < 2; repetition++)
+		{
+			// The sample's 0/1 command clears an already-empty source before its first add.
+			items.Clear();
+			items.Add(new object());
+			dispatcher.Drain();
+			Assert.Equal(1 + (visibility && !header ? 0 : 1) + (visibility && !footer ? 0 : 1), state.Count);
+			Assert.DoesNotContain(before.Rows, row => row.Position.Kind == PositionKind.EmptyView);
+			items.RemoveAt(0);
+			dispatcher.Drain();
+			Assert.Equal(emptyCount, state.Count);
+			Assert.Equal(header || footer, projection.HasInlineEmptyView);
+		}
+		view.IsHeaderVisible = view.IsFooterVisible = true;
+		view.ShowHeaderWhenEmpty = view.ShowFooterWhenEmpty = true;
+		Invalidate();
+		Assert.Equal(3, state.Count);
+		Assert.Equal(new[] { PositionKind.Header, PositionKind.EmptyView, PositionKind.Footer },
+			before.Rows.Select(row => row.Position.Kind));
+		Assert.Equal(4, batches);
+		publication.Disconnect();
+	}
+
+	[Fact]
+	public void EmptyToItemCanShiftASurvivingFooterWithoutAnExplicitNativeMove()
+	{
+		var empty = Snapshot(0);
+		var populated = Snapshot(1, "a");
+		var view = new TestListView
+		{
+			Adapter = new SnapshotAdapter(empty), GlobalHeader = new ContentView(), GlobalFooter = new ContentView(),
+			ShowFooterWhenEmpty = true, EmptyView = new ContentView()
+		};
+		var before = new KeyedRows(new PositionalViewSelector(view, empty), empty);
+		var after = new KeyedRows(new PositionalViewSelector(view, populated), populated);
+		var plan = new KeyedUpdatePlan(before, after, false);
+		Replay(plan);
+		Assert.Equal(new[] { 0 }, plan.Removed);
+		Assert.Equal(new[] { 0, 1 }, plan.Inserted);
+		Assert.Empty(plan.Moved);
+		Assert.Equal(PositionKind.Footer, after.Rows[2].Position.Kind);
+		Assert.Equal(1, before.Indices[after.Rows[2].Key]);
+	}
+
+	[Theory]
+	[InlineData(false)]
+	[InlineData(true)]
+	public void LegacyAndCachedSourcesRebuildInlineEmptyContentThroughZeroOneZero(bool cached)
+	{
+		var items = new List<object>();
+		var source = new VirtualListViewAdapter<object>(items);
+		using var cache = cached ? new CachedAdapter(source) : null;
+		var view = new TestListView
+		{
+			Adapter = cache ?? (IVirtualListViewAdapter)source,
+			GlobalHeader = new ContentView(), GlobalFooter = new ContentView(),
+			ShowHeaderWhenEmpty = true, ShowFooterWhenEmpty = true, EmptyView = new ContentView()
+		};
+		var projection = new PositionalViewSelector(view);
+		var dispatcher = new QueueDispatcher();
+		var publication = new HandlerPublication();
+		var accepted = new List<PositionKind>();
+		publication.Connect(dispatcher, view.Adapter, () =>
+		{
+			projection.Invalidate();
+			Assert.Equal(3, projection.TotalCount);
+			Assert.Equal(PositionKind.Header, projection.GetInfo(0).Kind);
+			Assert.Equal(PositionKind.Footer, projection.GetInfo(2).Kind);
+			accepted.Add(projection.GetInfo(1).Kind);
+		});
+		items.Add(new object());
+		source.InvalidateData();
+		dispatcher.Drain();
+		items.Clear();
+		source.InvalidateData();
+		dispatcher.Drain();
+		Assert.Equal(new[] { PositionKind.Item, PositionKind.EmptyView }, accepted);
+		publication.Disconnect();
+	}
+
+	[Theory]
+	[InlineData(false, false)]
+	[InlineData(true, false)]
+	[InlineData(false, true)]
+	[InlineData(true, true)]
+	public void RetainedEmptySectionsKeepTheirKeysAroundTheEmptyContentRow(bool header, bool footer)
+	{
+		var empty = new VirtualListViewSnapshot(0, new[] { Section("s") });
+		var populated = new VirtualListViewSnapshot(1, new[] { Section("s", Item("a")) });
+		var emptyAgain = new VirtualListViewSnapshot(2, new[] { Section("s") });
+		var view = new TestListView
+		{
+			Adapter = new SnapshotAdapter(empty), Selector = new CountingSelector { Header = _ => true, Footer = _ => true },
+			GlobalHeader = new ContentView(), GlobalFooter = new ContentView(), EmptyView = new ContentView(),
+			ShowHeaderWhenEmpty = header, ShowFooterWhenEmpty = footer
+		};
+		KeyedRows Project(VirtualListViewSnapshot snapshot) => new(new PositionalViewSelector(view, snapshot), snapshot);
+		var before = Project(empty);
+		var withItem = Project(populated);
+		var after = Project(emptyAgain);
+		var added = new KeyedUpdatePlan(before, withItem, false);
+		var removed = new KeyedUpdatePlan(withItem, after, false);
+		Replay(added);
+		Replay(removed);
+		Assert.Equal(before.Rows.Select(row => row.Key), after.Rows.Select(row => row.Key));
+		Assert.Equal(2 + (header ? 1 : 0) + (footer ? 1 : 0) + (header || footer ? 1 : 0), after.Rows.Length);
+		Assert.DoesNotContain(added.Removed, index => before.Rows[index].Key.Kind is PositionKind.SectionHeader or PositionKind.SectionFooter);
+		Assert.DoesNotContain(removed.Removed, index => withItem.Rows[index].Key.Kind is PositionKind.SectionHeader or PositionKind.SectionFooter);
+		Assert.Empty(withItem.ReconcileSelection(new[] { new ItemPosition(0, 0) }, after));
+	}
+
+	[Fact]
+	public void EmptyChromeSettingsCanToggleWithoutChangingTheSnapshotOrLosingKeys()
+	{
+		var snapshot = new VirtualListViewSnapshot(0, Array.Empty<SnapshotSection>());
+		var view = new TestListView
+		{
+			Adapter = new SnapshotAdapter(snapshot),
+			GlobalHeader = new ContentView(), GlobalFooter = new ContentView(), EmptyView = new ContentView()
+		};
+		var before = new KeyedRows(new PositionalViewSelector(view), snapshot);
+		foreach (var (header, footer) in new[] { (true, false), (true, true), (false, true), (false, false) })
+		{
+			view.ShowHeaderWhenEmpty = header;
+			view.ShowFooterWhenEmpty = footer;
+			var projection = new PositionalViewSelector(view, snapshot);
+			var after = new KeyedRows(projection, snapshot);
+			Replay(new KeyedUpdatePlan(before, after, false));
+			Assert.Equal(header, projection.HasGlobalHeader);
+			Assert.Equal(footer, projection.HasGlobalFooter);
+			Assert.Equal(header || footer, projection.HasInlineEmptyView);
+			before = after;
+		}
+		Assert.Empty(before.Rows);
+	}
+
 	[Fact]
 	public void ObservableRangeEventsAreCapturedAndMalformedNotificationsFailExplicitly()
 	{

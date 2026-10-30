@@ -6,6 +6,25 @@ namespace VirtualListView.Tests;
 public class ContentLayoutTests
 {
 	[Fact]
+	public void ApplicationInsetChangesRemeasureTheHorizontalCrossSizeWithoutPinningThePrimaryExtent()
+	{
+		var view = new MeasureView();
+		var handler = new MeasureHandler(view, (width, height) =>
+		{
+			Assert.True(double.IsPositiveInfinity(width));
+			return new Size(125, height);
+		});
+		using var layout = Create(view);
+
+		foreach (var applicationInset in new[] { 0d, 30, 60, 59, 30, 1, 0 })
+		{
+			var cross = 544 - applicationInset;
+			Assert.Equal(new Size(125, cross), layout.Measure(ListOrientation.Horizontal, cross));
+		}
+		Assert.Equal(7, handler.Measures);
+	}
+
+	[Fact]
 	public void VerticalMeasureUsesFiniteWidthAndArrangesTheAcceptedOuterSize()
 	{
 		var view = new MeasureView();
@@ -303,6 +322,60 @@ public class ContentLayoutTests
 		view.ChangeMeasure();
 		Assert.Equal(1, dispatcher.Pending);
 		dispatcher.Drain();
+	}
+
+	[Fact]
+	public void RepeatedGrowthAndCollapseDoNotChangeAnUnrelatedSlotsMeasurement()
+	{
+		var dispatcher = new ManualDispatcher();
+		var changed = new MeasureView();
+		var neighbor = new MeasureView();
+		var extent = 40d;
+		_ = new MeasureHandler(changed, (width, _) => new Size(width, extent));
+		var neighborHandler = new MeasureHandler(neighbor, (width, _) => new Size(width, 65));
+		var notifications = new List<bool>();
+		using var changedLayout = new RetainedContentLayout(changed, dispatcher.Dispatch, notifications.Add);
+		using var neighborLayout = Create(neighbor);
+		changedLayout.Measure(ListOrientation.Vertical, 320);
+		neighborLayout.Measure(ListOrientation.Vertical, 320);
+
+		foreach (var next in new[] { 180d, 40d, 180d, 40d })
+		{
+			extent = next;
+			changed.ChangeMeasure();
+			dispatcher.Drain();
+			Assert.Equal(new Size(320, next), changedLayout.Measure(ListOrientation.Vertical, 320));
+			Assert.Equal(new Size(320, 65), neighborLayout.Measure(ListOrientation.Vertical, 320));
+		}
+
+		Assert.Equal(new[] { true, true, true, true }, notifications);
+		Assert.Equal(1, neighborHandler.Measures);
+	}
+
+	[Fact]
+	public void NestedChildVisibilityExpandsAndCollapsesTheRetainedRoot()
+	{
+		var dispatcher = new ManualDispatcher();
+		var title = new MeasureView();
+		var details = new MeasureView { IsVisible = false };
+		_ = new MeasureHandler(title, (width, _) => new Size(width, 20));
+		_ = new MeasureHandler(details, (width, _) => new Size(width, 90));
+		var inner = new VerticalStackLayout { Children = { title, details } };
+		var manager = new VerticalStackLayoutManager(inner);
+		_ = new MeasureHandler(inner, manager.Measure);
+		var root = new MeasureView { Content = inner, Margin = 6, Padding = 8 };
+		_ = ContentHandler(root);
+		var notifications = new List<bool>();
+		using var layout = new RetainedContentLayout(root, dispatcher.Dispatch, notifications.Add);
+		Assert.Equal(new Size(320, 48), layout.Measure(ListOrientation.Vertical, 320));
+
+		details.IsVisible = true;
+		dispatcher.Drain();
+		Assert.Equal(new Size(320, 138), layout.Measure(ListOrientation.Vertical, 320));
+		details.IsVisible = false;
+		dispatcher.Drain();
+		Assert.Equal(new Size(320, 48), layout.Measure(ListOrientation.Vertical, 320));
+		Assert.Equal(new[] { true, true }, notifications);
 	}
 
 	static RetainedContentLayout Create(IView view) => new(view, _ => true, _ => { });

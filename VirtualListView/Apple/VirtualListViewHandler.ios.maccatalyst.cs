@@ -13,6 +13,60 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	CvLayout? layout;
 	CvDelegate? cvdelegate;
 	UIRefreshControl? refreshControl;
+	HorizontalRefreshHost? horizontalRefreshHost;
+
+	public override bool NeedsContainer => true;
+
+	protected override void SetupContainer()
+	{
+		base.SetupContainer();
+		UpdateRefreshHost();
+	}
+
+	protected override void RemoveContainer()
+	{
+		RemoveHorizontalRefreshHost();
+		base.RemoveContainer();
+	}
+
+	void RemoveHorizontalRefreshHost()
+	{
+		if (horizontalRefreshHost is null)
+			return;
+		horizontalRefreshHost.RefreshControl = null;
+		PlatformView.RemoveFromSuperview();
+		ContainerView?.InsertSubview(PlatformView, 0);
+		horizontalRefreshHost.RemoveFromSuperview();
+		horizontalRefreshHost.Dispose();
+		horizontalRefreshHost = null;
+	}
+
+	void UpdateRefreshHost()
+	{
+		if (VirtualView.Orientation == ListOrientation.Horizontal && ContainerView is not null)
+		{
+			PlatformView.RefreshControl = null;
+			PlatformView.AlwaysBounceVertical = false;
+			if (horizontalRefreshHost is null)
+			{
+				ResetRefreshControl();
+				PlatformView.RemoveFromSuperview();
+				horizontalRefreshHost = new HorizontalRefreshHost(PlatformView) { Frame = ContainerView.Bounds };
+				ContainerView.InsertSubview(horizontalRefreshHost, 0);
+			}
+			horizontalRefreshHost.ScrollEnabled = VirtualView.IsRefreshEnabled;
+			horizontalRefreshHost.RefreshControl = VirtualView.IsRefreshEnabled ? refreshControl : null;
+		}
+		else
+		{
+			var wasHorizontal = horizontalRefreshHost is not null;
+			RemoveHorizontalRefreshHost();
+			if (wasHorizontal)
+				ResetRefreshControl();
+			PlatformView.AlwaysBounceVertical = true;
+			PlatformView.RefreshControl = VirtualView.IsRefreshEnabled ? refreshControl : null;
+		}
+	}
 
 	protected override UICollectionView CreatePlatformView()
 	{
@@ -29,7 +83,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		layout.MinimumInteritemSpacing = 0f;
 		layout.MinimumLineSpacing = 0f;
 
-		var collectionView = new UICollectionView(CGRect.Empty, layout);
+		var collectionView = new LayoutCollectionView(layout, RemainingItemsLayoutCompleted);
 		//collectionView.ContentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentBehavior.Never;
 		collectionView.AllowsMultipleSelection = false;
 		collectionView.AllowsSelection = false;
@@ -44,14 +98,24 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		return collectionView;
 	}
 
+	sealed class LayoutCollectionView(UICollectionViewLayout layout, Action completed) : UICollectionView(CGRect.Empty, layout)
+	{
+		public override void LayoutSubviews()
+		{
+			base.LayoutSubviews();
+			completed();
+		}
+	}
+
+	void PlatformRequestRemainingItemsLayout() => PlatformView.SetNeedsLayout();
+
 	protected override void ConnectHandler(UICollectionView nativeView)
 	{
 		if (IsConnected)
 			return;
 		base.ConnectHandler(nativeView);
 		layout = nativeView.CollectionViewLayout as CvLayout;
-		refreshControl = new UIRefreshControl { Enabled = VirtualView.IsRefreshEnabled };
-		refreshControl.ValueChanged += RefreshControlValueChanged;
+		ResetRefreshControl();
 		if (VirtualView.IsRefreshEnabled)
 			nativeView.RefreshControl = refreshControl;
 
@@ -67,17 +131,55 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		ConnectLifetime();
 	}
 
+	void ResetRefreshControl()
+	{
+		// UIKit retains the original scroll host; create a control instead of reparenting it.
+		if (refreshControl is not null)
+		{
+			refreshControl.ValueChanged -= RefreshControlValueChanged;
+			refreshControl.RemoveFromSuperview();
+			refreshControl.Dispose();
+		}
+		refreshControl = new UIRefreshControl { Enabled = VirtualView.IsRefreshEnabled };
+		refreshControl.SizeToFit();
+		refreshControl.ValueChanged += RefreshControlValueChanged;
+		MapRefreshAccentColor(this, VirtualView);
+	}
+
 	void RefreshControlValueChanged(object? sender, EventArgs e)
 	{
 		if (IsConnected && VirtualView.IsRefreshEnabled && refreshControl is not null)
 		{
-			BeginRefresh(() => refreshControl.BeginRefreshing(), () => refreshControl?.EndRefreshing());
+			BeginRefresh(() => refreshControl.BeginRefreshing(), EndRefreshFeedback);
 		}
+	}
+
+	void EndRefreshFeedback()
+	{
+		refreshControl?.EndRefreshing();
+	}
+
+	void PlatformRequestRefresh()
+	{
+		var control = refreshControl
+			?? throw new InvalidOperationException("The connected refresh control is unavailable.");
+		RecordScrollIntent();
+		PlatformView.LayoutIfNeeded();
+		control.SizeToFit();
+		var host = (UIScrollView?)horizontalRefreshHost ?? PlatformView;
+		host.LayoutIfNeeded();
+		var top = host.AdjustedContentInset.Top;
+		BeginRefresh(() =>
+		{
+			host.SetContentOffset(new CGPoint(host.ContentOffset.X, -top - control.Bounds.Height), false);
+			control.BeginRefreshing();
+		}, EndRefreshFeedback);
 	}
 
 	protected override void DisconnectHandler(UICollectionView nativeView)
 	{
 		DisconnectLifetime();
+		RemoveHorizontalRefreshHost();
 		nativeView.WeakDelegate = null;
 		nativeView.WeakDataSource = null;
 		nativeView.BackgroundView?.RemoveFromSuperview();
@@ -118,8 +220,20 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	{
 		if (layout is null || PositionalViewSelector?.GetInfo(position.Position) is null)
 			return;
-		using var context = new UICollectionViewFlowLayoutInvalidationContext();
-		context.InvalidateItems(new[] { NSIndexPath.FromItemSection(position.Position, 0) });
+		using var path = NSIndexPath.FromItemSection(position.Position, 0);
+		// UIKit asks unrealized cells for their preferred size when displaying them.
+		if (PlatformView.CellForItem(path) is not CvCell cell)
+			return;
+		using var original = layout.LayoutAttributesForItem(path);
+		if (original is null)
+			return;
+		using var preferred = cell.PreferredLayoutAttributesFittingAttributes(original);
+		var tolerance = 0.5 / Math.Max(1, PlatformView.TraitCollection.DisplayScale);
+		if (Math.Abs(preferred.Frame.Width - original.Frame.Width) < tolerance
+			&& Math.Abs(preferred.Frame.Height - original.Frame.Height) < tolerance)
+			return;
+		// Preserve flow layout's per-item self-sizing state, including shrink deltas.
+		using var context = layout.GetInvalidationContext(preferred, original);
 		layout.InvalidateLayout(context);
 	}
 
@@ -159,6 +273,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		{
 			if (handler.layout is not null)
 			{
+				handler.EndRefresh();
+				handler.UpdateRefreshHost();
 				handler.layout.ScrollDirection = virtualListView.Orientation switch
 				{
 					ListOrientation.Vertical => UICollectionViewScrollDirection.Vertical,
@@ -183,23 +299,17 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		{
 			if (isRefreshEnabled)
 			{
-				handler.PlatformView.RefreshControl = handler.refreshControl;
 				handler.refreshControl.Enabled = true;
 			}
 			else
 			{
 				handler.EndRefresh();
 				handler.refreshControl.Enabled = false;
-				handler.PlatformView.RefreshControl = null;
 			}
+			handler.UpdateRefreshHost();
 		}
 	}
 
-
-	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
-	{
-		handler?.UpdateEmptyView();
-	}
 
 	void UpdateEmptyViewVisibility()
 	{
@@ -215,13 +325,18 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 	{
 		if (PlatformView is not null)
 		{
-			if (PlatformView.BackgroundView is not null)
+			UIView? next = null;
+			if (MauiContext is not null && VirtualView?.EmptyView is IView view && PositionalViewSelector?.HasInlineEmptyView != true)
 			{
-				PlatformView.BackgroundView.RemoveFromSuperview();
+				RetainedView.ReleaseSupplied(VirtualView, view, PositionKind.EmptyView);
+				next = view.ToPlatform(MauiContext);
 			}
-
-			if (MauiContext is not null)
-				PlatformView.BackgroundView = VirtualView?.EmptyView?.ToPlatform(MauiContext);
+			if (!ReferenceEquals(PlatformView.BackgroundView, next))
+			{
+				PlatformView.BackgroundView?.UpdateVisibility(Visibility.Visible);
+				PlatformView.BackgroundView?.RemoveFromSuperview();
+				PlatformView.BackgroundView = next;
+			}
 
 			UpdateEmptyViewVisibility();
 		}
@@ -237,39 +352,63 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		PlatformView.ShowsHorizontalScrollIndicator = scrollBarVisibility == ScrollBarVisibility.Always || scrollBarVisibility == ScrollBarVisibility.Default;
 	}
 
-	void PlatformInvalidateData()
+	void PlatformInvalidateData(KeyedUpdatePlan? plan = null)
 	{
-		dataSource?.PruneCells();
-		UpdateEmptyViewVisibility();
-		PlatformView.ReloadData();
+		dataSource?.State.Reload(PositionalViewSelector, acceptedRows, () =>
+		{
+			dataSource.PruneCells();
+			if (plan is not null)
+				dataSource.Rebind(plan);
+			UpdateEmptyView();
+			PlatformView.ReloadData();
+		});
 	}
 
 	void PlatformApplyUpdates(KeyedUpdatePlan plan)
 	{
-		dataSource?.Rebind(plan);
-		UpdateEmptyViewVisibility();
 		if (plan.Reset)
 		{
-			PlatformInvalidateData();
+			PlatformInvalidateData(plan);
 			return;
 		}
 		UIView.PerformWithoutAnimation(() =>
 		{
-			PlatformView.PerformBatchUpdates(() =>
+			// Even an empty structural transaction resets UIKit's self-sizing estimates.
+			var structural = plan.Removed.Length > 0 || plan.Inserted.Length > 0 || plan.Moved.Length > 0;
+			if (structural)
+				dataSource?.State.Apply(PositionalViewSelector, acceptedRows,
+					update => PlatformView.PerformBatchUpdates(update, null), () =>
+					{
+						UpdateEmptyView();
+						dataSource.Rebind(plan);
+						if (plan.Removed.Length > 0)
+							PlatformView.DeleteItems(plan.Removed.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
+						if (plan.Inserted.Length > 0)
+							PlatformView.InsertItems(plan.Inserted.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
+						foreach (var move in plan.Moved)
+							PlatformView.MoveItem(NSIndexPath.FromItemSection(move.From, 0), NSIndexPath.FromItemSection(move.To, 0));
+					});
+			else
 			{
-				if (plan.Removed.Length > 0)
-					PlatformView.DeleteItems(plan.Removed.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
-				if (plan.Inserted.Length > 0)
-					PlatformView.InsertItems(plan.Inserted.Select(index => NSIndexPath.FromItemSection(index, 0)).ToArray());
-				foreach (var move in plan.Moved)
-					PlatformView.MoveItem(NSIndexPath.FromItemSection(move.From, 0), NSIndexPath.FromItemSection(move.To, 0));
-			}, null);
+				dataSource?.State.Accept(PositionalViewSelector, acceptedRows);
+				UpdateEmptyView();
+				dataSource?.Rebind(plan);
+			}
 			// Content/template changes are rebound above, including moved rows. Do not
 			// reload old-coordinate paths in the same structural UIKit transaction.
 			foreach (var index in plan.Changed)
 				if (PositionalViewSelector.GetInfo(index) is PositionInfo info)
 					PlatformInvalidateContentLayout(info);
 			PlatformView.LayoutIfNeeded();
+			if (structural && plan.Before is KeyedRows before)
+			{
+				// Flow layout can retain stale sizes for survivors whose native index changed.
+				foreach (var cell in PlatformView.VisibleCells.OfType<CvCell>())
+					if (cell.Content?.Key is PresentationKey key && before.Indices.TryGetValue(key, out var oldIndex)
+						&& cell.PositionInfo is PositionInfo info && oldIndex != info.Position)
+						PlatformInvalidateContentLayout(info);
+				PlatformView.LayoutIfNeeded();
+			}
 		});
 	}
 

@@ -32,6 +32,8 @@ public sealed class MeasurementPage : ContentPage
 			ItemTemplate = new DataTemplate(CreateCard),
 			GlobalHeader = CardFor(header),
 			GlobalFooter = CardFor(footer),
+			ShowHeaderWhenEmpty = true,
+			ShowFooterWhenEmpty = true,
 			EmptyView = new Label { Text = "No rows. Header and footer must still size themselves.", Margin = 12 }
 		};
 		var axes = new HorizontalStackLayout
@@ -50,6 +52,13 @@ public sealed class MeasurementPage : ContentPage
 					items.Clear();
 					foreach (var row in rows.Take(countMode == 0 ? 60 : countMode == 1 ? 0 : 1))
 						items.Add(row);
+				}),
+				Button("0 / 1", "measurement-single", () =>
+				{
+					var addItem = items.Count == 0;
+					items.Clear();
+					if (addItem)
+						items.Add(rows[0]);
 				})
 			}
 		};
@@ -68,14 +77,26 @@ public sealed class MeasurementPage : ContentPage
 					largeFont = !largeFont;
 					foreach (var row in AllContent())
 						row.FontSize = largeFont ? 22 : 14;
-				})
+				}),
+				Button("Child visibility", "measurement-visibility", () => rows[0].DetailsVisible = !rows[0].DetailsVisible)
 			}
 		};
-		var grid = new Grid { RowDefinitions = { new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Star) } };
+		var chrome = new HorizontalStackLayout
+		{
+			Children =
+			{
+				Button("Empty header", "measurement-empty-header", () => list.ShowHeaderWhenEmpty = !list.ShowHeaderWhenEmpty),
+				Button("Empty footer", "measurement-empty-footer", () => list.ShowFooterWhenEmpty = !list.ShowFooterWhenEmpty),
+				Button("Header visible", "measurement-header-visible", () => list.IsHeaderVisible = !list.IsHeaderVisible),
+				Button("Footer visible", "measurement-footer-visible", () => list.IsFooterVisible = !list.IsFooterVisible)
+			}
+		};
+		var grid = new Grid { RowDefinitions = { new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Star) } };
 		grid.Add(new Label { Text = "Check every END marker, spacing, and chrome. Scroll back, change size, and repeat.", Margin = 8 }, 0, 0);
 		grid.Add(axes, 0, 1);
 		grid.Add(changes, 0, 2);
-		grid.Add(list, 0, 3);
+		grid.Add(chrome, 0, 3);
+		grid.Add(list, 0, 4);
 		Content = grid;
 	}
 
@@ -107,6 +128,14 @@ public sealed class MeasurementPage : ContentPage
 		var label = new Label { LineBreakMode = LineBreakMode.WordWrap, TextColor = Colors.Black };
 		label.SetBinding(Label.TextProperty, nameof(MeasurementItem.Text));
 		label.SetBinding(Label.FontSizeProperty, nameof(MeasurementItem.FontSize));
+		var details = new Label
+		{
+			Text = "Nested child content. " + LongText + "END DETAILS",
+			LineBreakMode = LineBreakMode.WordWrap,
+			TextColor = Colors.Black,
+			AutomationId = "measurement-details"
+		};
+		details.SetBinding(IsVisibleProperty, nameof(MeasurementItem.DetailsVisible));
 		var root = new ContentView
 		{
 			Margin = new Thickness(12, 6),
@@ -116,7 +145,7 @@ public sealed class MeasurementPage : ContentPage
 			{
 				Padding = 6,
 				BackgroundColor = Colors.White,
-				Children = { label }
+				Children = { label, new VerticalStackLayout { Children = { details } } }
 			}
 		};
 		root.SetBinding(WidthRequestProperty, nameof(MeasurementItem.CardWidth));
@@ -129,6 +158,7 @@ public sealed class MeasurementPage : ContentPage
 		bool expanded;
 		double fontSize = 14;
 		double cardWidth = -1;
+		bool detailsVisible;
 		public MeasurementItem(string text) => original = text;
 		public string Text => expanded ? original + "\nExpanded content. " + LongText + "END EXPANSION" : original;
 		public bool Expanded
@@ -144,6 +174,11 @@ public sealed class MeasurementPage : ContentPage
 		{
 			get => cardWidth;
 			set { cardWidth = value; OnPropertyChanged(); }
+		}
+		public bool DetailsVisible
+		{
+			get => detailsVisible;
+			set { detailsVisible = value; OnPropertyChanged(); }
 		}
 	}
 }

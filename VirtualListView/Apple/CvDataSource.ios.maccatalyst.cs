@@ -10,9 +10,11 @@ internal class CvDataSource : UICollectionViewDataSource
 		: base()
 	{
 		Handler = handler;
+		State = new CvDataSourceState(handler.PositionalViewSelector);
 	}
 
 	VirtualListViewHandler Handler { get; }
+	internal CvDataSourceState State { get; }
 	readonly NativeViewRegistry<CvCell> cells = new();
 
 	readonly ReusableIdManager itemIdManager = new ReusableIdManager("Item");
@@ -25,7 +27,7 @@ internal class CvDataSource : UICollectionViewDataSource
 	
 	public override UICollectionViewCell GetCell(UICollectionView collectionView, NSIndexPath indexPath)
 	{
-		var info = Handler?.PositionalViewSelector?.GetInfo(indexPath.Item.ToInt32());
+		var info = State.Projection.GetInfo(indexPath.Item.ToInt32());
 
 		object? data = null;
 
@@ -33,10 +35,10 @@ internal class CvDataSource : UICollectionViewDataSource
 		
 		if (info is not null)
 		{
-			data = Handler?.PositionalViewSelector?.Adapter?.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
+			data = State.Projection.Adapter?.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
 			
-			var reuseId = info.Kind is PositionKind.Header or PositionKind.Footer
-				? info.Kind.ToString() : Handler?.PositionalViewSelector?.ViewSelector?.GetReuseId(info, data);
+			var reuseId = info.Kind is PositionKind.Header or PositionKind.Footer or PositionKind.EmptyView
+				? info.Kind.ToString() : State.Projection.ViewSelector?.GetReuseId(info, data);
 
 			nativeReuseId = info.Kind switch
 			{
@@ -45,6 +47,7 @@ internal class CvDataSource : UICollectionViewDataSource
 				PositionKind.SectionFooter => sectionFooterIdManager.GetReuseId(collectionView, reuseId),
 				PositionKind.Header => globalIdManager.GetReuseId(collectionView, reuseId),
 				PositionKind.Footer => globalIdManager.GetReuseId(collectionView, reuseId),
+				PositionKind.EmptyView => globalIdManager.GetReuseId(collectionView, reuseId),
 				_ => CvCell.ReuseIdUnknown,
 			};
 		}
@@ -62,7 +65,7 @@ internal class CvDataSource : UICollectionViewDataSource
 			else
 				info.IsSelected = Handler?.IsItemSelected(info.SectionIndex, info.ItemIndex) ?? false;
 		
-			try { cell.Bind(Handler, info, data); }
+			try { cell.Bind(Handler, info, data, State.Rows?.Rows[info.Position].Key); }
 			catch
 			{
 				cell.Release();
@@ -91,7 +94,7 @@ internal class CvDataSource : UICollectionViewDataSource
 
 	public override nint GetItemsCount(UICollectionView collectionView, nint section)
 	{
-		return Handler?.PositionalViewSelector?.TotalCount ?? 0;
+		return State.Count;
 	}
 
 	protected override void Dispose(bool disposing)

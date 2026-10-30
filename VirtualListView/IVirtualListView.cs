@@ -12,13 +12,23 @@ public interface IVirtualListView : IView
 
 	bool IsHeaderVisible { get; }
 
+	bool ShowHeaderWhenEmpty => false;
+
 	IView Footer { get; }
 
 	bool IsFooterVisible { get; }
 
+	bool ShowFooterWhenEmpty => false;
+
 	event EventHandler<ScrolledEventArgs> OnScrolled;
 
 	void Scrolled(double x, double y);
+
+	int RemainingItemsThreshold { get; }
+
+	event EventHandler RemainingItemsThresholdReached;
+
+	void SendRemainingItemsThresholdReached();
 
 	SelectionMode SelectionMode { get; }
 

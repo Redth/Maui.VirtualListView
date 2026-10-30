@@ -23,6 +23,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	IrElementFactory elementFactory;
 	WStackLayout layout;
 	WGrid rootLayout;
+	WGrid contentLayout;
+	RefreshContainer refreshContainer;
 	WFrameworkElement emptyView;
 	Action afterLayout;
 
@@ -37,6 +39,14 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	protected override WGrid CreatePlatformView()
 	{
 		rootLayout = new WGrid();
+		contentLayout = new WGrid();
+		refreshContainer = new RefreshContainer
+		{
+			HorizontalContentAlignment = Microsoft.UI.Xaml.HorizontalAlignment.Stretch,
+			VerticalContentAlignment = Microsoft.UI.Xaml.VerticalAlignment.Stretch,
+			PullDirection = NativeOrientation == Orientation.Vertical
+				? RefreshPullDirection.TopToBottom : RefreshPullDirection.LeftToRight
+		};
 		itemsRepeaterScrollHost = new ItemsRepeaterScrollHost();
 		scrollViewer = new ScrollViewer();
 		itemsRepeater = new ItemsRepeater();
@@ -47,7 +57,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		scrollViewer.Content = itemsRepeater;
 		itemsRepeaterScrollHost.ScrollViewer = scrollViewer;
 
-		rootLayout.Children.Add(itemsRepeaterScrollHost);
+		contentLayout.Children.Add(itemsRepeaterScrollHost);
+		rootLayout.Children.Add(contentLayout);
 
 		return rootLayout;
 	}
@@ -58,6 +69,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		{
 			UpdateVisibleElements();
 			VirtualView.Scrolled(scrollViewer.HorizontalOffset, scrollViewer.VerticalOffset);
+			ScheduleRemainingItemsThresholdCheck();
 		}
 	}
 
@@ -67,7 +79,10 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		var completion = afterLayout;
 		afterLayout = null;
 		completion?.Invoke();
+		RemainingItemsLayoutCompleted();
 	}
+
+	void PlatformRequestRemainingItemsLayout() => itemsRepeater.InvalidateMeasure();
 
 	void UpdateVisibleElements()
 	{
@@ -95,12 +110,35 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		scrollViewer.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(ScrollPointerWheelChanged), true);
 		scrollViewer.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(ScrollKeyDown), true);
 		itemsRepeater.LayoutUpdated += ItemsRepeaterLayoutUpdated;
+		refreshContainer.RefreshRequested += NativeRefreshRequested;
 		ConnectLifetime();
+		UpdateRefreshEnabled();
+	}
+
+	void PlatformRequestRefresh()
+	{
+		refreshContainer.ApplyTemplate();
+		rootLayout.UpdateLayout();
+		if (refreshContainer.Visualizer is null)
+			throw new InvalidOperationException("The connected refresh visualizer is unavailable.");
+		refreshContainer.RequestRefresh();
+	}
+
+	void NativeRefreshRequested(RefreshContainer sender, RefreshRequestedEventArgs args)
+	{
+		var completion = args.GetDeferral();
+		if (!IsConnected || !VirtualView.IsRefreshEnabled)
+		{
+			completion.Complete();
+			return;
+		}
+		BeginRefresh(static () => { }, completion.Complete);
 	}
 
 	protected override void DisconnectHandler(WGrid nativeView)
 	{
 		DisconnectLifetime();
+		refreshContainer.RefreshRequested -= NativeRefreshRequested;
 		afterLayout = null;
 		scrollViewer.ViewChanged -= ScrollViewerViewChanged;
 		scrollViewer.DirectManipulationStarted -= ScrollManipulationStarted;
@@ -109,13 +147,14 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		scrollViewer.RemoveHandler(UIElement.KeyDownEvent, new KeyEventHandler(ScrollKeyDown));
 		itemsRepeater.LayoutUpdated -= ItemsRepeaterLayoutUpdated;
 		itemsRepeater.ItemsSource = null;
-		itemsRepeater.ItemTemplate = null;
+		// WinUI rejects a null ItemTemplate, even after ItemsSource is cleared.
+		itemsRepeater.ItemTemplate = new Microsoft.UI.Xaml.DataTemplate();
 		elementFactory?.Dispose();
 		elementFactory = null;
 
 		irSource = null;
 		if (emptyView is not null)
-			rootLayout.Children.Remove(emptyView);
+			contentLayout.Children.Remove(emptyView);
 		emptyView = null;
 
 		base.DisconnectHandler(nativeView);
@@ -123,8 +162,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 	void PlatformInvalidateData()
 	{
+		UpdateEmptyView();
 		irSource?.Reset();
-		UpdateEmptyViewVisibility();
 	}
 
 	void ScrollManipulationStarted(object sender, object e) => RecordScrollIntent();
@@ -133,9 +172,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 	void PlatformApplyUpdates(KeyedUpdatePlan plan)
 	{
+		UpdateEmptyView();
 		irSource.Apply(plan);
 		elementFactory.Rebind(plan);
-		UpdateEmptyViewVisibility();
 	}
 
 	(int Index, double Offset) PlatformVisibleAnchor()
@@ -228,6 +267,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		{
 			handler.layout.Orientation = handler.NativeOrientation;
 			var vertical = virtualListView.Orientation == ListOrientation.Vertical;
+			handler.refreshContainer.PullDirection = vertical
+				? RefreshPullDirection.TopToBottom : RefreshPullDirection.LeftToRight;
 			handler.scrollViewer.HorizontalScrollMode = vertical ? WScrollMode.Disabled : WScrollMode.Enabled;
 			handler.scrollViewer.VerticalScrollMode = vertical ? WScrollMode.Enabled : WScrollMode.Disabled;
 			handler.UpdateHorizontalScrollbarVisibility(virtualListView.HorizontalScrollbarVisibility);
@@ -240,18 +281,49 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	}
 
 	public static void MapRefreshAccentColor(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		=> handler.Publish(handler.UpdateRefreshAccentColor);
+
+	void UpdateRefreshAccentColor()
 	{
+		if (refreshContainer.Visualizer is RefreshVisualizer visualizer)
+		{
+			if (VirtualView.RefreshAccentColor is Color color)
+				visualizer.Foreground = color.ToPlatform();
+			else
+				visualizer.ClearValue(Control.ForegroundProperty);
+		}
 	}
 
 	public static void MapIsRefreshEnabled(VirtualListViewHandler handler, IVirtualListView virtualListView)
+		=> handler.Publish(handler.UpdateRefreshEnabled);
+
+	void UpdateRefreshEnabled()
 	{
+		var enabled = VirtualView.IsRefreshEnabled;
+		if (!enabled)
+			EndRefresh();
+		if (enabled == ReferenceEquals(refreshContainer.Content, contentLayout))
+			return;
+
+		PreserveAnchorDuring(() =>
+		{
+			if (enabled)
+			{
+				rootLayout.Children.Remove(contentLayout);
+				refreshContainer.Content = contentLayout;
+				rootLayout.Children.Add(refreshContainer);
+				refreshContainer.ApplyTemplate();
+				UpdateRefreshAccentColor();
+			}
+			else
+			{
+				refreshContainer.Content = null;
+				rootLayout.Children.Remove(refreshContainer);
+				rootLayout.Children.Add(contentLayout);
+			}
+		});
 	}
 
-
-	public static void MapEmptyView(VirtualListViewHandler handler, IVirtualListView virtualListView)
-	{
-		handler?.UpdateEmptyView();
-	}
 
 	void UpdateEmptyViewVisibility()
 	{
@@ -264,13 +336,23 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 	void UpdateEmptyView()
 	{
-		if (emptyView is not null)
-			rootLayout.Children.Remove(emptyView);
-
-		emptyView = VirtualView?.EmptyView?.ToPlatform(MauiContext);
-
-		if (emptyView is not null)
-			rootLayout.Children.Add(emptyView);
+		WFrameworkElement next = null;
+		if (VirtualView?.EmptyView is IView view && PositionalViewSelector?.HasInlineEmptyView != true)
+		{
+			RetainedView.ReleaseSupplied(VirtualView, view, PositionKind.EmptyView);
+			next = view.ToPlatform(MauiContext);
+		}
+		if (!ReferenceEquals(emptyView, next))
+		{
+			if (emptyView is not null)
+			{
+				emptyView.Visibility = WVisibility.Visible;
+				contentLayout.Children.Remove(emptyView);
+			}
+			emptyView = next;
+			if (emptyView is not null)
+				contentLayout.Children.Add(emptyView);
+		}
 
 		UpdateEmptyViewVisibility();
 	}

@@ -214,6 +214,13 @@ internal sealed class OwnedRefresh
 
 	public OwnedRefresh(HandlerPublication publication) => this.publication = publication;
 
+	public void Request(Func<bool> isEnabled, Action request)
+		=> publication.Post(() =>
+		{
+			if (finish is null && isEnabled())
+				request();
+		});
+
 	public void Begin(Action<Action> refresh, Action onFinished)
 	{
 		End();
