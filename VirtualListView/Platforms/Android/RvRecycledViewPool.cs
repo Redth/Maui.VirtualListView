@@ -4,6 +4,7 @@ namespace Microsoft.Maui;
 
 internal sealed class RvRecycledViewPool : RecyclerView.RecycledViewPool
 {
+	const int MaxPerType = 5;
 	readonly HashSet<int> types = new();
 	readonly Func<int> visibleCount;
 	int count;
@@ -13,8 +14,10 @@ internal sealed class RvRecycledViewPool : RecyclerView.RecycledViewPool
 	public override void PutRecycledView(RecyclerView.ViewHolder holder)
 	{
 		var type = holder.ItemViewType;
-		base.SetMaxRecycledViews(type, 2);
-		if (base.GetRecycledViewCount(type) >= 2)
+		base.SetMaxRecycledViews(type, MaxPerType);
+		var capacity = Math.Max(4, visibleCount() * 2);
+		TrimTo(capacity);
+		if (base.GetRecycledViewCount(type) >= MaxPerType)
 		{
 			Release(holder);
 			// Keep RecyclerView's own reset/discard bookkeeping.
@@ -22,17 +25,20 @@ internal sealed class RvRecycledViewPool : RecyclerView.RecycledViewPool
 			return;
 		}
 
-		var capacity = Math.Max(4, visibleCount() * 2);
-		while (count >= capacity)
-		{
-			var oldestType = types.First();
-			var evicted = GetRecycledView(oldestType);
-			if (evicted is not null)
-				Release(evicted);
-		}
+		TrimTo(capacity - 1);
 		base.PutRecycledView(holder);
 		types.Add(type);
 		count++;
+	}
+
+	void TrimTo(int capacity)
+	{
+		while (count > capacity)
+		{
+			var evicted = GetRecycledView(types.First());
+			if (evicted is not null)
+				Release(evicted);
+		}
 	}
 
 	public override RecyclerView.ViewHolder GetRecycledView(int viewType)
