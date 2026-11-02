@@ -8,8 +8,13 @@ public partial class VirtualListView : View, IVirtualListView, IVirtualListViewS
 {
 	static readonly DataTemplate defaultItemTemplate = new(() =>
 	{
+		// Avoid a string-path binding so the library stays trim/NativeAOT clean (IL2026).
 		var label = new Label();
-		label.SetBinding(Label.TextProperty, ".");
+		label.BindingContextChanged += static (sender, _) =>
+		{
+			if (sender is Label l)
+				l.Text = l.BindingContext?.ToString();
+		};
 		return label;
 	});
 
