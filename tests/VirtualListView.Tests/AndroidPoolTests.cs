@@ -20,16 +20,16 @@ public class AndroidPoolTests
 	public void PerTypeOverflowIsReleasedBeforeNativeDiscardAndTakenTreesAreNotReleased()
 	{
 		var pool = new RvRecycledViewPool(() => 20);
-		var holders = Enumerable.Range(0, 6).Select(_ => new RvItemHolder(1)).ToArray();
+		var holders = Enumerable.Range(0, 23).Select(_ => new RvItemHolder(1)).ToArray();
 		foreach (var holder in holders)
 			pool.PutRecycledView(holder);
-		Assert.Equal(5, pool.GetRecycledViewCount(1));
-		Assert.Equal(1, holders[5].Releases);
-		Assert.Equal(1, holders[5].NativeReturns);
+		Assert.Equal(22, pool.GetRecycledViewCount(1));
+		Assert.Equal(1, holders[22].Releases);
+		Assert.Equal(1, holders[22].NativeReturns);
 		var taken = pool.GetRecycledView(1);
 		pool.Clear();
 		Assert.Equal(0, ((RvItemHolder)taken).Releases);
-		Assert.Equal(5, holders.Sum(holder => holder.Releases));
+		Assert.Equal(22, holders.Sum(holder => holder.Releases));
 	}
 
 	[Fact]
@@ -53,7 +53,7 @@ public class AndroidPoolTests
 	}
 
 	[Fact]
-	public void FullTypeCannotBypassAShrinkingViewportBudget()
+	public void FullTypeKeepsItsHighWaterBudgetWhileRowsAreDetached()
 	{
 		var visible = 3;
 		var pool = new RvRecycledViewPool(() => visible);
@@ -63,15 +63,15 @@ public class AndroidPoolTests
 		Assert.Equal(5, pool.GetRecycledViewCount(1));
 		visible = 0;
 		pool.PutRecycledView(holders[5]);
-		Assert.Equal(4, pool.GetRecycledViewCount(1));
-		Assert.Equal(2, holders.Sum(holder => holder.Releases));
+		Assert.Equal(5, pool.GetRecycledViewCount(1));
+		Assert.Equal(1, holders.Sum(holder => holder.Releases));
 		Assert.All(holders, holder => Assert.Equal(1, holder.NativeReturns));
 		pool.Clear();
 		Assert.All(holders, holder => Assert.Equal(1, holder.Releases));
 	}
 
 	[Fact]
-	public void TotalSpareBudgetTracksTheViewportRatherThanDatasetSize()
+	public void TotalSpareBudgetTracksTheLargestViewportRatherThanDatasetSize()
 	{
 		var visible = 10;
 		var pool = new RvRecycledViewPool(() => visible);
@@ -82,8 +82,33 @@ public class AndroidPoolTests
 		visible = 1;
 		holders.Add(new RvItemHolder(21));
 		pool.PutRecycledView(holders.Last());
-		Assert.Equal(17, holders.Sum(holder => holder.Releases));
+		Assert.Equal(1, holders.Sum(holder => holder.Releases));
 		pool.Clear();
 		Assert.Equal(21, holders.Sum(holder => holder.Releases));
+	}
+
+	[Fact]
+	public void FullScreenBatchSurvivesRepeatedReturnsAsTheLiveChildCountDropsToZero()
+	{
+		var visible = 20;
+		var pool = new RvRecycledViewPool(() => visible);
+		var holders = Enumerable.Range(0, 20).Select(_ => new RvItemHolder(1)).ToArray();
+		for (var iteration = 0; iteration < 10; iteration++)
+		{
+			visible = holders.Length;
+			foreach (var holder in holders)
+			{
+				pool.PutRecycledView(holder);
+				visible--;
+			}
+			Assert.Equal(20, pool.GetRecycledViewCount(1));
+			for (var index = 0; index < holders.Length; index++)
+				Assert.Contains(pool.GetRecycledView(1), holders);
+			Assert.All(holders, holder => Assert.Equal(0, holder.Releases));
+		}
+		foreach (var holder in holders)
+			pool.PutRecycledView(holder);
+		pool.Clear();
+		Assert.All(holders, holder => Assert.Equal(1, holder.Releases));
 	}
 }
