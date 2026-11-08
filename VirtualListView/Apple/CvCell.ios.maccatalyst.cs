@@ -100,7 +100,13 @@ internal class CvCell : UICollectionViewCell
 		var frame = result.Frame;
 		var cross = Handler.ContentCrossSize;
 		var size = contentLayout.Measure(axis, cross, force: true);
-		result.Frame = new CGRect(frame.X, frame.Y, size.Width, size.Height);
+		// Only the scrolling axis is self-sized; the cross axis keeps the layout's own value. The
+		// layout's frame goes through float precision, so at a fractional cross size such as a
+		// 1174/3 pt pane (391.3333435 vs 391.3333333) returning the measured cross size reads as a
+		// changed preferred size on every pass, and UIKit's feedback loop never settles.
+		result.Frame = axis == ListOrientation.Vertical
+			? new CGRect(frame.X, frame.Y, frame.Width, size.Height)
+			: new CGRect(frame.X, frame.Y, size.Width, frame.Height);
 		return result;
 	}
 
