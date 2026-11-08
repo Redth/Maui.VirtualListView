@@ -18,6 +18,14 @@ Controls used on each platform:
   - Android: RecyclerView
   - WinAppSDK: ItemsRepeater + ScrollHost with IElementFactory
 
+Android's recycled pool keeps up to a screenful plus two rows per template type,
+with a total spare-row budget based on twice the largest observed visible row
+count (and small minimum limits). Temporary drops in the live child count during
+a full rebind do not shrink that budget. Pooled rows keep their last binding
+context until reuse; a different item replaces it directly, while rebinding the
+same item still resets its bindings. Eviction and teardown clear the context and
+release the owned MAUI tree.
+
 ### Variable content sizing
 
 The native collection owns scrolling and row placement. Retained MAUI content is

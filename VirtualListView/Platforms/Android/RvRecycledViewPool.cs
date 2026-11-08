@@ -4,10 +4,20 @@ namespace Microsoft.Maui;
 
 internal sealed class RvRecycledViewPool : RecyclerView.RecycledViewPool
 {
-	const int MaxPerType = 5;
+	// RecyclerView's default is 5 holders per view type, which is too few for a list that's mostly one
+	// row type: a full rebind (NotifyDataSetChanged) or a fast fling hands back every visible row of that
+	// type at once, and the ones over the cap get released (their MAUI views torn down) only to be rebuilt
+	// moments later. Keep at least a screenful (plus a couple) per type.
+	const int MinPerType = 5;
+	int MaxPerType => Math.Max(MinPerType, VisibleCount + 2);
 	readonly HashSet<int> types = new();
 	readonly Func<int> visibleCount;
 	int count;
+	int visibleHighWater;
+
+	// The most rows seen on screen. The live child count drops to ~0 while a full rebind detaches every
+	// row, which is exactly when they're all handed to the pool, so sizing from it would evict them.
+	int VisibleCount => visibleHighWater = Math.Max(visibleHighWater, visibleCount());
 
 	public RvRecycledViewPool(Func<int> visibleCount) => this.visibleCount = visibleCount;
 
@@ -15,7 +25,7 @@ internal sealed class RvRecycledViewPool : RecyclerView.RecycledViewPool
 	{
 		var type = holder.ItemViewType;
 		base.SetMaxRecycledViews(type, MaxPerType);
-		var capacity = Math.Max(4, visibleCount() * 2);
+		var capacity = Math.Max(4, VisibleCount * 2);
 		TrimTo(capacity);
 		if (base.GetRecycledViewCount(type) >= MaxPerType)
 		{

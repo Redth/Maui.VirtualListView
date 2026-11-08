@@ -54,7 +54,7 @@ internal partial class RvAdapter : RecyclerView.Adapter
 	public override void OnViewRecycled(Java.Lang.Object holder)
 	{
 		if (holder is RvItemHolder itemHolder)
-			itemHolder.Content.Unbind();
+			itemHolder.Content.Unbind(clearContext: false);
 		base.OnViewRecycled(holder);
 	}
 

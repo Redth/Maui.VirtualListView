@@ -90,6 +90,65 @@ public class RetainedViewTests
 	}
 
 	[Fact]
+	public void RecycledRowKeepsContextUntilOnePassRebindAndReleaseClearsIt()
+	{
+		var created = 0;
+		var owner = new TestListView
+		{
+			ItemTemplate = new DataTemplate(() =>
+			{
+				created++;
+				return new TrackedView();
+			})
+		};
+		using var slot = CreateSlot(owner);
+		var first = new object();
+		var second = new object();
+		slot.Bind(Item(0, true), first);
+		slot.SetVisible(true);
+		var view = Assert.IsType<TrackedView>(slot.View);
+		var handler = new TrackingHandler(view);
+		view.Handler = handler;
+		var contexts = new List<object>();
+		view.BindingContextChanged += (_, _) => contexts.Add(view.BindingContext);
+
+		slot.Unbind(clearContext: false);
+		Assert.Same(first, view.BindingContext);
+		Assert.Null(slot.Position);
+		Assert.Null(slot.Key);
+		Assert.Equal(-1, view.ItemIndex);
+		Assert.False(view.IsSelected);
+		Assert.Empty(contexts);
+
+		slot.Bind(Item(1), second);
+		Assert.Same(view, slot.View);
+		Assert.Same(handler, view.Handler);
+		Assert.Equal(new[] { second }, contexts);
+		Assert.Equal(1, created);
+		slot.Release();
+		Assert.Equal(new[] { second, null }, contexts);
+		Assert.Null(view.BindingContext);
+		Assert.Equal(1, handler.Disconnects);
+		Assert.Equal(1, view.Disposals);
+	}
+
+	[Fact]
+	public void RecycledRowRebindingTheSameItemStillRefreshesItsBindings()
+	{
+		var owner = new TestListView { ItemTemplate = new DataTemplate(() => new TrackedView()) };
+		using var slot = CreateSlot(owner);
+		var data = new object();
+		slot.Bind(Item(0), data);
+		slot.Unbind(clearContext: false);
+		var view = Assert.IsType<TrackedView>(slot.View);
+		var contexts = new List<object>();
+		view.BindingContextChanged += (_, _) => contexts.Add(view.BindingContext);
+		slot.Bind(Item(1), data);
+		Assert.Equal(new[] { null, data }, contexts);
+		Assert.Equal(1, view.ItemIndex);
+	}
+
+	[Fact]
 	public void VisibilityDoesNotReleaseLogicalOwnershipBindingOrRequiredCallbacks()
 	{
 		var selector = new TestSelector();
