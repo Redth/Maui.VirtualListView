@@ -80,6 +80,45 @@ sealed class RvViewContainer : global::Android.Widget.FrameLayout
 		}
 	}
 
+	// List content doesn't take part in window insets / safe areas, matching MAUI's own exemption for
+	// CollectionView items (MauiWindowInsetListener skips views under its internal IMauiRecyclerView unless
+	// they set SafeAreaEdges explicitly). Without this, every MAUI layout in a cell gets an insets
+	// listener, and recycling (attach, detach, resize) makes those layouts call requestApplyInsets from
+	// OnLayout, which re-dispatches insets through the whole window on every scroll step.
+	bool passWindowInsets;
+
+#pragma warning disable CS0618, CS0672 // requestApplyInsets() is implemented as requestFitSystemWindows() up the parent chain
+	public override void RequestFitSystemWindows()
+	{
+		if (passWindowInsets)
+			base.RequestFitSystemWindows();
+	}
+#pragma warning restore CS0618, CS0672
+
+	public override global::Android.Views.WindowInsets DispatchApplyWindowInsets(global::Android.Views.WindowInsets insets)
+		=> passWindowInsets ? base.DispatchApplyWindowInsets(insets) : insets;
+
+	static bool HasExplicitSafeAreaEdges(IView view)
+	{
+		if (view is Microsoft.Maui.Controls.BindableObject bindable
+			&& (bindable.IsSet(Microsoft.Maui.Controls.Layout.SafeAreaEdgesProperty)
+				|| bindable.IsSet(Microsoft.Maui.Controls.ContentView.SafeAreaEdgesProperty)
+				|| bindable.IsSet(Microsoft.Maui.Controls.Border.SafeAreaEdgesProperty)
+				|| bindable.IsSet(Microsoft.Maui.Controls.ScrollView.SafeAreaEdgesProperty)))
+			return true;
+
+		if (view is IVisualTreeElement element)
+		{
+			foreach (var child in element.GetVisualChildren())
+			{
+				if (child is IView childView && HasExplicitSafeAreaEdges(childView))
+					return true;
+			}
+		}
+
+		return false;
+	}
+
 	public void UpdatePosition(IPositionInfo positionInfo)
 	{
         if (VirtualView is IPositionInfo viewWithPositionInfo)
@@ -90,6 +129,7 @@ sealed class RvViewContainer : global::Android.Widget.FrameLayout
 	{
 		ClearView();
 		VirtualView = view;
+		passWindowInsets = HasExplicitSafeAreaEdges(view);
 		NativeView = view.ToPlatform(MauiContext);
 		NativeView.RemoveFromParent();
 		AddView(NativeView);
