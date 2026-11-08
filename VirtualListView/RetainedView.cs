@@ -97,7 +97,9 @@ internal sealed class RetainedView : IDisposable
 		var wasVisible = visible;
 		var created = false;
 		SetVisible(false);
-		if (ownsView && View is BindableObject previousBinding)
+		// Rebinding the same item needs a reset to re-apply its bindings; a different item replaces the
+		// context directly. (Recycled rows keep their previous context, so this is one binding pass.)
+		if (ownsView && View is BindableObject previousBinding && ReferenceEquals(previousBinding.BindingContext, data))
 			previousBinding.BindingContext = null;
 		if (View is not null && (!ReferenceEquals(selector, nextSelector) || reuseId != nextId || kind != position.Kind
 			|| (supplied && !ReferenceEquals(View, suppliedView))))
@@ -154,12 +156,15 @@ internal sealed class RetainedView : IDisposable
 			selector?.ViewDetached(Position, View);
 	}
 
-	public void Unbind()
+	// clearContext: false when RecyclerView recycles the row into the pool. Clearing BindingContext there
+	// pushes defaults through every binding only for Bind to set the next item moments later; the row keeps
+	// its previous item until then (Release still clears it).
+	public void Unbind(bool clearContext = true)
 	{
 		SetVisible(false);
 		Position = null;
 		Key = null;
-		if (ownsView && View is BindableObject bindable)
+		if (clearContext && ownsView && View is BindableObject bindable)
 			bindable.BindingContext = null;
 		if (View is IPositionInfo position)
 			position.Update(new PositionInfo { SectionIndex = -1, ItemIndex = -1 });
