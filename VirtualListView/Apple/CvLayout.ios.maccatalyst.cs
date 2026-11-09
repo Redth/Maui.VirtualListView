@@ -95,4 +95,22 @@ internal class CvLayout : UICollectionViewFlowLayout
 			: newBounds.Height != CollectionView.Bounds.Height;
 		return crossChanged || base.ShouldInvalidateLayoutForBoundsChange(newBounds);
 	}
+
+	// Items are only self-sized along the scrolling axis; the cross axis is the layout's. UIKit
+	// pixel-aligns a cell's preferred size but keeps the flow layout's item sizes at float precision,
+	// so at a fractional cross size like a 1174/3 pt pane the two never agree (391.3333333 vs
+	// 391.3333435). Invalidating on that difference makes the self-sizing loop run forever, until
+	// UIKit asserts. Only a change along the scrolling axis invalidates.
+	public override bool ShouldInvalidateLayout(UICollectionViewLayoutAttributes preferredAttributes, UICollectionViewLayoutAttributes originalAttributes)
+	{
+		if (preferredAttributes.RepresentedElementCategory != UICollectionElementCategory.Cell
+			|| !Handler.TryGetTarget(out var handler) || !handler.IsConnected)
+			return base.ShouldInvalidateLayout(preferredAttributes, originalAttributes);
+
+		var tolerance = 0.5 / Math.Max(1, CollectionView.TraitCollection.DisplayScale);
+		var mainAxisChanged = handler.VirtualView.Orientation == ListOrientation.Vertical
+			? Math.Abs(preferredAttributes.Frame.Height - originalAttributes.Frame.Height) >= tolerance
+			: Math.Abs(preferredAttributes.Frame.Width - originalAttributes.Frame.Width) >= tolerance;
+		return mainAxisChanged && base.ShouldInvalidateLayout(preferredAttributes, originalAttributes);
+	}
 }
