@@ -53,7 +53,9 @@ jobs:
 
   native-macos:
     name: Android and Apple libraries and samples
-    # This workload set requires Xcode 27.1; macos-latest still has Xcode 26.
+    # The workload set for the SDK pinned in global.json (rollForward: patch, so
+    # a newer preinstalled SDK is not picked up) requires Xcode 27.1; bump both
+    # together. macos-latest still has Xcode 26.
     runs-on: xcode-27
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
