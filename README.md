@@ -695,6 +695,38 @@ Membership and native selection differences use internal hash sets, not repeated
 linear searches of the public list. Only changed, valid item positions update
 native selection; offscreen items read the accepted state when realized.
 
+## Accessibility
+
+Rows appear in each platform's native accessibility tree, so VoiceOver, TalkBack,
+and Narrator present them as list rows:
+
+| | iOS / Mac Catalyst | Android | Windows |
+|---|---|---|---|
+| Item | One element whose label joins its content's labels | One focus stop (`RecyclerView` adds the list and its item count) | `ListItem` in a `List`, numbered "3 of 10" within its section |
+| Selection | `Selected` trait; activating the row selects it | Native selected state; only selectable items are clickable | `SelectionItem` on rows and `Selection` on the list; Enter/Space select, and the list is a single tab stop with arrow keys between rows |
+| Section header | Heading (`Header` trait) | Heading | Text, heading level 2 |
+| Section footer | One element | One focus stop | Text |
+
+Only items take part in selection, and only while `SelectionMode` isn't `None`. When
+selection is off, rows aren't announced as actionable. The global `Header`,
+`Footer`, and `EmptyView` are treated as page content: their controls stay
+individually reachable and aren't grouped or marked as headings.
+
+On iOS and Windows, a row is read as one element only when its content has no
+controls of its own. If a template contains buttons, switches, entries, tap
+gestures, links, or nested scrolling, the row is left ungrouped so those controls
+stay reachable. On iOS, that row then has no single element to carry the
+`Selected` or heading state. On Android, controls inside a row are always their own
+TalkBack stops, and the rest of the row is read together.
+
+Templates still need to describe what they show. The row's label is built from
+the labels its content already exposes, so:
+
+- give images that carry meaning a `SemanticProperties.Description`;
+- set `SemanticProperties.Description` on the template's root to replace the
+  generated label (for example, to read "Song, Artist, 3:45" in a better order);
+- set `SemanticProperties.HeadingLevel` inside a template to make other rows headings.
+
 ## Refreshing
 
 Set `IsRefreshEnabled = true` to enable native refresh on Android, iOS,

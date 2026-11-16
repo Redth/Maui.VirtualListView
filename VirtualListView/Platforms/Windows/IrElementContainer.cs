@@ -21,7 +21,9 @@ internal class IrElementContainer : Panel
 		this.handler = handler;
 		ContentOwner = new RetainedView(positionalViewSelector.VirtualListView, SetupView, ClearView);
 		UpdateOrientation();
+		UseSystemFocusVisuals = true;
 		Tapped += ContainerTapped;
+		KeyDown += ContainerKeyDown;
 	}
 
 	internal void UpdateOrientation()
@@ -101,23 +103,54 @@ internal class IrElementContainer : Panel
             viewWithPositionInfo.Update(PositionInfo);
     }
 
+	internal SelectionMode SelectionMode => handler.IsConnected ? handler.VirtualView.SelectionMode : SelectionMode.None;
+
+	bool CanSelect => !IsRecycled && RowAccessibility.IsSelectable(PositionInfo, SelectionMode);
+
 	void ContainerTapped(object sender, TappedRoutedEventArgs e)
 	{
 		// Don't select non-item positions
-		if (IsRecycled || !handler.IsConnected || handler.VirtualView.SelectionMode == SelectionMode.None
-			|| (PositionInfo?.Kind ?? PositionKind.Header) != PositionKind.Item)
+		if (CanSelect)
+			SetSelected(!PositionInfo.IsSelected, exclusive: false);
+	}
+
+	// Enter/Space select the focused row, as they do in a native list; keys aimed at a control inside
+	// the row (a text box, a button) are left to that control.
+	void ContainerKeyDown(object sender, KeyRoutedEventArgs e)
+	{
+		if (e.Handled || !ReferenceEquals(e.OriginalSource, this) || !CanSelect
+			|| e.Key is not (global::Windows.System.VirtualKey.Enter or global::Windows.System.VirtualKey.Space))
+			return;
+		e.Handled = true;
+		SetSelected(!PositionInfo.IsSelected, exclusive: false);
+	}
+
+	// exclusive replaces the whole selection with this row (UI Automation's Select).
+	internal void SetSelected(bool selected, bool exclusive)
+	{
+		if (!CanSelect)
 			return;
 
-		if (PositionInfo != null)
-			PositionInfo.IsSelected = !PositionInfo.IsSelected;
+		var list = PositionalViewSelector.VirtualListView;
+		var itemPos = new ItemPosition(PositionInfo.SectionIndex, PositionInfo.ItemIndex);
+		PositionInfo.IsSelected = selected;
 
-		var itemPos = new ItemPosition(PositionInfo?.SectionIndex ?? 0, PositionInfo?.ItemIndex ?? 0);
-
-		if (PositionInfo?.IsSelected ?? false)
-			PositionalViewSelector?.VirtualListView?.SelectItem(itemPos);
+		if (!selected)
+			list.DeselectItem(itemPos);
+		else if (exclusive && list.SelectionMode == SelectionMode.Multiple)
+			list.SelectedItems = [itemPos];
 		else
-			PositionalViewSelector?.VirtualListView?.DeselectItem(itemPos);
+			list.SelectItem(itemPos);
 	}
+
+	// Only selectable rows take keyboard focus; the repeater keeps a single tab stop (see the handler),
+	// and arrow keys move between rows.
+	internal void UpdateAccessibility()
+	{
+		IsTabStop = CanSelect;
+	}
+
+	internal void RaiseSelectionChanged(bool selected) => automationPeer?.RaiseSelectionChanged(selected);
 
 	protected override IEnumerable<DependencyObject> GetChildrenInTabFocusOrder()
 	{

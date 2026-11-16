@@ -1,4 +1,6 @@
 ﻿using AView = global::Android.Views.View;
+using AndroidX.Core.View;
+using AndroidX.Core.View.Accessibility;
 using Microsoft.Maui.Platform;
 
 namespace Microsoft.Maui;
@@ -116,6 +118,38 @@ sealed class RvViewContainer : global::Android.Widget.FrameLayout
 			}
 		}
 
+		return false;
+	}
+
+	// The row's selected state is for accessibility (TalkBack reads it from the row); passing it down
+	// would restyle the template's own views, e.g. starting a marquee in a selected TextView.
+	public override void DispatchSetSelected(bool selected)
+	{
+	}
+
+	public override void OnInitializeAccessibilityNodeInfo(global::Android.Views.Accessibility.AccessibilityNodeInfo info)
+	{
+		base.OnInitializeAccessibilityNodeInfo(info);
+		// TalkBack reads a grouped row as one stop, so a heading set inside the template
+		// (SemanticProperties.HeadingLevel) has to be reported by the row itself.
+		var node = AccessibilityNodeInfoCompat.Wrap(info);
+		if (!node.Heading && ViewCompat.IsScreenReaderFocusable(this) && NativeView is AView content && HasGroupedHeading(content))
+			node.Heading = true;
+	}
+
+	// Focusable descendants are their own TalkBack stops and report their own heading state.
+	static bool HasGroupedHeading(AView view)
+	{
+		if (view.Visibility != global::Android.Views.ViewStates.Visible || view.Focusable || view.Clickable)
+			return false;
+		// Read the node the way TalkBack would: MAUI reports semantic headings through its delegate.
+		using (var info = view.CreateAccessibilityNodeInfo())
+			if (info is not null && AccessibilityNodeInfoCompat.Wrap(info).Heading)
+				return true;
+		if (view is global::Android.Views.ViewGroup group)
+			for (var i = 0; i < group.ChildCount; i++)
+				if (group.GetChildAt(i) is AView child && HasGroupedHeading(child))
+					return true;
 		return false;
 	}
 

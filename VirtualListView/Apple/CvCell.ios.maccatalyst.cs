@@ -75,6 +75,56 @@ internal class CvCell : UICollectionViewCell
 		}
 	}
 
+	SelectionMode SelectionMode => Handler?.IsConnected == true ? Handler.VirtualView.SelectionMode : SelectionMode.None;
+
+	// A row reads as one VoiceOver element (like a UITableViewCell) with its content's labels joined,
+	// so selection and heading state have somewhere to live. Rows hosting their own controls (buttons,
+	// switches, tap gestures, nested scrolling, ...) keep their children reachable instead, because a
+	// single element would hide those controls from VoiceOver. Everything is read on demand: positions
+	// move under a cell during keyed updates without the cell being rebound.
+	public override bool IsAccessibilityElement
+	{
+		get => RowAccessibility.IsRow(PositionInfo) && NativeView is UIView content
+			&& !AccessibilityContent.Inspect(content).Interactive;
+		set => base.IsAccessibilityElement = value;
+	}
+
+	public override string AccessibilityLabel
+	{
+		get => NativeView is UIView content ? AccessibilityContent.Inspect(content).Label : base.AccessibilityLabel;
+		set => base.AccessibilityLabel = value;
+	}
+
+	public override string AccessibilityHint
+	{
+		get => NativeView?.AccessibilityHint is { Length: > 0 } hint ? hint : base.AccessibilityHint;
+		set => base.AccessibilityHint = value;
+	}
+
+	public override UIAccessibilityTrait AccessibilityTraits
+	{
+		get
+		{
+			var traits = base.AccessibilityTraits;
+			// A heading set inside the template (SemanticProperties.HeadingLevel) survives the grouping.
+			if (RowAccessibility.IsHeading(PositionInfo)
+				|| (NativeView is UIView content && AccessibilityContent.Inspect(content).Heading))
+				traits |= UIAccessibilityTrait.Header;
+			if (RowAccessibility.IsSelected(PositionInfo, SelectionMode))
+				traits |= UIAccessibilityTrait.Selected;
+			return traits;
+		}
+		set => base.AccessibilityTraits = value;
+	}
+
+	public override bool AccessibilityActivate()
+	{
+		if (!RowAccessibility.IsSelectable(PositionInfo, SelectionMode))
+			return base.AccessibilityActivate();
+		InvokeTap();
+		return true;
+	}
+
 	public void UpdateSelected(bool selected)
 	{
 		if (PositionInfo is null)

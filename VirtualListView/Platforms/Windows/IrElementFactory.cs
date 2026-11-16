@@ -40,6 +40,7 @@ internal class IrElementFactory : IElementFactory, IDisposable
 			container.ContentOwner.Release();
 			throw;
 		}
+		container.UpdateAccessibility();
 		return container;
 	}
 
@@ -49,6 +50,7 @@ internal class IrElementFactory : IElementFactory, IDisposable
 			return;
 		container.IsRecycled = true;
 		container.ContentOwner.Unbind();
+		container.UpdateAccessibility();
 		if (disposed)
 			container.ContentOwner.Release();
 		else
@@ -59,7 +61,16 @@ internal class IrElementFactory : IElementFactory, IDisposable
 	internal void Rebind(KeyedUpdatePlan plan)
 	{
 		foreach (var container in active.ToArray())
+		{
 			handler.RebindRetained(container.ContentOwner, plan);
+			container.UpdateAccessibility();
+		}
+	}
+
+	internal void UpdateAccessibility()
+	{
+		foreach (var container in active)
+			container.UpdateAccessibility();
 	}
 
 	public void Dispose()

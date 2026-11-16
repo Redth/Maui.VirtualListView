@@ -65,7 +65,10 @@ internal partial class RvAdapter : RecyclerView.Adapter
 		if (info == null)
 		{
 			if (holder is RvItemHolder stale)
+			{
 				stale.Content.Unbind();
+				stale.UpdateAccessibility(SelectionMode);
+			}
 			return;
 		}
 
@@ -79,8 +82,11 @@ internal partial class RvAdapter : RecyclerView.Adapter
 			itemHolder.ViewContainer.UpdateOrientation();
 			var data = positionalViewSelector.Adapter.DataFor(info.Kind, info.SectionIndex, info.ItemIndex);
 			handler.BindRetained(itemHolder.Content, info, data);
+			itemHolder.UpdateAccessibility(SelectionMode);
 		}
 	}
+
+	SelectionMode SelectionMode => handler.IsConnected ? handler.VirtualView.SelectionMode : SelectionMode.None;
 
 	Dictionary<string, int> cachedReuseIds = new ();
 	int reuseIdCount = 100;
@@ -140,6 +146,8 @@ internal partial class RvAdapter : RecyclerView.Adapter
 		});
 
 		viewHolder.ItemView.SetOnClickListener(viewHolder.ClickListener);
+		// SetOnClickListener makes the row clickable; binding decides whether this row really is.
+		viewHolder.UpdateAccessibility(SelectionMode);
 
 		return viewHolder;
 	}
@@ -151,7 +159,12 @@ internal partial class RvAdapter : RecyclerView.Adapter
 	}
 
 	internal void ResetTemplates() => holders.ForEach(holder => holder.Content.Release());
-	internal void Rebind(KeyedUpdatePlan plan) => holders.ForEach(holder => handler.RebindRetained(holder.Content, plan));
+	internal void Rebind(KeyedUpdatePlan plan) => holders.ForEach(holder =>
+	{
+		handler.RebindRetained(holder.Content, plan);
+		holder.UpdateAccessibility(SelectionMode);
+	});
+	internal void UpdateAccessibility() => holders.ForEach(holder => holder.UpdateAccessibility(SelectionMode));
 	internal void UpdateOrientation() => holders.ForEach(holder => holder.ViewContainer.UpdateOrientation());
 
 	internal void InvalidateContentLayout(PositionInfo position)
