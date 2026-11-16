@@ -198,7 +198,11 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	}
 
 	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> MapSelectedItems(handler, virtualListView);
+	{
+		MapSelectedItems(handler, virtualListView);
+		// Whether rows are clickable depends on the mode, not only on what is selected.
+		handler.Publish(() => handler.adapter?.UpdateAccessibility());
+	}
 
 	public static void MapInvalidateData(VirtualListViewHandler handler, IVirtualListView virtualListView, object parameter)
 		=> handler.InvalidateData();
@@ -218,6 +222,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 
 			if (rvh.ViewContainer?.VirtualView is IPositionInfo viewPositionInfo)
 				viewPositionInfo.IsSelected = selected;
+
+			rvh.UpdateAccessibility(VirtualView.SelectionMode);
 		}
 	}
 

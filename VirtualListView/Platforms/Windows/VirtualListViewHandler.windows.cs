@@ -18,7 +18,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 {
 	ItemsRepeaterScrollHost itemsRepeaterScrollHost;
 	ScrollViewer scrollViewer;
-	ItemsRepeater itemsRepeater;
+	IrItemsRepeater itemsRepeater;
 	IrSource irSource;
 	IrElementFactory elementFactory;
 	WStackLayout layout;
@@ -49,7 +49,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		};
 		itemsRepeaterScrollHost = new ItemsRepeaterScrollHost();
 		scrollViewer = new ScrollViewer();
-		itemsRepeater = new ItemsRepeater();
+		itemsRepeater = new IrItemsRepeater(this);
 
 		layout = new WStackLayout { Orientation = NativeOrientation };
 		itemsRepeater.Layout = layout;
@@ -113,6 +113,20 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 		refreshContainer.RefreshRequested += NativeRefreshRequested;
 		ConnectLifetime();
 		UpdateRefreshEnabled();
+		UpdateKeyboardNavigation();
+	}
+
+	internal IEnumerable<IrElementContainer> RealizedContainers
+		=> elementFactory?.ActiveElements ?? Enumerable.Empty<IrElementContainer>();
+
+	// With selectable rows, the list is one tab stop and arrow keys move between rows, as in a native
+	// ListView. Without selection the rows aren't focusable, so Tab keeps reaching their controls.
+	void UpdateKeyboardNavigation()
+	{
+		var selectable = VirtualView.SelectionMode != SelectionMode.None;
+		itemsRepeater.TabFocusNavigation = selectable ? KeyboardNavigationMode.Once : KeyboardNavigationMode.Local;
+		itemsRepeater.XYFocusKeyboardNavigation = selectable
+			? XYFocusKeyboardNavigationMode.Enabled : XYFocusKeyboardNavigationMode.Auto;
 	}
 
 	void PlatformRequestRefresh()
@@ -241,7 +255,14 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 	}
 
 	public static void MapSelectionMode(VirtualListViewHandler handler, IVirtualListView virtualListView)
-		=> MapSelectedItems(handler, virtualListView);
+	{
+		MapSelectedItems(handler, virtualListView);
+		handler.Publish(() =>
+		{
+			handler.UpdateKeyboardNavigation();
+			handler.elementFactory?.UpdateAccessibility();
+		});
+	}
 
 	void PlatformUpdateItemSelection(ItemPosition itemPosition, bool selected)
 	{
@@ -258,6 +279,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, WGri
 
 			if (contentControl?.VirtualView is IPositionInfo viewPositionInfo)
 				viewPositionInfo.IsSelected = selected;
+
+			contentControl.RaiseSelectionChanged(selected);
 		}
 	}
 

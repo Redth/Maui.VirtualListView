@@ -1,4 +1,5 @@
 ﻿using Android.Views;
+using AndroidX.Core.View;
 using AndroidX.RecyclerView.Widget;
 using Microsoft.Maui.Controls;
 
@@ -46,6 +47,20 @@ internal class RvItemHolder : RecyclerView.ViewHolder
 	public void UpdatePosition(PositionInfo positionInfo)
 	{
 		ViewContainer.UpdatePosition(positionInfo);
+	}
+
+	// Syncs the row container's native accessibility state with its current position: only selectable
+	// items are clickable (so TalkBack doesn't offer "double-tap to activate" on headers, or on any row
+	// while selection is off), rows are read as one unit, section headers are headings, and the selected
+	// state is the native one TalkBack announces.
+	internal void UpdateAccessibility(SelectionMode mode)
+	{
+		var position = Content.Position;
+		var view = ItemView;
+		view.Clickable = RowAccessibility.IsSelectable(position, mode);
+		ViewCompat.SetScreenReaderFocusable(view, RowAccessibility.IsRow(position));
+		ViewCompat.SetAccessibilityHeading(view, RowAccessibility.IsHeading(position));
+		view.Selected = RowAccessibility.IsSelected(position, mode);
 	}
 
 	internal void Release()
