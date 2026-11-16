@@ -53,4 +53,9 @@ public partial class MainPage : ContentPage, ISafeAreaView
 	{
 		Navigation.PushAsync(new PagingPage());
 	}
+
+	private void ReloadNav_Clicked(object sender, EventArgs e)
+	{
+		Navigation.PushAsync(new ReloadAfterNavigationPage());
+	}
 }

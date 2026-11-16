@@ -111,6 +111,106 @@ internal class CvLayout : UICollectionViewFlowLayout
 		var mainAxisChanged = handler.VirtualView.Orientation == ListOrientation.Vertical
 			? Math.Abs(preferredAttributes.Frame.Height - originalAttributes.Frame.Height) >= tolerance
 			: Math.Abs(preferredAttributes.Frame.Width - originalAttributes.Frame.Width) >= tolerance;
-		return mainAxisChanged && base.ShouldInvalidateLayout(preferredAttributes, originalAttributes);
+		if (!mainAxisChanged)
+			return false;
+		// Before base: flow layout applies the new size inside it, so the anchor must be read first.
+		if (anchorItem < 0)
+			CaptureScrollAnchor();
+		return base.ShouldInvalidateLayout(preferredAttributes, originalAttributes);
+	}
+
+	// Flow layout never moves the content offset when an item above the viewport changes size. Rows
+	// self-size as they scroll in at the top, so scrolling up pushes the visible rows down by each
+	// row's size difference: a few points per row normally, and hundreds after a reload or a jump far
+	// down the list, when every row above is still at the estimate (flow layout also re-estimates all
+	// unmeasured rows from the measured ones, moving them all at once). So when a row self-sizes, the
+	// first item that starts inside the viewport is anchored, and once the collection view has laid out
+	// again the content offset follows it. Positions are in content coordinates, so the user's own
+	// scrolling in between doesn't count as movement.
+	int anchorItem = -1;
+	int anchorSection;
+	nfloat anchorPosition;
+
+	public override void InvalidateLayout(UICollectionViewLayoutInvalidationContext context)
+	{
+		// Reloads and batch updates renumber items; the anchor no longer means the same item.
+		if (context.InvalidateEverything || context.InvalidateDataSourceCounts)
+			ClearScrollAnchor();
+		base.InvalidateLayout(context);
+	}
+
+	void ClearScrollAnchor() => anchorItem = -1;
+
+	void CaptureScrollAnchor()
+	{
+		if (CollectionView is not UICollectionView collectionView
+			|| !Handler.TryGetTarget(out var handler) || !handler.IsConnected)
+			return;
+
+		var vertical = handler.VirtualView.Orientation == ListOrientation.Vertical;
+		var inset = collectionView.AdjustedContentInset;
+		var bounds = collectionView.Bounds;
+		var start = vertical ? bounds.Y + inset.Top : bounds.X + inset.Left;
+		var visible = vertical
+			? new CGRect(bounds.X, start, bounds.Width, Math.Max(1, bounds.Height - inset.Top - inset.Bottom))
+			: new CGRect(start, bounds.Y, Math.Max(1, bounds.Width - inset.Left - inset.Right), bounds.Height);
+
+		UICollectionViewLayoutAttributes anchor = null;
+		UICollectionViewLayoutAttributes first = null;
+		foreach (var attributes in base.LayoutAttributesForElementsInRect(visible) ?? [])
+		{
+			if (attributes.RepresentedElementCategory != UICollectionElementCategory.Cell)
+				continue;
+			var position = vertical ? attributes.Frame.Y : attributes.Frame.X;
+			if (first is null || attributes.IndexPath.Item < first.IndexPath.Item)
+				first = attributes;
+			// An item straddling the leading edge is the one most likely to be self-sizing as it
+			// scrolls in, so anchor the first one that starts inside the viewport.
+			if (position >= start - 0.5 && (anchor is null || attributes.IndexPath.Item < anchor.IndexPath.Item))
+				anchor = attributes;
+		}
+
+		anchor ??= first;
+		if (anchor is null)
+			return;
+		anchorItem = (int)anchor.IndexPath.Item;
+		anchorSection = (int)anchor.IndexPath.Section;
+		anchorPosition = vertical ? anchor.Frame.Y : anchor.Frame.X;
+	}
+
+	/// <summary>
+	/// Called after the collection view lays out. Moves the content offset by however far
+	/// self-sizing moved the anchored item, and returns whether it did.
+	/// </summary>
+	internal bool FollowScrollAnchor()
+	{
+		var item = anchorItem;
+		if (item < 0)
+			return false;
+		ClearScrollAnchor();
+
+		if (CollectionView is not UICollectionView collectionView
+			|| !Handler.TryGetTarget(out var handler) || !handler.IsConnected
+			// The handler is restoring its own anchor (data updates, resizes); it decides the offset.
+			|| handler.HasPendingAnchor
+			|| anchorSection >= collectionView.NumberOfSections()
+			|| item >= collectionView.NumberOfItemsInSection(anchorSection))
+			return false;
+
+		using var path = NSIndexPath.FromItemSection(item, anchorSection);
+		using var attributes = base.LayoutAttributesForItem(path);
+		if (attributes is null)
+			return false;
+
+		var vertical = handler.VirtualView.Orientation == ListOrientation.Vertical;
+		var delta = (vertical ? attributes.Frame.Y : attributes.Frame.X) - anchorPosition;
+		if (Math.Abs(delta) < 0.5 / Math.Max(1, collectionView.TraitCollection.DisplayScale))
+			return false;
+
+		var offset = collectionView.ContentOffset;
+		collectionView.ContentOffset = vertical
+			? new CGPoint(offset.X, offset.Y + delta)
+			: new CGPoint(offset.X + delta, offset.Y);
+		return true;
 	}
 }

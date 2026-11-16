@@ -203,6 +203,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	internal VirtualListViewSnapshot AcceptedSnapshot => acceptedRows?.Snapshot;
 	IVirtualListViewAdapter acceptedSource;
 	KeyedAnchor pendingAnchor;
+	internal bool HasPendingAnchor => pendingAnchor is not null;
 	Size? arrangedSize;
 	readonly KeyedAnchorState anchorState = new();
 	internal void RecordScrollIntent()
