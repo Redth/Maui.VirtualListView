@@ -103,6 +103,9 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		public override void LayoutSubviews()
 		{
 			base.LayoutSubviews();
+			// Following the anchor reveals other items, which can self-size in turn.
+			for (var i = 0; i < 4 && CollectionViewLayout is CvLayout cvLayout && cvLayout.FollowScrollAnchor(); i++)
+				base.LayoutSubviews();
 			completed();
 		}
 	}
