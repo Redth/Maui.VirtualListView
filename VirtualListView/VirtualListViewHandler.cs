@@ -101,6 +101,28 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	}
 
 	internal void Publish(Action action) => publication.Post(action);
+
+	// Connecting runs ConnectHandler and every property mapping, and each data-related mapping (Adapter,
+	// Header, Footer, their visibility, the view selector, EmptyView) invalidates the data. The projection
+	// is still updated each time, but the native list reloads once at the end (see PlatformInvalidateData).
+	int connectBatch;
+	internal bool IsBatchingConnect => connectBatch > 0;
+
+	public override void SetVirtualView(IView view)
+	{
+		connectBatch++;
+		try
+		{
+			base.SetVirtualView(view);
+		}
+		finally
+		{
+			if (--connectBatch == 0)
+				PlatformEndConnectBatch();
+		}
+	}
+
+	partial void PlatformEndConnectBatch();
 	internal Action<Action> CapturePublisher() => publication.CapturePublisher();
 	internal bool DispatchContentLayout(Action action)
 	{
@@ -174,8 +196,12 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 
 	public void InvalidateData() => Publish(ApplyDataInvalidation);
 
+	// Bumped whenever the source data may have changed; BindRetained compares it with the slot's.
+	long dataGeneration;
+
 	void ApplyDataInvalidation()
 	{
+		dataGeneration++;
 		if (VirtualView.Adapter is ISnapshotVirtualListViewAdapter snapshots)
 		{
 			ApplySnapshot(acceptedRows?.Snapshot ?? snapshots.CaptureSnapshot(), true);
@@ -192,6 +218,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	{
 		if (args.Items.Count == 0)
 			return;
+		dataGeneration++;
 		var plan = new KeyedUpdatePlan(PositionalViewSelector, args);
 		var anchor = CaptureAnchor(positional: true);
 		RemainingItemsDataChanged();
@@ -263,6 +290,7 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 
 	void ApplySnapshot(VirtualListViewSnapshot snapshot, bool reset)
 	{
+		dataGeneration++;
 		var before = acceptedRows;
 		if (before is not null && !ReferenceEquals(before.Snapshot, snapshot))
 			SnapshotValidation.Validate(before.Snapshot, snapshot, reset);
@@ -291,7 +319,8 @@ public partial class VirtualListViewHandler : IVirtualListViewHandler
 	internal void BindRetained(RetainedView content, PositionInfo info, object data, PresentationKey? key = null)
 	{
 		info.IsSelected = info.Kind == PositionKind.Item && IsItemSelected(info.SectionIndex, info.ItemIndex);
-		content.Bind(info, data);
+		content.Bind(info, data, refresh: content.BoundGeneration != dataGeneration);
+		content.BoundGeneration = dataGeneration;
 		content.Key = key ?? (acceptedRows is not null && info.Position >= 0 && info.Position < acceptedRows.Rows.Length
 			? acceptedRows.Rows[info.Position].Key : null);
 	}

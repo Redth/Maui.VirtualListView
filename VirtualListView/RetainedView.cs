@@ -26,6 +26,8 @@ internal sealed class RetainedView : IDisposable
 
 	public IView? View { get; private set; }
 	public PositionInfo? Position { get; private set; }
+	// The handler's data generation when this slot was last bound (see VirtualListViewHandler.BindRetained).
+	internal long BoundGeneration { get; set; } = -1;
 	internal PresentationKey? Key { get; set; }
 
 	internal void Rebind(KeyedUpdatePlan plan, Func<int, int, bool> isSelected)
@@ -82,7 +84,10 @@ internal sealed class RetainedView : IDisposable
 			slot.Release();
 	}
 
-	public void Bind(PositionInfo position, object? data)
+	// refresh: the source data may have changed since this slot was last bound, so re-binding the same
+	// item must re-apply its bindings. Without it (UIKit/RecyclerView re-requesting a row it already
+	// showed, e.g. after a size change), the same item keeps its BindingContext and nothing is rebuilt.
+	public void Bind(PositionInfo position, object? data, bool refresh = true)
 	{
 		var nextSelector = owner.ViewSelector;
 		var nextId = nextSelector.GetReuseId(position, data);
@@ -97,9 +102,10 @@ internal sealed class RetainedView : IDisposable
 		var wasVisible = visible;
 		var created = false;
 		SetVisible(false);
-		// Rebinding the same item needs a reset to re-apply its bindings; a different item replaces the
-		// context directly. (Recycled rows keep their previous context, so this is one binding pass.)
-		if (ownsView && View is BindableObject previousBinding && ReferenceEquals(previousBinding.BindingContext, data))
+		// Rebinding the same item after a data change needs a reset to re-apply its bindings; a different
+		// item replaces the context directly. (Recycled rows keep their previous context, so this is one
+		// binding pass.)
+		if (refresh && ownsView && View is BindableObject previousBinding && ReferenceEquals(previousBinding.BindingContext, data))
 			previousBinding.BindingContext = null;
 		if (View is not null && (!ReferenceEquals(selector, nextSelector) || reuseId != nextId || kind != position.Kind
 			|| (supplied && !ReferenceEquals(View, suppliedView))))
@@ -173,6 +179,7 @@ internal sealed class RetainedView : IDisposable
 	public void Release()
 	{
 		SetVisible(false);
+		BoundGeneration = -1;
 		var view = View;
 		var keepsLogicalOwnership = kind == PositionKind.EmptyView && ReferenceEquals(view, owner.EmptyView);
 		View = null;

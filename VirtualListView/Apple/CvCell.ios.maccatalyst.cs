@@ -200,7 +200,10 @@ internal class CvCell : UICollectionViewCell
 	{
 		base.PrepareForReuse();
 
-		Content?.Unbind();
+		// Keep the previous BindingContext (as RecyclerView does on Android): clearing it here pushes defaults
+		// through every binding, and makes rows that build content on BindingContextChanged rebuild, only for
+		// the next Bind to set an item moments later. Release still clears it.
+		Content?.Unbind(clearContext: false);
 	}
 
 	public void SetupView(IView view)
