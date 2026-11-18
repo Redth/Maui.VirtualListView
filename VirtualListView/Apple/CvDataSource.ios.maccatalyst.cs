@@ -58,6 +58,8 @@ internal class CvDataSource : UICollectionViewDataSource
 		
 		if (info is not null)
 		{
+			if (info.Kind == PositionKind.Item && data is not null)
+				ReclaimContent(cell, data);
 			var track = cell.Content is null;
 			cell.SetTapHandlerCallback(TapCellHandler);
 			if (info.SectionIndex < 0 || info.ItemIndex < 0)
@@ -78,6 +80,42 @@ internal class CvDataSource : UICollectionViewDataSource
 			cell.Release();
 
 		return cell;
+	}
+
+	// Set the AppContext switch to turn content affinity off.
+	internal const string DisableContentAffinitySwitch = "Microsoft.Maui.VirtualListView.DisableContentAffinity";
+	static readonly bool contentAffinity =
+		!(AppContext.TryGetSwitch(DisableContentAffinitySwitch, out var disabled) && disabled);
+
+	// Content affinity. After a reload or a size change UIKit sends every visible cell through the reuse
+	// pool and hands them back in no particular order, so each row would be rebuilt for an item another
+	// cell was showing a moment ago. If a cell waiting in the pool still shows the requested item, the
+	// dequeued cell takes that content instead (and the pooled cell gets the dequeued cell's), and the
+	// bind finds its item already in place.
+	void ReclaimContent(CvCell cell, object data)
+	{
+		if (!contentAffinity || cell.Content?.Holds(data) == true)
+			return;
+
+		CvCell? donor = null;
+		var reuseId = cell.ReuseIdentifier?.ToString();
+		var collectionView = Handler.PlatformView;
+		cells.ForEach(candidate =>
+		{
+			// A donor must be in UIKit's reuse pool: display ended, no index path, and hidden (UIKit hides
+			// the cells it pools and un-hides them when it dequeues them, prefetching included).
+			if (donor is null && !ReferenceEquals(candidate, cell)
+				&& candidate.Content?.IsUndisplayedHolding(data) == true
+				&& candidate.Hidden
+				&& collectionView.IndexPathForCell(candidate) is null
+				&& candidate.ReuseIdentifier?.ToString() == reuseId)
+				donor = candidate;
+		});
+		if (donor is null)
+			return;
+
+		CvCell.ExchangeContent(cell, donor);
+		cells.Exchange(cell, donor);
 	}
 
 	void TapCellHandler(CvCell cell)

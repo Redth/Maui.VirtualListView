@@ -67,6 +67,16 @@ internal sealed class RetainedView : IDisposable
 			Unbind();
 	}
 
+	// This slot shows exactly this item.
+	internal bool Holds(object data) => View is BindableObject bindable && ReferenceEquals(bindable.BindingContext, data);
+
+	// An item row that isn't on screen (the platform ended displaying it) but still shows this exact
+	// item, so a cell asked for that item can adopt it instead of rebinding (CvDataSource.ReclaimContent).
+	// Only part of the test: the caller must also know the native cell is out of use (in the reuse pool).
+	// Position is not checked: UIKit only calls PrepareForReuse (Unbind) when it dequeues a pooled cell.
+	internal bool IsUndisplayedHolding(object data)
+		=> !visible && ownsView && kind == PositionKind.Item && Holds(data);
+
 	internal bool TryUpdatePosition(PositionInfo position, object? data)
 	{
 		if (View is null || !ReferenceEquals(selector, owner.ViewSelector) || kind != position.Kind
@@ -248,6 +258,25 @@ internal sealed class NativeViewRegistry<T> where T : class
 		}
 		views.Add((new WeakReference<T>(view), content));
 	}
+
+	// Re-pairs two native hosts after they swapped content: nothing is released.
+	public void Exchange(T a, T b)
+	{
+		var ia = views.FindIndex(entry => entry.Native.TryGetTarget(out var existing) && ReferenceEquals(existing, a));
+		var ib = views.FindIndex(entry => entry.Native.TryGetTarget(out var existing) && ReferenceEquals(existing, b));
+		var contentA = ia >= 0 ? views[ia].Content : null;
+		var contentB = ib >= 0 ? views[ib].Content : null;
+		foreach (var index in new[] { ia, ib }.Where(index => index >= 0).OrderByDescending(index => index))
+			views.RemoveAt(index);
+		if (contentB is not null)
+			views.Add((new WeakReference<T>(a), contentB));
+		if (contentA is not null)
+			views.Add((new WeakReference<T>(b), contentA));
+	}
+
+	// The content currently paired with a native host (tests).
+	internal RetainedView? ContentOf(T view)
+		=> views.FirstOrDefault(entry => entry.Native.TryGetTarget(out var existing) && ReferenceEquals(existing, view)).Content;
 
 	public void Drain(Action<T> release)
 	{

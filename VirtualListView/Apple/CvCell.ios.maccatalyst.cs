@@ -13,11 +13,13 @@ internal class CvCell : UICollectionViewCell
 	public VirtualListViewHandler Handler { get; set; }
 
 	public PositionInfo PositionInfo => Content?.Position;
-	internal RetainedView Content { get; private set; }
+	internal RetainedView Content => hosted?.Retained;
+	// What this cell currently shows. It can move to another cell (see CvDataSource.ReclaimContent).
+	CellContent hosted;
 	[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "The callback holds only a weak cell reference; the cell removes and disposes its recognizer.")]
 	readonly UITapGestureRecognizer tapRecognizer;
 	bool disposed;
-	RetainedContentLayout contentLayout;
+	RetainedContentLayout contentLayout => hosted?.Layout;
 
 	[Export("initWithFrame:")]
 	public CvCell(CGRect frame) : base(frame)
@@ -169,28 +171,24 @@ internal class CvCell : UICollectionViewCell
 
 	public IView VirtualView => Content?.View;
 
-	[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "The slot owns retained content; ClearView removes it and Release disconnects owned MAUI handlers.")]
-	public UIView NativeView { get; private set; }
+	public UIView NativeView => hosted?.NativeView;
 
 	public void Bind(VirtualListViewHandler handler, PositionInfo position, object data, PresentationKey? key)
 	{
 		Handler = handler;
 		tapRecognizer.Enabled = position.Kind == PositionKind.Item;
-		if (Content is null)
+		if (hosted is null)
 		{
-			var weakSelf = new WeakReference<CvCell>(this);
-			Content = new RetainedView(handler.VirtualView,
+			var slot = new CellContent(this);
+			slot.Retained = new RetainedView(handler.VirtualView,
 				view =>
 				{
-					if (!weakSelf.TryGetTarget(out var cell))
+					if (!slot.Host.TryGetTarget(out var cell))
 						throw new InvalidOperationException("The Apple content host is no longer available.");
-					cell.SetupView(view);
+					cell.SetupView(slot, view);
 				},
-				() =>
-				{
-					if (weakSelf.TryGetTarget(out var cell))
-						cell.ClearView();
-				});
+				slot.ClearView);
+			hosted = slot;
 		}
 		handler.BindRetained(Content, position, data, key);
 		SetNeedsLayout();
@@ -206,36 +204,51 @@ internal class CvCell : UICollectionViewCell
 		Content?.Unbind(clearContext: false);
 	}
 
-	public void SetupView(IView view)
+	void SetupView(CellContent slot, IView view)
 	{
-		NativeView = view.ToPlatform(Handler.MauiContext);
-		NativeView.RemoveFromSuperview();
-		NativeView.AutoresizingMask = UIViewAutoresizing.None;
-		ContentView.AddSubview(NativeView);
-		var weakSelf = new WeakReference<CvCell>(this);
-		contentLayout = new RetainedContentLayout(view, Handler.DispatchContentLayout, changed =>
+		var native = view.ToPlatform(Handler.MauiContext);
+		native.RemoveFromSuperview();
+		native.AutoresizingMask = UIViewAutoresizing.None;
+		ContentView.AddSubview(native);
+		slot.NativeView = native;
+		// Through the slot's host, not this cell: the content may move to another cell.
+		slot.Layout = new RetainedContentLayout(view, Handler.DispatchContentLayout, changed =>
 		{
-			if (weakSelf.TryGetTarget(out var cell) && cell.Handler?.IsConnected == true && cell.PositionInfo is not null)
+			if (slot.Host.TryGetTarget(out var cell) && cell.Handler?.IsConnected == true && cell.PositionInfo is not null)
 			{
 				cell.SetNeedsLayout();
 				if (changed)
 					cell.Handler.InvalidateContentLayout(cell.PositionInfo);
 			}
 		});
-    }
+	}
 
-	void ClearView()
+	// Swaps what two cells show: the retained MAUI trees, their native views and their measurements.
+	// Only for cells UIKit isn't displaying (a cell being dequeued and one waiting in the reuse pool).
+	internal static void ExchangeContent(CvCell a, CvCell b)
 	{
-		contentLayout?.Dispose();
-		contentLayout = null;
-		NativeView?.RemoveFromSuperview();
-		NativeView = null;
+		(a.hosted, b.hosted) = (b.hosted, a.hosted);
+		a.AdoptHostedContent();
+		b.AdoptHostedContent();
+	}
+
+	void AdoptHostedContent()
+	{
+		if (hosted is null)
+			return;
+		hosted.Host.SetTarget(this);
+		if (hosted.NativeView is UIView native && !ReferenceEquals(native.Superview, ContentView))
+		{
+			native.RemoveFromSuperview();
+			ContentView.AddSubview(native);
+		}
+		SetNeedsLayout();
 	}
 
 	internal void Release()
 	{
-		Content?.Release();
-		Content = null;
+		hosted?.Retained?.Release();
+		hosted = null;
 		TapHandler = null;
 		Handler = null;
 	}
@@ -252,6 +265,26 @@ internal class CvCell : UICollectionViewCell
 		base.Dispose(disposing);
 	}
 	
+	// A cell's retained content. Its callbacks reach the cell through Host, which ExchangeContent re-points.
+	[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "The slot owns retained content; ClearView removes it and Release disconnects owned MAUI handlers.")]
+	sealed class CellContent
+	{
+		public CellContent(CvCell host) => Host = new WeakReference<CvCell>(host);
+
+		public WeakReference<CvCell> Host { get; }
+		public RetainedView Retained { get; set; }
+		public UIView NativeView { get; set; }
+		public RetainedContentLayout Layout { get; set; }
+
+		public void ClearView()
+		{
+			Layout?.Dispose();
+			Layout = null;
+			NativeView?.RemoveFromSuperview();
+			NativeView = null;
+		}
+	}
+
 	class TapHandlerCallback
 	{
 		public TapHandlerCallback(Action<CvCell> callback)
