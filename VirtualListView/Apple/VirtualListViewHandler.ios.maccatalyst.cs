@@ -355,6 +355,8 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 		PlatformView.ShowsHorizontalScrollIndicator = scrollBarVisibility == ScrollBarVisibility.Always || scrollBarVisibility == ScrollBarVisibility.Default;
 	}
 
+	bool reloadDeferred;
+
 	void PlatformInvalidateData(KeyedUpdatePlan? plan = null)
 	{
 		dataSource?.State.Reload(PositionalViewSelector, acceptedRows, () =>
@@ -363,12 +365,31 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, UICo
 			if (plan is not null)
 				dataSource.Rebind(plan);
 			UpdateEmptyView();
-			PlatformView.ReloadData();
+			// While connecting, every data-related mapping lands here; UIKit only needs the last one.
+			if (IsBatchingConnect)
+				reloadDeferred = true;
+			else
+				ReloadNative();
 		});
+	}
+
+	void ReloadNative()
+	{
+		reloadDeferred = false;
+		PlatformView.ReloadData();
+	}
+
+	partial void PlatformEndConnectBatch()
+	{
+		if (reloadDeferred && IsConnected)
+			ReloadNative();
 	}
 
 	void PlatformApplyUpdates(KeyedUpdatePlan plan)
 	{
+		// Batch updates are relative to the counts UIKit last loaded: catch up on a deferred reload first.
+		if (reloadDeferred)
+			ReloadNative();
 		if (plan.Reset)
 		{
 			PlatformInvalidateData(plan);

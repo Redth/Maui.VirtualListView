@@ -149,6 +149,67 @@ public class RetainedViewTests
 	}
 
 	[Fact]
+	public void RecycledRowRebindingTheSameItemWithoutADataChangeKeepsItsContext()
+	{
+		var owner = new TestListView { ItemTemplate = new DataTemplate(() => new TrackedView()) };
+		using var slot = CreateSlot(owner);
+		var data = new object();
+		slot.Bind(Item(0), data);
+		slot.Unbind(clearContext: false);
+		var view = Assert.IsType<TrackedView>(slot.View);
+		var contexts = new List<object>();
+		view.BindingContextChanged += (_, _) => contexts.Add(view.BindingContext);
+		slot.Bind(Item(0), data, refresh: false);
+		Assert.Empty(contexts);
+		Assert.Same(data, view.BindingContext);
+		Assert.Equal(0, view.ItemIndex);
+		Assert.NotNull(slot.Position);
+	}
+
+	[Fact]
+	public void SameItemRebindWithoutADataChangeStillUpdatesPositionAndSelection()
+	{
+		var owner = new TestListView { ItemTemplate = new DataTemplate(() => new TrackedView()) };
+		using var slot = CreateSlot(owner);
+		var data = new object();
+		slot.Bind(Item(0, false), data);
+		var view = Assert.IsType<TrackedView>(slot.View);
+		var contexts = new List<object>();
+		view.BindingContextChanged += (_, _) => contexts.Add(view.BindingContext);
+		slot.Bind(Item(4, true), data, refresh: false);
+		Assert.Empty(contexts);
+		Assert.Equal(4, view.ItemIndex);
+		Assert.True(view.IsSelected);
+	}
+
+	[Fact]
+	public void DifferentItemWithoutRefreshStillReplacesTheContextInOnePass()
+	{
+		var owner = new TestListView { ItemTemplate = new DataTemplate(() => new TrackedView()) };
+		using var slot = CreateSlot(owner);
+		var first = new object();
+		var second = new object();
+		slot.Bind(Item(0), first);
+		slot.Unbind(clearContext: false);
+		var view = Assert.IsType<TrackedView>(slot.View);
+		var contexts = new List<object>();
+		view.BindingContextChanged += (_, _) => contexts.Add(view.BindingContext);
+		slot.Bind(Item(1), second, refresh: false);
+		Assert.Equal(new[] { second }, contexts);
+	}
+
+	[Fact]
+	public void ReleaseForgetsTheBoundGeneration()
+	{
+		var owner = new TestListView { ItemTemplate = new DataTemplate(() => new TrackedView()) };
+		using var slot = CreateSlot(owner);
+		slot.Bind(Item(0), new object());
+		slot.BoundGeneration = 7;
+		slot.Release();
+		Assert.Equal(-1, slot.BoundGeneration);
+	}
+
+	[Fact]
 	public void VisibilityDoesNotReleaseLogicalOwnershipBindingOrRequiredCallbacks()
 	{
 		var selector = new TestSelector();
