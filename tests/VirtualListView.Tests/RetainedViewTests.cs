@@ -479,6 +479,111 @@ public class RetainedViewTests
 	}
 
 	[Fact]
+	public void OnlyAnUndisplayedItemSlotShowingThatExactItemCanBeAdopted()
+	{
+		var owner = new TestListView { ItemTemplate = new DataTemplate(() => new TrackedView()) };
+		using var slot = CreateSlot(owner);
+		var data = new object();
+		slot.Bind(Item(0), data);
+		slot.SetVisible(true);
+		Assert.True(slot.Holds(data));
+		Assert.False(slot.IsUndisplayedHolding(data)); // on screen
+
+		slot.SetVisible(false); // the platform ended displaying it; still bound until the cell is dequeued
+		Assert.True(slot.IsUndisplayedHolding(data));
+		Assert.False(slot.IsUndisplayedHolding(new object()));
+
+		slot.Unbind(clearContext: false);
+		Assert.True(slot.IsUndisplayedHolding(data));
+
+		slot.Unbind(); // cleared: shows nothing any more
+		Assert.False(slot.IsUndisplayedHolding(data));
+	}
+
+	[Fact]
+	public void SuppliedViewsAreNeverAdopted()
+	{
+		var data = new object();
+		var header = new ContentView { BindingContext = data };
+		var owner = new TestListView { GlobalHeader = header };
+		using var slot = CreateSlot(owner);
+		slot.Bind(PositionInfo.ForHeader(0), data);
+		slot.Unbind(clearContext: false);
+		Assert.False(slot.IsUndisplayedHolding(data));
+	}
+
+	[Fact]
+	public void RegistryExchangeRepairsHostsWithoutReleasingEitherSlot()
+	{
+		var owner = new TestListView { ItemTemplate = new DataTemplate(() => new TrackedView()) };
+		var registry = new NativeViewRegistry<object>();
+		object a = new(), b = new();
+		var slotA = CreateSlot(owner);
+		var slotB = CreateSlot(owner);
+		slotA.Bind(Item(0), new object());
+		slotB.Bind(Item(1), new object());
+		registry.Add(a, slotA);
+		registry.Add(b, slotB);
+		var viewA = (TrackedView)slotA.View;
+		var viewB = (TrackedView)slotB.View;
+
+		registry.Exchange(a, b);
+
+		Assert.Same(slotB, registry.ContentOf(a));
+		Assert.Same(slotA, registry.ContentOf(b));
+		Assert.Same(viewA, slotA.View);
+		Assert.Same(viewB, slotB.View);
+		Assert.Equal(0, viewA.Disposals);
+		Assert.Equal(0, viewB.Disposals);
+		GC.KeepAlive(a);
+		GC.KeepAlive(b);
+	}
+
+	[Fact]
+	public void RegistryExchangeMovesContentToAHostThatHadNone()
+	{
+		var owner = new TestListView { ItemTemplate = new DataTemplate(() => new TrackedView()) };
+		var registry = new NativeViewRegistry<object>();
+		object fresh = new(), pooled = new();
+		var slot = CreateSlot(owner);
+		slot.Bind(Item(0), new object());
+		registry.Add(pooled, slot);
+
+		registry.Exchange(fresh, pooled);
+
+		Assert.Same(slot, registry.ContentOf(fresh));
+		Assert.Null(registry.ContentOf(pooled));
+		Assert.NotNull(slot.View);
+		GC.KeepAlive(fresh);
+		GC.KeepAlive(pooled);
+	}
+
+	[Fact]
+	public void AfterAnExchangeADeadHostReleasesTheContentItNowHolds()
+	{
+		var owner = new TestListView { ItemTemplate = new DataTemplate(() => new TrackedView()) };
+		var registry = new NativeViewRegistry<object>();
+		var live = new object();
+		var liveSlot = CreateSlot(owner);
+		liveSlot.Bind(Item(0), new object());
+		registry.Add(live, liveSlot);
+		var liveView = (TrackedView)liveSlot.View;
+
+		var (dead, deadSlotView) = RegisterAndExchangeWithDeadNative(registry, owner, live);
+		GC.Collect();
+		GC.WaitForPendingFinalizers();
+		GC.Collect();
+		Assert.False(dead.TryGetTarget(out _));
+		registry.ForEach(_ => { });
+
+		// The dead host held liveSlot after the exchange, so that's what is released.
+		Assert.Equal(1, liveView.Disposals);
+		Assert.Equal(0, deadSlotView.Disposals);
+		Assert.Same(deadSlotView, registry.ContentOf(live)?.View);
+		GC.KeepAlive(live);
+	}
+
+	[Fact]
 	public void BuiltInBindingPreservesApplicationSuppliedContextAndBindsNullItemAsNull()
 	{
 		var data = new object();
@@ -509,6 +614,17 @@ public class RetainedViewTests
 		var slot = CreateSlot(owner);
 		slot.Bind(Item(0), null);
 		registry.Add(native, slot);
+		return (new WeakReference<object>(native), (TrackedView)slot.View);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static (WeakReference<object> Native, TrackedView View) RegisterAndExchangeWithDeadNative(NativeViewRegistry<object> registry, TestListView owner, object live)
+	{
+		var native = new object();
+		var slot = CreateSlot(owner);
+		slot.Bind(Item(1), new object());
+		registry.Add(native, slot);
+		registry.Exchange(live, native);
 		return (new WeakReference<object>(native), (TrackedView)slot.View);
 	}
 
