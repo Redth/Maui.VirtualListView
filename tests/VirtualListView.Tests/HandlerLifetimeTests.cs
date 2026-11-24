@@ -64,6 +64,87 @@ public class HandlerLifetimeTests
 	}
 
 	[Fact]
+	public void OnThreadPublicationWaitsForTheNativePassToFinish()
+	{
+		// Android: a row bind/recycle inside RecyclerView layout publishes a data change. Running it
+		// inline calls notifyDataSetChanged mid-layout (IllegalStateException), so it must wait.
+		var dispatcher = new TestDispatcher();
+		var publication = new HandlerPublication();
+		var busy = false;
+		publication.IsNativeBusy = () => busy;
+		var values = new List<int>();
+		publication.Connect(dispatcher, new EventAdapter(), () => { });
+		dispatcher.Dispatch(() =>
+		{
+			busy = true;
+			publication.Post(() => values.Add(1));
+			publication.Post(() => values.Add(2));
+			Assert.Empty(values);
+			busy = false;
+		});
+		dispatcher.Drain();
+		Assert.Equal(new[] { 1, 2 }, values);
+		Assert.Equal(0, dispatcher.PendingCount);
+	}
+
+	[Fact]
+	public void OnThreadPublicationStillRunsInlineOutsideANativePass()
+	{
+		var dispatcher = new TestDispatcher();
+		var publication = new HandlerPublication();
+		publication.IsNativeBusy = () => false;
+		var values = new List<int>();
+		publication.Connect(dispatcher, new EventAdapter(), () => { });
+		dispatcher.Dispatch(() =>
+		{
+			publication.Post(() => values.Add(1));
+			Assert.Equal(new[] { 1 }, values);
+		});
+		dispatcher.Drain();
+		Assert.Equal(0, dispatcher.PendingCount);
+	}
+
+	[Fact]
+	public void ADrainThatLandsInANativePassKeepsItsQueueAndOrderForTheNextTurn()
+	{
+		var dispatcher = new TestDispatcher();
+		var publication = new HandlerPublication();
+		var busy = false;
+		publication.IsNativeBusy = () => busy;
+		var values = new List<int>();
+		var source = new EventAdapter();
+		publication.Connect(dispatcher, source, () => values.Add(1));
+		source.InvalidateData();
+		publication.Post(() => values.Add(2));
+		Assert.Equal(1, dispatcher.PendingCount);
+		busy = true;
+		dispatcher.Drain(maxActions: 1);
+		Assert.Empty(values);
+		Assert.Equal(1, dispatcher.PendingCount);
+		busy = false;
+		publication.Post(() => values.Add(3));
+		dispatcher.Drain();
+		Assert.Equal(new[] { 1, 2, 3 }, values);
+	}
+
+	[Fact]
+	public void DisconnectWhileDeferredDropsTheWork()
+	{
+		var dispatcher = new TestDispatcher();
+		var publication = new HandlerPublication();
+		var busy = true;
+		publication.IsNativeBusy = () => busy;
+		var values = new List<int>();
+		publication.Connect(dispatcher, new EventAdapter(), () => { });
+		dispatcher.Dispatch(() => publication.Post(() => values.Add(1)));
+		dispatcher.Drain(maxActions: 1);
+		publication.Disconnect();
+		busy = false;
+		dispatcher.Drain();
+		Assert.Empty(values);
+	}
+
+	[Fact]
 	public void OldDispatcherCannotDrainWorkForAReconnectedControl()
 	{
 		var oldDispatcher = new TestDispatcher();
@@ -418,7 +499,7 @@ public class HandlerLifetimeTests
 		var finishes = 0;
 		refresh.Request(() => true, () => refresh.Begin(
 			callback => ((IVirtualListView)view).Refresh(callback), () => finishes++));
-		Assert.Same(failure, Assert.Throws<ApplicationException>(dispatcher.Drain));
+		Assert.Same(failure, Assert.Throws<ApplicationException>(() => dispatcher.Drain()));
 		Assert.Equal(1, finishes);
 		var requests = 0;
 		refresh.Request(() => true, () => requests++);
@@ -484,12 +565,12 @@ public class HandlerLifetimeTests
 			queue.Enqueue(action);
 			return true;
 		}
-		public void Drain()
+		public void Drain(int maxActions = int.MaxValue)
 		{
 			IsDraining = true;
 			try
 			{
-				while (queue.TryDequeue(out var action))
+				while (maxActions-- > 0 && queue.TryDequeue(out var action))
 					action();
 			}
 			finally { IsDraining = false; }
