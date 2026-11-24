@@ -19,6 +19,13 @@ internal sealed class HandlerPublication
 	long scheduledDrain;
 	long nextDrain;
 
+	// True while the native list is in a pass that must not be re-entered with data changes
+	// (Android: RecyclerView.IsComputingLayout, which throws IllegalStateException from
+	// notify* calls). Work posted then waits for the next dispatcher turn instead of running inline.
+	public Func<bool>? IsNativeBusy { get; set; }
+
+	bool NativeBusy() => IsNativeBusy?.Invoke() ?? false;
+
 	public bool IsConnected { get { lock (sync) return dispatcher is not null; } }
 
 	public void Connect(IDispatcher owningDispatcher, IVirtualListViewAdapter? source, Action onInvalidated,
@@ -153,19 +160,24 @@ internal sealed class HandlerPublication
 			target = dispatcher;
 		}
 
-		if (!target.IsDispatchRequired)
+		if (!target.IsDispatchRequired && !NativeBusy())
 			Drain(target, ticket);
-		else if (!target.Dispatch(() => Drain(target, ticket)))
+		else
+			ScheduleDrain(target, ticket);
+	}
+
+	void ScheduleDrain(IDispatcher target, long ticket)
+	{
+		if (target.Dispatch(() => Drain(target, ticket)))
+			return;
+		lock (sync)
 		{
-			lock (sync)
-			{
-				if (scheduledDrain != ticket || !ReferenceEquals(dispatcher, target))
-					return;
-				pending.Clear();
-				scheduledDrain = 0;
-			}
-			throw new InvalidOperationException("The owning VirtualListView dispatcher rejected publication.");
+			if (scheduledDrain != ticket || !ReferenceEquals(dispatcher, target))
+				return;
+			pending.Clear();
+			scheduledDrain = 0;
 		}
+		throw new InvalidOperationException("The owning VirtualListView dispatcher rejected publication.");
 	}
 
 	void Drain(IDispatcher target, long ticket)
@@ -175,6 +187,16 @@ internal sealed class HandlerPublication
 			while (true)
 			{
 				Action action;
+				// A dispatched drain can still land inside a native pass (a nested message loop, or
+				// an action whose work re-entered layout). Keep the queue and its order for later.
+				if (NativeBusy())
+				{
+					lock (sync)
+						if (!ReferenceEquals(dispatcher, target) || scheduledDrain != ticket)
+							return;
+					ScheduleDrain(target, ticket);
+					return;
+				}
 				lock (sync)
 				{
 					if (!ReferenceEquals(dispatcher, target) || scheduledDrain != ticket)

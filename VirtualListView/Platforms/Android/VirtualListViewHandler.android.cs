@@ -76,6 +76,11 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 		recyclerView.ViewTreeObserver.GlobalLayout += RecyclerLayoutCompleted;
 		recyclerView.LayoutParameters = new FrameLayout.LayoutParams(
 			ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
+		// A row's bind or recycle can change what the list shows (e.g. a header's IsVisible
+		// follows the binding context it gets when bound). Applying that to the adapter while
+		// RecyclerView is still laying out throws, so wait for the pass to finish.
+		var rv = recyclerView;
+		publication.IsNativeBusy = () => rv.IsComputingLayout;
 		ConnectLifetime();
 	}
 
@@ -85,6 +90,7 @@ public partial class VirtualListViewHandler : ViewHandler<IVirtualListView, Fram
 	protected override void DisconnectHandler(FrameLayout nativeView)
 	{
 		DisconnectLifetime();
+		publication.IsNativeBusy = null;
 		recyclerView.ViewTreeObserver.GlobalLayout -= RecyclerLayoutCompleted;
 		afterLayout = null;
 		swipeRefreshLayout.SetOnRefreshListener(null);
